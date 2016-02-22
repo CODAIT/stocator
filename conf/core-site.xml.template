@@ -1,0 +1,92 @@
+<configuration>
+<property>
+   <name>fs.swift2d.impl</name>
+   <value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+</property>
+
+<!-- Keystone V2 based authentication -->
+<property>
+    <name>fs.swift2d.service.lvm.auth.url</name>
+    <value>http://IP:PORT/v2.0/tokens</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvm.public</name>
+    <value>true</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvm.tenant</name>
+    <value>TENANT</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvm.password</name>
+    <value>PASSWORD</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvm.username</name>
+    <value>USERNAME</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvm.auth.method</name>
+    <value>keystone</value>
+</property>
+
+<!--Swiftauth model-->
+
+<property>
+    <name>fs.swift2d.service.dal05.auth.url</name>
+    <value>https://dal05.objectstorage.softlayer.net/auth/v1.0/</value>
+</property>
+<property>
+    <name>fs.swift2d.service.dal05.public</name>
+    <value>true</value>
+</property>
+<property>
+    <name>fs.swift2d.service.dal05.tenant</name>
+    <value>TENANT</value>
+</property>
+<property>
+    <name>fs.swift2d.service.dal05.password</name>
+    <value>PASSWORD</value>
+</property>
+<property>
+    <name>fs.swift2d.service.dal05.username</name>
+    <value>USER</value>
+</property>
+<property>
+    <name>fs.swift2d.service.dal05.auth.method</name>
+    <value>swiftauth</value>
+</property>
+
+<!--Bluemix Object Service Keystone v3 based authentication-->
+<property>
+    <name>fs.swift2d.service.bmv3.auth.url</name>
+    <value>https://identity.open.softlayer.com/v3/auth/tokens</value>
+</property>
+<property>
+    <name>fs.swift2d.service.bmv3.public</name>
+    <value>true</value>
+</property>
+<property>
+    <name>fs.swift2d.service.bmv3.tenant</name>
+    <value>PROJECTID</value>
+</property>
+<property>
+    <name>fs.swift2d.service.bmv3.password</name>
+    <value>PASSWORD</value>
+</property>
+<property>
+    <name>fs.swift2d.service.bmv3.username</name>
+    <value>USERID</value>
+</property>
+<property>
+    <name>fs.swift2d.service.bmv3.auth.method</name>
+    <value>keystoneV3</value>
+</property>
+<property>
+    <name>fs.swift2d.service.bmv3.region</name>
+    <value>dallas</value>
+</property>
+
+</configuration>
+
+

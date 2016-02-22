@@ -1,0 +1,844 @@
+From 875ebe490f44828c1b8c6729ede187cb2012df3f Mon Sep 17 00:00:00 2001
+From: Gil Vernik <gilv@il.ibm.com>
+Date: Mon, 22 Feb 2016 09:01:27 +0200
+Subject: [PATCH] Keystone V3. Password with scope
+
+---
+ .../joss/client/factory/AccountConfig.java         | 19 +++++
+ .../org/javaswift/joss/client/impl/ClientImpl.java | 14 +++-
+ .../factory/AuthenticationCommandFactoryImpl.java  |  6 ++
+ .../KeystoneAuthenticationCommandImpl.java         | 31 +++++++
+ .../factory/AuthenticationCommandFactoryMock.java  |  9 ++
+ .../factory/AuthenticationCommandFactory.java      |  4 +
+ .../identity/access/AbstractAccessKeystoneV3.java  | 52 ++++++++++++
+ .../shared/identity/access/AccessBasic.java        |  6 ++
+ .../shared/identity/access/AccessNoTenant.java     |  7 ++
+ .../shared/identity/access/AccessTenant.java       |  5 ++
+ .../shared/identity/access/AccessToken.java        | 97 ++++++++++++++++++++++
+ .../command/shared/identity/access/Catalog.java    | 65 +++++++++++++++
+ .../command/shared/identity/access/EndPoint.java   |  7 ++
+ .../shared/identity/access/ServiceCatalog.java     | 10 ++-
+ .../identity/authentication/Authentication.java    | 23 +++--
+ .../shared/identity/authentication/Identity.java   | 50 +++++++++++
+ .../shared/identity/authentication/Password.java   | 36 ++++++++
+ .../identity/authentication/ProjectScope.java      | 36 ++++++++
+ .../shared/identity/authentication/Scope.java      | 36 ++++++++
+ .../shared/identity/authentication/User.java       | 46 ++++++++++
+ src/main/java/org/javaswift/joss/model/Access.java |  2 +
+ 21 files changed, 550 insertions(+), 11 deletions(-)
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/access/AbstractAccessKeystoneV3.java
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/access/AccessToken.java
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/access/Catalog.java
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/authentication/Identity.java
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/authentication/Password.java
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/authentication/ProjectScope.java
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/authentication/Scope.java
+ create mode 100644 src/main/java/org/javaswift/joss/command/shared/identity/authentication/User.java
+
+diff --git a/src/main/java/org/javaswift/joss/client/factory/AccountConfig.java b/src/main/java/org/javaswift/joss/client/factory/AccountConfig.java
+index 04a817b..40ec842 100644
+--- a/src/main/java/org/javaswift/joss/client/factory/AccountConfig.java
++++ b/src/main/java/org/javaswift/joss/client/factory/AccountConfig.java
+@@ -4,6 +4,9 @@ import static org.javaswift.joss.client.factory.AuthenticationMethod.*;
+ 
+ public class AccountConfig {
+ 
++    private String userId;
++
++    private String projectId;
+     /**
+     * ObjectStore tenant name. This is most often equated with the project
+     */
+@@ -382,4 +385,20 @@ public class AccountConfig {
+     public void setMockOnFileObjectStoreIsAbsolutePath(boolean mockOnFileObjectStoreIsAbsolutePath) {
+         this.mockOnFileObjectStoreIsAbsolutePath = mockOnFileObjectStoreIsAbsolutePath;
+     }
++
++    public String getUserId() {
++        return userId;
++	}
++
++    public void setUserId(String userId) {
++	    this.userId = userId;
++    }
++
++    public String getProjectId() {
++        return projectId;
++    }
++
++    public void setProjectId(String projectId) {
++        this.projectId = projectId;
++    }
+ }
+diff --git a/src/main/java/org/javaswift/joss/client/impl/ClientImpl.java b/src/main/java/org/javaswift/joss/client/impl/ClientImpl.java
+index 2efbb80..f413088 100644
+--- a/src/main/java/org/javaswift/joss/client/impl/ClientImpl.java
++++ b/src/main/java/org/javaswift/joss/client/impl/ClientImpl.java
+@@ -81,7 +81,9 @@ public class ClientImpl extends AbstractClient<AccountImpl> {
+ 
+     @Override
+     protected AccountImpl createAccount() {
+-        AuthenticationCommand command = this.factory.createAuthenticationCommand(
++        AuthenticationCommand command = null;
++        if (accountConfig.getProjectId() == null ) {
++        command = this.factory.createAuthenticationCommand(
+                 httpClient,
+                 accountConfig.getAuthenticationMethod(),
+                 accountConfig.getAuthUrl(),
+@@ -90,6 +92,16 @@ public class ClientImpl extends AbstractClient<AccountImpl> {
+                 accountConfig.getUsername(),
+                 accountConfig.getPassword(),
+                 accountConfig.getAccessProvider());
++        } else {
++           command = this.factory.createAuthenticationCommand(
++               httpClient,
++               accountConfig.getAuthenticationMethod(),
++               accountConfig.getAuthUrl(),
++               accountConfig.getUserId(),
++               accountConfig.getPassword(),
++               accountConfig.getProjectId(),
++               accountConfig.getAccessProvider());
++        }
+         LOG.info(
+                 "JOSS / Attempting authentication with tenant name: " + accountConfig.getTenantName()+
+                         ", tenant ID: "+accountConfig.getTenantId()+
+diff --git a/src/main/java/org/javaswift/joss/command/impl/factory/AuthenticationCommandFactoryImpl.java b/src/main/java/org/javaswift/joss/command/impl/factory/AuthenticationCommandFactoryImpl.java
+index d229d74..6859ee6 100644
+--- a/src/main/java/org/javaswift/joss/command/impl/factory/AuthenticationCommandFactoryImpl.java
++++ b/src/main/java/org/javaswift/joss/command/impl/factory/AuthenticationCommandFactoryImpl.java
+@@ -28,4 +28,10 @@ public class AuthenticationCommandFactoryImpl implements AuthenticationCommandFa
+         }
+     }
+ 
++    @Override
++    public AuthenticationCommand createAuthenticationCommand(HttpClient httpClient, AuthenticationMethod authenticationMethod,
++        String url, String userId, String password,
++        String projectId, AuthenticationMethod.AccessProvider accessProvier) {
++      return new KeystoneAuthenticationCommandImpl(httpClient, url, userId, password, projectId);
++    }
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/impl/identity/KeystoneAuthenticationCommandImpl.java b/src/main/java/org/javaswift/joss/command/impl/identity/KeystoneAuthenticationCommandImpl.java
+index 5be081f..f81e3e6 100644
+--- a/src/main/java/org/javaswift/joss/command/impl/identity/KeystoneAuthenticationCommandImpl.java
++++ b/src/main/java/org/javaswift/joss/command/impl/identity/KeystoneAuthenticationCommandImpl.java
+@@ -11,6 +11,7 @@ import org.javaswift.joss.command.impl.core.httpstatus.HttpStatusSuccessConditio
+ import org.javaswift.joss.command.shared.identity.AuthenticationCommand;
+ import org.javaswift.joss.command.shared.identity.access.AccessNoTenant;
+ import org.javaswift.joss.command.shared.identity.access.AccessTenant;
++import org.javaswift.joss.command.shared.identity.access.AccessToken;
+ import org.javaswift.joss.command.shared.identity.authentication.Authentication;
+ import org.javaswift.joss.exception.CommandException;
+ import org.javaswift.joss.headers.Accept;
+@@ -22,6 +23,8 @@ public class KeystoneAuthenticationCommandImpl extends AbstractCommand<HttpPost,
+ 
+     private boolean tenantSupplied;
+ 
++    private boolean isKeystoneV3 = false;
++
+     private String url;
+ 
+     public KeystoneAuthenticationCommandImpl(HttpClient httpClient, String url, String tenantName, String tenantId, String username, String password) {
+@@ -32,6 +35,15 @@ public class KeystoneAuthenticationCommandImpl extends AbstractCommand<HttpPost,
+         this.url = url;
+     }
+ 
++    public KeystoneAuthenticationCommandImpl(HttpClient httpClient, String url, String userId, String password, String projectId) {
++        super(httpClient, url);
++        isKeystoneV3 = true;
++        setTenantSupplied("", "");
++        setAuthenticationHeader(userId, password, projectId);
++        setHeader(new Accept("application/json"));
++        this.url = url;
++    }
++
+     private void setTenantSupplied(String tenantName, String tenantId) {
+         this.tenantSupplied = tenantName != null || tenantId != null;
+     }
+@@ -52,8 +64,27 @@ public class KeystoneAuthenticationCommandImpl extends AbstractCommand<HttpPost,
+         }
+     }
+ 
++    private void setAuthenticationHeader(String userId, String password, String projectId) {
++        try {
++            Authentication auth = new Authentication(userId, password, projectId);
++            String jsonString = createObjectMapper(true).writeValueAsString(auth);
++            StringEntity input = new StringEntity(jsonString);
++            input.setContentType("application/json");
++            request.setEntity(input);
++        } catch (IOException err) {
++            throw new CommandException("Unable to set the JSON body for the authentication header", err);
++        }
++    }
++
+     @Override
+     public Access getReturnObject(HttpResponse response) throws IOException {
++      if (isKeystoneV3) {
++          String subjectToken = response.getFirstHeader("X-Subject-Token").getValue();
++          Access access = createObjectMapper(true)
++                    .readValue(response.getEntity().getContent(), AccessToken.class);
++          access.setManualToken(subjectToken);
++          return access;
++        }
+         if (isTenantSupplied()) {
+             return createObjectMapper(true)
+                     .readValue(response.getEntity().getContent(), AccessTenant.class);
+diff --git a/src/main/java/org/javaswift/joss/command/mock/factory/AuthenticationCommandFactoryMock.java b/src/main/java/org/javaswift/joss/command/mock/factory/AuthenticationCommandFactoryMock.java
+index 9d29898..7a9b96a 100644
+--- a/src/main/java/org/javaswift/joss/command/mock/factory/AuthenticationCommandFactoryMock.java
++++ b/src/main/java/org/javaswift/joss/command/mock/factory/AuthenticationCommandFactoryMock.java
+@@ -2,6 +2,7 @@ package org.javaswift.joss.command.mock.factory;
+ 
+ import org.apache.http.client.HttpClient;
+ import org.javaswift.joss.client.factory.AuthenticationMethod;
++import org.javaswift.joss.client.factory.AuthenticationMethod.AccessProvider;
+ import org.javaswift.joss.command.mock.identity.AuthenticationCommandMock;
+ import org.javaswift.joss.command.shared.factory.AuthenticationCommandFactory;
+ import org.javaswift.joss.command.shared.identity.AuthenticationCommand;
+@@ -22,4 +23,12 @@ public class AuthenticationCommandFactoryMock implements AuthenticationCommandFa
+         return new AuthenticationCommandMock(swift, url, tenantName, tenantId, username, password);
+     }
+ 
++	@Override
++	public AuthenticationCommand createAuthenticationCommand(HttpClient httpClient,
++			AuthenticationMethod authenticationMethod, String url, String userId, String password, String projectId,
++			AccessProvider accessProvier) {
++		// TODO Auto-generated method stub
++		return null;
++	}
++
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/shared/factory/AuthenticationCommandFactory.java b/src/main/java/org/javaswift/joss/command/shared/factory/AuthenticationCommandFactory.java
+index 546ae34..cb024a5 100644
+--- a/src/main/java/org/javaswift/joss/command/shared/factory/AuthenticationCommandFactory.java
++++ b/src/main/java/org/javaswift/joss/command/shared/factory/AuthenticationCommandFactory.java
+@@ -10,4 +10,8 @@ public interface AuthenticationCommandFactory {
+                                                       String url, String tenantName, String tenantId,
+                                                       String username, String password, AuthenticationMethod.AccessProvider accessProvier);
+ 
++    AuthenticationCommand createAuthenticationCommand(HttpClient httpClient, AuthenticationMethod authenticationMethod,
++            String url, String userId, String password,
++            String projectId, AuthenticationMethod.AccessProvider accessProvier);
++
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/AbstractAccessKeystoneV3.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/AbstractAccessKeystoneV3.java
+new file mode 100644
+index 0000000..1c216f8
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/AbstractAccessKeystoneV3.java
+@@ -0,0 +1,52 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.access;
++
++import java.util.HashMap;
++
++import org.javaswift.joss.model.Access;
++
++public abstract class AbstractAccessKeystoneV3 implements Access {
++
++  public static final String SERVICE_CATALOG_OBJECT_STORE = "object-store";
++
++  public String token;
++
++  public User user;
++
++  public Metadata metadata;
++
++  private String preferredRegion;
++
++  protected abstract HashMap<String, EndPoint> determineAllCurrentEndPoints();
++
++  public abstract boolean isTenantSupplied();
++
++  public String getToken() {
++    return token;
++  }
++
++  public String getPreferredRegion() {
++    return this.preferredRegion;
++  }
++
++  public void setPreferredRegion(String preferredRegion) {
++    this.preferredRegion = preferredRegion;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessBasic.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessBasic.java
+index 5469138..6042745 100644
+--- a/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessBasic.java
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessBasic.java
+@@ -43,4 +43,10 @@ public class AccessBasic implements Access {
+     public String getTempUrlPrefix(TempUrlHashPrefixSource tempUrlHashPrefixSource) {
+         return url.endsWith("/") ? url.substring(0, url.length()-1) : url;
+     }
++
++    @Override
++    public void setManualToken(String token) {
++      // TODO Auto-generated method stub
++    }
++
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessNoTenant.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessNoTenant.java
+index 0fe20d0..8e2883a 100644
+--- a/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessNoTenant.java
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessNoTenant.java
+@@ -1,5 +1,7 @@
+ package org.javaswift.joss.command.shared.identity.access;
+ 
++import java.util.HashMap;
++
+ import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+ import org.codehaus.jackson.map.annotate.JsonRootName;
+ import org.javaswift.joss.client.factory.TempUrlHashPrefixSource;
+@@ -23,4 +25,9 @@ public class AccessNoTenant extends AbstractAccess {
+         return null;  // Unused
+     }
+ 
++	@Override
++	public void setManualToken(String token) {
++	  // TODO Auto-generated method stub
++	}
++
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessTenant.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessTenant.java
+index 2cf34a9..b78eda3 100644
+--- a/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessTenant.java
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessTenant.java
+@@ -65,4 +65,9 @@ public class AccessTenant extends AbstractAccess {
+         return this.currentEndPoint;
+     }
+ 
++	@Override
++	public void setManualToken(String token) {
++	  // TODO Auto-generated method stub
++	}
++
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessToken.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessToken.java
+new file mode 100644
+index 0000000..f64be21
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/AccessToken.java
+@@ -0,0 +1,97 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.access;
++
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.Hashtable;
++import java.util.List;
++
++import org.apache.http.HttpStatus;
++import org.codehaus.jackson.annotate.JsonIgnore;
++import org.codehaus.jackson.annotate.JsonIgnoreProperties;
++import org.codehaus.jackson.map.annotate.JsonRootName;
++import org.javaswift.joss.client.factory.TempUrlHashPrefixSource;
++import org.javaswift.joss.exception.CommandExceptionError;
++import org.javaswift.joss.exception.HttpStatusExceptionUtil;
++
++@JsonRootName(value = "token")
++@JsonIgnoreProperties(ignoreUnknown = true)
++public class AccessToken extends AbstractAccessKeystoneV3 {
++
++  public List<Catalog> catalog = new ArrayList<Catalog>();
++
++  @JsonIgnore
++  private HashMap<String, EndPoint> currentEndPoints;
++
++  private Catalog getObjectStoreCatalog() {
++    for (Catalog catal : catalog) {
++      if (SERVICE_CATALOG_OBJECT_STORE.equals(catal.type)) {
++        return catal;
++      }
++    }
++    return null;
++  }
++
++  @Override
++  public String getTempUrlPrefix(TempUrlHashPrefixSource tempUrlHashPrefixSource) {
++    // TODO Auto-generated method stub
++    return null;
++  }
++
++  @SuppressWarnings("ConstantConditions")
++  protected HashMap<String, EndPoint> determineAllCurrentEndPoints() {
++    if (currentEndPoints != null) {
++      return currentEndPoints;
++    }
++    currentEndPoints = new HashMap<String, EndPoint>();
++    Catalog objectStoreCatalog = getObjectStoreCatalog();
++    if (objectStoreCatalog == null) {
++      HttpStatusExceptionUtil.throwException(HttpStatus.SC_NOT_FOUND,
++          CommandExceptionError.NO_SERVICE_CATALOG_FOUND);
++    }
++    currentEndPoints = objectStoreCatalog.getAllRegions(getPreferredRegion());
++    if (this.currentEndPoints == null) {
++      HttpStatusExceptionUtil.throwException(HttpStatus.SC_NOT_FOUND,
++          CommandExceptionError.NO_END_POINT_FOUND);
++    }
++    return this.currentEndPoints;
++  }
++
++  @Override
++  public boolean isTenantSupplied() {
++    // TODO Auto-generated method stub
++    return true;
++  }
++
++  @Override
++  public String getInternalURL() {
++    return ((EndPoint) determineAllCurrentEndPoints().get("internal")).url;
++  }
++
++  @Override
++  public String getPublicURL() {
++    return ((EndPoint) determineAllCurrentEndPoints().get("public")).url;
++  }
++
++  @Override
++  public void setManualToken(String token) {
++    this.token = token;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/Catalog.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/Catalog.java
+new file mode 100644
+index 0000000..18303fe
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/Catalog.java
+@@ -0,0 +1,65 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.access;
++
++import org.codehaus.jackson.annotate.JsonIgnoreProperties;
++
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.List;
++
++@JsonIgnoreProperties(ignoreUnknown = true)
++public class Catalog {
++
++  public List<EndPoint> endpoints = new ArrayList<EndPoint>();
++
++  public String type;
++
++  public String name;
++
++  public EndPoint getRegion(String regionName) {
++    EndPoint firstEndPoint = null;
++    for (EndPoint endPoint : endpoints) {
++      if (regionName == null) { // If no region is passed, return the first region
++        return endPoint;
++      }
++      if (firstEndPoint == null) {
++        // If the requested region was not found, return the first region -- show must go on
++        firstEndPoint = endPoint;
++      }
++      if (regionName.equals(endPoint.region)) {
++        return endPoint;
++      }
++      if (regionName.equals(endPoint.region_id)) {
++        return endPoint;
++      }
++    }
++    return firstEndPoint;
++  }
++
++  public HashMap<String, EndPoint> getAllRegions(String regionName) {
++    HashMap<String, EndPoint> allEndPoints = new HashMap<String, EndPoint>();
++    for (EndPoint endPoint : endpoints) {
++      if (regionName.equals(endPoint.region) || regionName.equals(endPoint.region_id)) {
++        allEndPoints.put(endPoint.accessInterface, endPoint);
++      }
++    }
++    return allEndPoints;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/EndPoint.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/EndPoint.java
+index 401e7b8..9a359c0 100644
+--- a/src/main/java/org/javaswift/joss/command/shared/identity/access/EndPoint.java
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/EndPoint.java
+@@ -1,6 +1,7 @@
+ package org.javaswift.joss.command.shared.identity.access;
+ 
+ import org.codehaus.jackson.annotate.JsonIgnoreProperties;
++import org.codehaus.jackson.annotate.JsonProperty;
+ 
+ @JsonIgnoreProperties(ignoreUnknown = true)
+ public class EndPoint {
+@@ -15,4 +16,10 @@ public class EndPoint {
+ 
+     public String id;
+ 
++    public String region_id;
++
++    public String url;
++
++    @JsonProperty("interface")
++    public String accessInterface;
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/access/ServiceCatalog.java b/src/main/java/org/javaswift/joss/command/shared/identity/access/ServiceCatalog.java
+index 27df485..00c4ef8 100644
+--- a/src/main/java/org/javaswift/joss/command/shared/identity/access/ServiceCatalog.java
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/access/ServiceCatalog.java
+@@ -20,11 +20,13 @@ public class ServiceCatalog {
+     public EndPoint getRegion(String regionName) {
+         EndPoint firstEndPoint = null;
+         for (EndPoint endPoint : endpoints) {
+-            if (regionName == null) { // If no region is passed, return the first region
+-                return endPoint;
++            if (regionName == null) {
++              // If no region is passed, return the first region
++              return endPoint;
+             }
+-            if (firstEndPoint == null) { // If the requested region was not found, return the first region -- show must go on
+-                firstEndPoint = endPoint;
++            if (firstEndPoint == null) {
++              // If the requested region was not found, return the first region -- show must go on
++              firstEndPoint = endPoint;
+             }
+             if (regionName.equals(endPoint.region)) {
+                 return endPoint;
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Authentication.java b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Authentication.java
+index 0bf1850..dc508c7 100644
+--- a/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Authentication.java
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Authentication.java
+@@ -9,24 +9,35 @@ public class Authentication {
+     private PasswordCredentials passwordCredentials;
+     private String tenantName;
+     private String tenantId;
++    private Identity identity;
+ 
+     public Authentication(final String tenantName, String tenantId, final String username, final String password) {
+-        this.passwordCredentials = new PasswordCredentials(username, password);
+-        this.tenantName = tenantName;
+-        this.tenantId = tenantId;
++      this.passwordCredentials = new PasswordCredentials(username, password);
++      this.tenantName = tenantName;
++      this.tenantId = tenantId;
++    }
++
++    public Authentication(final String userId, final String password, final String projectId) {
++      this.identity = new Identity("password", userId, password, projectId);
+     }
+ 
+     @JsonSerialize(include=Inclusion.NON_NULL)
+     public String getTenantId() {
+-        return this.tenantId;
++      return this.tenantId;
+     }
+ 
+     @JsonSerialize(include=Inclusion.NON_NULL)
+     public String getTenantName() {
+-        return this.tenantName;
++      return this.tenantName;
++    }
++
++    @JsonSerialize(include=Inclusion.NON_NULL)
++    public Identity getIdentity() {
++      return this.identity;
+     }
+ 
++    @JsonSerialize(include=Inclusion.NON_NULL)
+     public PasswordCredentials getPasswordCredentials() {
+-        return this.passwordCredentials;
++      return this.passwordCredentials;
+     }
+ }
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Identity.java b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Identity.java
+new file mode 100644
+index 0000000..74bb5d6
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Identity.java
+@@ -0,0 +1,50 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.authentication;
++
++import java.util.ArrayList;
++
++public class Identity {
++
++  private ArrayList<String> methods;
++  private Password password;
++  private Scope scope;
++
++  public Identity(String method, String id, String pass, String projectId) {
++    if (methods == null) {
++      methods = new ArrayList<String>();
++    }
++    methods.add(method);
++    password = new Password(id, pass);
++    scope = new Scope(projectId);
++  }
++
++  public String[] getMethods() {
++    String[] tmpArr = new String[methods.size()];
++    return methods.toArray(tmpArr);
++  }
++
++  public Password getPassword() {
++    return password;
++  }
++
++  public Scope getScope() {
++    return scope;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Password.java b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Password.java
+new file mode 100644
+index 0000000..d6979d5
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Password.java
+@@ -0,0 +1,36 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.authentication;
++
++public class Password {
++
++  private User user;
++
++  public Password(String id, String password) {
++    this.user = new User(id, password);
++  }
++
++  public User getUser() {
++    return user;
++  }
++
++  public void setUser(User user) {
++    this.user = user;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/authentication/ProjectScope.java b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/ProjectScope.java
+new file mode 100644
+index 0000000..0ddad4b
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/ProjectScope.java
+@@ -0,0 +1,36 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.authentication;
++
++public class ProjectScope {
++
++  private String id;
++
++  public ProjectScope(String id) {
++    this.id = id;
++  }
++
++  public String getId() {
++    return id;
++  }
++
++  public void setId(String id) {
++    this.id = id;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Scope.java b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Scope.java
+new file mode 100644
+index 0000000..1074296
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/Scope.java
+@@ -0,0 +1,36 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.authentication;
++
++public class Scope {
++
++  private ProjectScope project ;
++
++  public Scope(String id) {
++    project  = new ProjectScope(id);
++  }
++
++  public ProjectScope getProject() {
++    return project;
++  }
++
++  public void setProject(ProjectScope project) {
++    this.project = project;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/command/shared/identity/authentication/User.java b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/User.java
+new file mode 100644
+index 0000000..71a6cc0
+--- /dev/null
++++ b/src/main/java/org/javaswift/joss/command/shared/identity/authentication/User.java
+@@ -0,0 +1,46 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one
++ * or more contributor license agreements.  See the NOTICE file
++ * distributed with this work for additional information
++ * regarding copyright ownership.  The ASF licenses this file
++ * to you under the Apache License, Version 2.0 (the
++ * "License"); you may not use this file except in compliance
++ * with the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.javaswift.joss.command.shared.identity.authentication;
++
++public class User {
++
++  private String id;
++  private String password;
++
++  public User(String id, String password) {
++    this.id = id;
++    this.password = password;
++  }
++
++  public String getId() {
++    return id;
++  }
++
++  public void setId(String id) {
++    this.id = id;
++  }
++
++  public String getPassword() {
++    return password;
++  }
++
++  public void setPassword(String password) {
++    this.password = password;
++  }
++}
+diff --git a/src/main/java/org/javaswift/joss/model/Access.java b/src/main/java/org/javaswift/joss/model/Access.java
+index eba381c..2431b22 100644
+--- a/src/main/java/org/javaswift/joss/model/Access.java
++++ b/src/main/java/org/javaswift/joss/model/Access.java
+@@ -51,4 +51,6 @@ public interface Access {
+     */
+     public String getTempUrlPrefix(TempUrlHashPrefixSource tempUrlHashPrefixSource);
+ 
++    public void setManualToken(String token);
++
+ }
+-- 
+2.5.4 (Apple Git-61)
+
