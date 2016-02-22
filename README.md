@@ -62,6 +62,7 @@ The following is the list of the configuration keys.
 |fs.swift2d.service.lvm.tenant | Mandatory |
 |fs.swift2d.service.lvm.password |  Mandatory |
 |fs.swift2d.service.lvm.username | Mandatory |
+|fs.swift2d.service.lvm.block.size | Block size in MB | 128MB |
 |fs.swift2d.service.lvm.region | Mandatory for Keystone V3 | dallas
 |fs.swift2d.service.lvm.auth.method | Optional. Values: keystone, swiftauth, keystoneV3| keystoneV3
 
