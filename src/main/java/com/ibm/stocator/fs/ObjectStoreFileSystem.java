@@ -41,7 +41,7 @@ import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 
 /**
- * Swift object store driver implementation
+ * Object store driver implementation
  * Based on the Hadoop FileSystem interface
  *
  */
@@ -57,7 +57,7 @@ public class ObjectStoreFileSystem extends FileSystem {
    */
   private IStoreClient storageClient;
   /*
-   * Host name with schema, e.g. swift://container.conf-entry/
+   * Host name with schema, e.g. schema://container.conf-entry/
    */
   private String hostNameScheme;
 
@@ -96,7 +96,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   }
 
   /**
-   * Check if the object exists in Swift.
+   * Check if the object exists.
    */
   @Override
   public boolean exists(Path f) throws IOException {
@@ -277,7 +277,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   /**
    * Extract object name from path. For example:
-   * swift2d://tone1.lvm/aa/bb/cc/one3.txt/_temporary/0/_temporary/
+   * schema://tone1.lvm/aa/bb/cc/one3.txt/_temporary/0/_temporary/
    * attempt_201610052038_0001_m_000007_15/part-00007 will extract get
    * aa/bb/cc/one3.txt
    *
@@ -292,13 +292,13 @@ public class ObjectStoreFileSystem extends FileSystem {
     if (pIdx > 0) {
       int npIdx = noPrefix.indexOf(boundary);
       if (npIdx == 0 && noPrefix.contains("/")) {
-        //swift2d://tone1.lvm/_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
+        //schema://tone1.lvm/_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
         //noPrefix == _temporary/0/_temporary/attempt_201610052038_0001_m_000007_15/part-00007
         //no path in container reverse search for separator,
         //use the part name (e.g. part-00007) as object name
         objectName = noPrefix.substring(noPrefix.lastIndexOf("/") + 1, noPrefix.length());
       } else if (npIdx == 0) {
-        //swift2d://tone1.lvm/_SUCCESS
+        //schema://tone1.lvm/_SUCCESS
         //noPrefix == _SUCCESS
         objectName = noPrefix;
       } else {

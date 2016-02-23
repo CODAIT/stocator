@@ -197,12 +197,11 @@ Compile Spark with Haddop support
 
 	
 ### Examples
-Assume for example that core-site.xml contains site `lvm`. 
 #### Create new object in Swift.
 
 	val data = Array(1, 2, 3, 4, 5, 6, 7, 8)
 	val distData = sc.parallelize(data)
-	distData.saveAsTextFile("swift2d://newcontainer.lvm/one1.txt")
+	distData.saveAsTextFile("swift2d://newcontainer.SERVICENAME/one1.txt")
 
 Listing container `newcontainer` will display
 
@@ -254,6 +253,8 @@ If you like to work on code, you can easily setup Eclipse project via
 	mvn eclipse:eclipse
 
 and import it into Eclipse workspace.
+
+Please follow the [development guide](https://github.com/SparkTC/development-guidelines/blob/master/contributing-to-projects.md), prior you submit pull requests.
 
 To easy the debug process, Please modify `conf/log4j.properties` and add
 
