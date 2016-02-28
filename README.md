@@ -262,6 +262,5 @@ To easy the debug process, Please modify `conf/log4j.properties` and add
 
 ## Next steps
 * Code tested with Hadoop 2.6.0.
-* Large object creation (over 4GB) is not yet supported. Code is ready, but not yet integrated. 
 * Token expiration was not tested (re-authentication)
 * Amazon S3 support. It seems to be very easy to add support for S3. Just copy "swift" package into "s3" and use jet3st instead of Joss. One particular issue is that Amazon S3 requires content-length for object uploads. Hence each object creation should create local tmp file, calculate it's size and only then upload to S3.
