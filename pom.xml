@@ -13,6 +13,7 @@
         <slf4j.version>1.7.2</slf4j.version>
         <java.version>1.7</java.version>
         <joss.version>0.9.10</joss.version>
+        <jetset.version>0.9.4</jetset.version>
         <hadoop.version>2.6.0</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.7</jackson.version>
@@ -31,6 +32,12 @@
             <artifactId>joss</artifactId>
             <version>${joss.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.java.dev.jets3t</groupId>
+            <artifactId>jets3t</artifactId>
+            <version>${jetset.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
             <artifactId>jackson-mapper-asl</artifactId>

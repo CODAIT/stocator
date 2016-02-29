@@ -1,18 +1,17 @@
 /**
  * (C) Copyright IBM Corp. 2015, 2016
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.ibm.stocator.fs.common;
@@ -56,7 +55,7 @@ public interface IStoreClient {
    * @throws FileNotFoundException if path not found
    */
   public FileStatus getObjectMetadata(String hostName,
-      Path path) throws IOException, FileNotFoundException;
+                                      Path path) throws IOException, FileNotFoundException;
 
   /**
    * Verify if object exists
@@ -67,7 +66,7 @@ public interface IStoreClient {
    * @throws FileNotFoundException if path not found
    */
   public boolean exists(String hostName,
-      Path path) throws IOException, FileNotFoundException;
+                        Path path) throws IOException, FileNotFoundException;
 
   /**
    * Get object
@@ -75,6 +74,7 @@ public interface IStoreClient {
    *
    * @param hostName URL to host
    * @param path path to the object
+   * @throws IOException if connection error
    * @return FSDataInputStream to the object
    */
   public FSDataInputStream getObject(String hostName, Path path) throws IOException;
@@ -87,18 +87,19 @@ public interface IStoreClient {
    * @throws IOException if connection error
    */
   public FileStatus[] listContainer(String hostName,
-      Path path) throws IOException;
+                                    Path path) throws IOException;
 
   /**
    * Create object. Return output stream
    * @param objName name of the object
    * @param contentType content type
-   * @param statistics
+   * @param statistics file write stats
    * @return FSDataOutputStream
-   * @throws IOException
+   * @throws IOException connection error
    */
   public FSDataOutputStream createObject(String objName, String contentType,
-      Statistics statistics) throws IOException;
+                                         Statistics statistics) throws IOException;
+
   /**
    * Get driver schema
    * @return String schema of the object driver
@@ -110,7 +111,8 @@ public interface IStoreClient {
    *
    * @param hostName URL to host
    * @param path path to the object
-   * @throws IOException
+   * @throws IOException object does not delete successfully
+   * @return Boolean if the delete was successful or not
    */
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException;
 

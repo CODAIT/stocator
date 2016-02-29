@@ -1,18 +1,17 @@
 /**
  * (C) Copyright IBM Corp. 2015, 2016
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.ibm.stocator.fs.swift;
@@ -37,33 +36,32 @@ import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.hadoop.fs.Path;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_REGION_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USERNAME_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TENANT_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_METHOD_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_REGION_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TENANT_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USERNAME_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 
 /**
@@ -168,12 +166,12 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public FileStatus getObjectMetadata(String hostName,
-      Path path) throws IOException, FileNotFoundException {
+                                      Path path) throws IOException, FileNotFoundException {
     LOG.debug("Get object metadata: {}, hostname: {}", path, hostName);
     Container cont = mAccount.getContainer(container);
     StoredObject so = cont.getObject(path.toString()
         .substring(hostName.length()));
-    LOG.debug("Got object. Is directory: {}, is object {}", so.isDirectory(),  so.isObject());
+    LOG.debug("Got object. Is directory: {}, is object {}", so.isDirectory(), so.isObject());
     if (so.getContentLength() == 0) {
       LOG.debug("Going to check if object is a root of the nested structure");
       String tmpObjName = path.toString().substring(hostName.length())
@@ -297,7 +295,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
-      Statistics statistics) throws IOException {
+                                         Statistics statistics) throws IOException {
     URL url = new URL(getAccessURL() + "/" + objName);
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
     try {
