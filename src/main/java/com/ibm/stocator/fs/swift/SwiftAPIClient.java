@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.swift;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
+import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -31,6 +32,7 @@ import org.codehaus.jackson.map.SerializationConfig;
 import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
+import org.javaswift.joss.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,27 +47,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
 
-import org.javaswift.joss.model.Access;
-import org.javaswift.joss.model.Account;
-import org.javaswift.joss.model.Container;
-import org.javaswift.joss.model.PaginationMap;
-import org.javaswift.joss.model.StoredObject;
-
-
-import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
-
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_REGION_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USERNAME_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TENANT_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_METHOD_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.*;
 
 /**
  * Swift back-end driver

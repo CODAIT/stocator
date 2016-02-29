@@ -36,9 +36,9 @@ The configuration template located under `conf/core-site.xml.template`.
 Add driver reference in the `conf/core-site.xml` of Spark
 
 	<property>
-		<name>fs.swift2d.impl</name>
-        <value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
-    </property>
+   		<name>fs.swift2d.impl</name>
+   		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+	</property>
 	
    	
 #### Swift Driver configuration
