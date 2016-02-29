@@ -17,24 +17,12 @@ Stocator is a generic connector, that may contain various implementations for ob
 * Containers / buckets are automatically created
 * (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to OpenStack Swift
 * (Swift Driver) Tested to read large objects (over 16GB)
+* Supports Swiftauth, Keystone V2, Keystone V2 Password Scope Authentication
+* Tested to work with vanilla Swift cluster, SoftLayer object store,  IBM Bluemix Object service
 
 ## Build procedure
 
 Checkout the Stocator source `https://github.com/SparkTC/stocator.git`
-
-### JOSS and Keystone V3 API
-Swift driver uses JOSS to access OpenStack Swift. Currently JOSS supports Keystone V2 and Swift auth models. 
-Some object store providers expose Keystone V3 API (for example IBM Bluemix Object Store). The patch extending JOSS with Keystone V3 support exists, but is not yet merged into JOSS.
-Below are instructions how to install JOSS locally and compile with Keystone V3 support
-
-* git clone https://github.com/javaswift/joss
-* cd joss
-* copy `keystone-v3-0.9.10-0001.patch` from `../stocator/additions/joss/patch` to `joss`
-* git apply keystone-v3-0.9.10-0001.patch
-* mvn clean install
-
-This will compile JOSS and install it into local maven repository. 
-You are now ready to compile Stocator.
 
 ### How to build Stocator
 * Change directory to `stocator`

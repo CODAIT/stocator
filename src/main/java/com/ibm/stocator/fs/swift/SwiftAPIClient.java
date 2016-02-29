@@ -49,6 +49,7 @@ import org.apache.hadoop.fs.FileSystem.Statistics;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
+import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
@@ -125,9 +126,12 @@ public class SwiftAPIClient implements IStoreClient {
     } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
       preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
       config.setPreferredRegion(preferredRegion);
-      config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
-      config.setUserId(props.getProperty(SWIFT_USER_ID_PROPERTY));
-      config.setProjectId(props.getProperty(SWIFT_PROJECT_ID_PROPERTY));
+      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+      String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
+      String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
+      PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
+          config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
+      config.setAccessProvider(psap);
     } else {
       config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
       config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
