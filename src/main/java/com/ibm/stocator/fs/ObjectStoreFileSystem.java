@@ -1,18 +1,17 @@
 /**
  * (C) Copyright IBM Corp. 2015, 2016
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.ibm.stocator.fs;
@@ -77,7 +76,7 @@ public class ObjectStoreFileSystem extends FileSystem {
     String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(nameSpace, fsuri, conf);
-      hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
+      hostNameScheme = storageClient.getScheme() + "://" + Utils.getHost(fsuri) + "/";
       LOG.debug("ObjectStoreFileSystem has been initialized");
     }
   }
@@ -106,8 +105,8 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   /**
    * There is no "directories" in the object store
-   * The general structure is <container</<object>
-   * <object> may contain nested structure
+   * The general structure is container object
+   * object may contain nested structure
    */
   @Override
   public boolean isDirectory(Path f) throws IOException {
@@ -124,7 +123,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   protected RemoteIterator<LocatedFileStatus> listLocatedStatus(Path f,
-      PathFilter filter)
+                                                                PathFilter filter)
       throws FileNotFoundException, IOException {
     LOG.debug("listLocatedStatus with path filter: {}", f.toString());
     return super.listLocatedStatus(f, filter);
@@ -132,8 +131,10 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public FSDataInputStream open(Path f) throws IOException {
-    LOG.debug("open method: {} without buffer size" , f.toString());
+    LOG.debug("open method: {} without buffer size", f.toString());
+
     return storageClient.getObject(hostNameScheme, f);
+
   }
 
   public FSDataInputStream open(Path f, int bufferSize) throws IOException {
@@ -142,8 +143,9 @@ public class ObjectStoreFileSystem extends FileSystem {
   }
 
   public FSDataOutputStream create(Path f, FsPermission permission,
-      boolean overwrite, int bufferSize,
-      short replication, long blockSize, Progressable progress) throws IOException {
+                                   boolean overwrite, int bufferSize,
+                                   short replication,
+                                   long blockSize, Progressable progress) throws IOException {
     LOG.debug("Create method: {}", f.toString());
     String objNameModified = "";
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
@@ -168,7 +170,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   }
 
   public FSDataOutputStream append(Path f, int bufferSize,
-      Progressable progress) throws IOException {
+                                   Progressable progress) throws IOException {
     throw new IOException("Append is not supported");
   }
 
@@ -189,9 +191,9 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public FileStatus[] listStatus(Path f,
-      PathFilter filter) throws FileNotFoundException, IOException {
+                                 PathFilter filter) throws FileNotFoundException, IOException {
     if (filter != null) {
-      LOG.debug("list status: {}, filter: {}",f.toString(), filter.toString());
+      LOG.debug("list status: {}, filter: {}", f.toString(), filter.toString());
     } else {
       LOG.debug("list status: {}", f.toString());
     }
@@ -204,7 +206,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public FileStatus[] listStatus(Path[] files,
-      PathFilter filter) throws FileNotFoundException, IOException {
+                                 PathFilter filter) throws FileNotFoundException, IOException {
     return super.listStatus(files, filter);
   }
 
@@ -319,7 +321,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public FileStatus[] globStatus(Path pathPattern, PathFilter filter) throws IOException {
-    LOG.debug("Glob status {} with path filter {}",pathPattern.toString(), filter.toString());
+    LOG.debug("Glob status {} with path filter {}", pathPattern.toString(), filter.toString());
     return super.globStatus(pathPattern, filter);
   }
 

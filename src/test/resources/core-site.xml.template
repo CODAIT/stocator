@@ -4,6 +4,13 @@
    <value>swift2d://drivertest.lvm</value>
 </property>
 
+<!--
+<property>
+   <name>fs.swift2d.test.uri</name>
+   <value>s3://bucket.test/</value>
+</property>
+-->
+
 <property>
    <name>fs.swift2d.impl</name>
    <value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
@@ -59,6 +66,24 @@
     <name>fs.swift2d.service.dal05.auth.method</name>
     <value>swiftauth</value>
 </property>
+
+<property>
+    <name>fs.amazon.service.s3.access</name>
+    <value>KEY</value>
+</property>
+<property>
+    <name>fs.amazon.service.s3.secret</name>
+    <value>KEY</value>
+</property>
+<property>
+    <name>fs.amazon.service.s3.region</name>
+    <value>us-east-1</value>
+</property>
+<property>
+    <name>fs.amazon.service.s3.bucket</name>
+    <value>bucket</value>
+</property>
+
 
 </configuration>
 

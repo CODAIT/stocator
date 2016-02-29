@@ -1,18 +1,17 @@
 /**
  * (C) Copyright IBM Corp. 2015, 2016
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.ibm.stocator.fs.common;
@@ -21,11 +20,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 
-import com.ibm.stocator.fs.swift.ConfigurationHandler;
-
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ibm.stocator.fs.swift.ConfigurationHandler;
 
 public class Utils {
   private static final Logger LOG = LoggerFactory.getLogger(ConfigurationHandler.class);
@@ -39,6 +38,7 @@ public class Utils {
    * @return IOException
    */
   private static IOException badHostName(String hostname) {
+
     return new IOException(String.format(BAD_HOST, hostname));
   }
 
@@ -47,7 +47,7 @@ public class Utils {
    *
    * @param hostname hostname to split
    * @return the container
-   * @throws IOException
+   * @throws IOException if cannot extract the URI
    */
   public static String getContainerName(String hostname) throws IOException {
     int i = hostname.indexOf(".");
@@ -78,21 +78,22 @@ public class Utils {
 
   /**
    * Extract host name from the URI
-   * @param uri
+   *
+   * @param uri the URI to extract from
    * @return host name
    */
   public static String getHost(URI uri) {
     LOG.debug("Extract the host name from URI");
     String host = uri.getHost();
     if (host != null) {
-      LOG.debug("Host is {}",host);
+      LOG.debug("Host is {}", host);
       return host;
     }
     host = uri.toString();
     int sInd = host.indexOf("//") + 2;
     host = host.substring(sInd);
     int eInd = host.indexOf("/");
-    host = host.substring(0,eInd);
+    host = host.substring(0, eInd);
     LOG.debug("Manual host extract {}", host);
     return host;
   }
@@ -101,7 +102,7 @@ public class Utils {
    * Get a mandatory configuration option
    *
    * @param props property set
-   * @param key key
+   * @param key   key
    * @return value of the configuration
    * @throws IOException if there was no match for the key
    */
@@ -116,16 +117,17 @@ public class Utils {
   /**
    * Read key from core-site.xml and parse it to Swift configuration
    *
-   * @param conf source configuration
-   * @param prefix configuration key prefix
-   * @param key key in the configuration file
-   * @param props destination property set
+   * @param conf     source configuration
+   * @param prefix   configuration key prefix
+   * @param key      key in the configuration file
+   * @param props    destination property set
    * @param propsKey key in the property set
+   * @throws IOException if was not able to update property
    * @param required if the key is mandatory
    */
 
   public static void updateProperty(Configuration conf, String prefix, String key,
-      Properties props, String propsKey, boolean required)
+                                    Properties props, String propsKey, boolean required)
       throws IOException {
     String val = conf.get(prefix + key);
     if (required && val == null) {
