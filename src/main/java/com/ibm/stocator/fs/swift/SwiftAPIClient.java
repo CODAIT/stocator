@@ -17,6 +17,24 @@
 
 package com.ibm.stocator.fs.swift;
 
+import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.common.IStoreClient;
+import com.ibm.stocator.fs.common.Utils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.hadoop.fs.Path;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
+import org.javaswift.joss.client.factory.AccountConfig;
+import org.javaswift.joss.client.factory.AccountFactory;
+import org.javaswift.joss.client.factory.AuthenticationMethod;
+import org.javaswift.joss.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -28,43 +46,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
 
-import org.javaswift.joss.client.factory.AccountConfig;
-import org.javaswift.joss.client.factory.AccountFactory;
-import org.javaswift.joss.client.factory.AuthenticationMethod;
-import org.javaswift.joss.model.Access;
-import org.javaswift.joss.model.Account;
-import org.javaswift.joss.model.Container;
-import org.javaswift.joss.model.PaginationMap;
-import org.javaswift.joss.model.StoredObject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.FileSystem.Statistics;
-
-import com.ibm.stocator.fs.common.Constants;
-import com.ibm.stocator.fs.common.IStoreClient;
-import com.ibm.stocator.fs.common.Utils;
-
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_REGION_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USERNAME_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TENANT_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_METHOD_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.*;
 
 /**
  * Swift back-end driver
@@ -171,28 +153,26 @@ public class SwiftAPIClient implements IStoreClient {
       Path path) throws IOException, FileNotFoundException {
     LOG.debug("Get object metadata: {}, hostname: {}", path, hostName);
     Container cont = mAccount.getContainer(container);
-    StoredObject so = cont.getObject(path.toString()
-        .substring(hostName.length()));
-    LOG.debug("Got object. Is directory: {}, is object {}", so.isDirectory(),  so.isObject());
-    if (so.getContentLength() == 0) {
-      LOG.debug("Going to check if object is a root of the nested structure");
-      String tmpObjName = path.toString().substring(hostName.length())
-          .concat("/");
-      LOG.debug("tmp object name: {}", tmpObjName);
-      StoredObject soSuccess = cont
-          .getObject(tmpObjName.concat("_SUCCESS"));
-      if (soSuccess.exists()) {
-        LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
-        LOG.debug("/SUCCESS exists. Declare {} as directory", so.getName());
-        return new FileStatus(so.getContentLength(), true, 1, blockSize,
-            getLastModified(so.getLastModified()), 0, null,
-            null, null, path);
-      }
+    /*
+      HostName is equal to the requested path, therefore we have no object to look for
+      We return as a directory but with no LastModified
+     */
+    if (path.toString().equals(hostName)) {
+      LOG.debug("Object metadata requested on container!");
+      return new FileStatus(0L, true, 1, blockSize, 0L, path);
     }
-    LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
-    return new FileStatus(so.getContentLength(), false, 1, blockSize,
-        getLastModified(so.getLastModified()), 0, null,
-        null, null, path);
+    /*
+      HostName is not equal to the requested path, therefore we have an object to look for
+     */
+    String objectName = path.toString().substring(hostName.length());
+    StoredObject so = cont.getObject(objectName);
+    if (so.exists()) {
+      LOG.debug("Got object. Is directory: {}, is object {}", so.isDirectory(),  so.isObject());
+      LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
+      return new FileStatus(so.getContentLength(), so.isDirectory(), 1, blockSize,
+              getLastModified(so.getLastModified()), path);
+    }
+    throw new FileNotFoundException(objectName + " does not exists");
   }
 
   private long getLastModified(String strTime) throws IOException {
@@ -216,7 +196,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
-    LOG.debug("Get object metadata: {}", path);
+    LOG.debug("Get object: {}", path);
     try {
       SwiftInputStream sis = new SwiftInputStream(this, hostName, path);
       return new FSDataInputStream(sis);
@@ -250,9 +230,9 @@ public class SwiftAPIClient implements IStoreClient {
         LOG.debug("inside listing loop: new name {}, old name {} size {}", newMergedPath,
             tmp.getName(), tmp.getContentLength());
         if (tmp.getContentLength() == 0) {
-          // we may hit a well knownn Swift bug.
+          // we may hit a well known Swift bug.
           // container listing reports 0 for large objects.
-          LOG.debug("Content length is 0. Peform HEAD {}", newMergedPath);
+          LOG.debug("Content length is 0. Perform HEAD {}", newMergedPath);
           StoredObject soDirect = cObj
               .getObject(tmp.getName());
           if (soDirect.getContentLength() > 0) {
