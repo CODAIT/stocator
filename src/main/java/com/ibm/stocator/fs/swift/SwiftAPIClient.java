@@ -34,6 +34,7 @@ import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
+import org.javaswift.joss.model.DirectoryOrObject;
 import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
@@ -175,28 +176,62 @@ public class SwiftAPIClient implements IStoreClient {
       Path path) throws IOException, FileNotFoundException {
     LOG.debug("Get object metadata: {}, hostname: {}", path, hostName);
     Container cont = mAccount.getContainer(container);
-    StoredObject so = cont.getObject(path.toString()
-        .substring(hostName.length()));
-    LOG.debug("Got object. Is directory: {}, is object {}", so.isDirectory(),  so.isObject());
-    if (so.getContentLength() == 0) {
-      LOG.debug("Going to check if object is a root of the nested structure");
-      String tmpObjName = path.toString().substring(hostName.length())
-          .concat("/");
-      LOG.debug("tmp object name: {}", tmpObjName);
-      StoredObject soSuccess = cont
-          .getObject(tmpObjName.concat("_SUCCESS"));
-      if (soSuccess.exists()) {
-        LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
-        LOG.debug("/SUCCESS exists. Declare {} as directory", so.getName());
-        return new FileStatus(so.getContentLength(), true, 1, blockSize,
-            getLastModified(so.getLastModified()), 0, null,
-            null, null, path);
-      }
+    /*
+      The requested path is equal to hostName.
+      HostName is equal to hostNameScheme, thus the container.
+      Therefore we have no object to look for and
+      we return the FileStatus as a directory.
+      Containers have to lastModified.
+     */
+    if (path.toString().equals(hostName)) {
+      LOG.debug("Object metadata requested on container!");
+      return new FileStatus(0L, true, 1, blockSize, 0L, path);
     }
-    LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
-    return new FileStatus(so.getContentLength(), false, 1, blockSize,
-        getLastModified(so.getLastModified()), 0, null,
-        null, null, path);
+    /*
+      The requested path is not equal to the container.
+      We need to check if the object requested is a real object or a directory.
+      This may be triggered when users want to access a directory rather than
+      the entire container.
+      A directory in Swift can have two implementations:
+      1) a zero byte object with the name of the directory
+      2) no zero byte object with the name of the directory
+    */
+    String objectName = path.toString().substring(hostName.length());
+    if (objectName.endsWith("/")) {
+      /*
+        removing the trailing slash because it is not supported in Swift
+        an request on an object (not a container) that has a trailing slash will lead
+        to a 404 response message
+      */
+      objectName = objectName.substring(0, objectName.length() - 1);
+    }
+    StoredObject so = cont.getObject(objectName);
+    boolean isDirectory = false;
+    if (so.exists()) {
+      // We need to check if the object size is equal to zero
+      // If so, it might be a directory
+      long contentLength = so.getContentLength();
+      String lastModified = so.getLastModified();
+      if (contentLength == 0) {
+        Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
+        if (directoryFiles != null && directoryFiles.size() != 0) {
+          // The zero length object is a directory
+          isDirectory = true;
+        }
+      }
+      LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, lastModified);
+      return new FileStatus(contentLength, isDirectory, 1, blockSize,
+              getLastModified(lastModified), path);
+    }
+    // We need to check if it may be a directory with no zero byte file associated
+    Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
+    if (directoryFiles != null && directoryFiles.size() != 0) {
+      // In this case there is no lastModified
+      LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, null);
+      return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
+    }
+
+    throw new FileNotFoundException(objectName + " does not exists");
   }
 
   private long getLastModified(String strTime) throws IOException {
