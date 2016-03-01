@@ -175,28 +175,26 @@ public class SwiftAPIClient implements IStoreClient {
       Path path) throws IOException, FileNotFoundException {
     LOG.debug("Get object metadata: {}, hostname: {}", path, hostName);
     Container cont = mAccount.getContainer(container);
-    StoredObject so = cont.getObject(path.toString()
-        .substring(hostName.length()));
-    LOG.debug("Got object. Is directory: {}, is object {}", so.isDirectory(),  so.isObject());
-    if (so.getContentLength() == 0) {
-      LOG.debug("Going to check if object is a root of the nested structure");
-      String tmpObjName = path.toString().substring(hostName.length())
-          .concat("/");
-      LOG.debug("tmp object name: {}", tmpObjName);
-      StoredObject soSuccess = cont
-          .getObject(tmpObjName.concat("_SUCCESS"));
-      if (soSuccess.exists()) {
-        LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
-        LOG.debug("/SUCCESS exists. Declare {} as directory", so.getName());
-        return new FileStatus(so.getContentLength(), true, 1, blockSize,
-            getLastModified(so.getLastModified()), 0, null,
-            null, null, path);
-      }
+    /*
+      HostName is equal to the requested path, therefore we have no object to look for
+      We return as a directory but with no LastModified
+     */
+    if (path.toString().equals(hostName)) {
+      LOG.debug("Object metadata requested on container!");
+      return new FileStatus(0L, true, 1, blockSize, 0L, path);
     }
-    LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
-    return new FileStatus(so.getContentLength(), false, 1, blockSize,
-        getLastModified(so.getLastModified()), 0, null,
-        null, null, path);
+    /*
+      HostName is not equal to the requested path, therefore we have an object to look for
+     */
+    String objectName = path.toString().substring(hostName.length());
+    StoredObject so = cont.getObject(objectName);
+    if (so.exists()) {
+      LOG.debug("Got object. Is directory: {}, is object {}", so.isDirectory(),  so.isObject());
+      LOG.debug("{} {}", so.getLastModifiedAsDate(), so.getLastModified());
+      return new FileStatus(so.getContentLength(), so.isDirectory(), 1, blockSize,
+              getLastModified(so.getLastModified()), path);
+    }
+    throw new FileNotFoundException(objectName + " does not exists");
   }
 
   private long getLastModified(String strTime) throws IOException {
@@ -220,7 +218,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
-    LOG.debug("Get object metadata: {}", path);
+    LOG.debug("Get object: {}", path);
     try {
       SwiftInputStream sis = new SwiftInputStream(this, hostName, path);
       return new FSDataInputStream(sis);
@@ -254,9 +252,9 @@ public class SwiftAPIClient implements IStoreClient {
         LOG.debug("inside listing loop: new name {}, old name {} size {}", newMergedPath,
             tmp.getName(), tmp.getContentLength());
         if (tmp.getContentLength() == 0) {
-          // we may hit a well knownn Swift bug.
+          // we may hit a well known Swift bug.
           // container listing reports 0 for large objects.
-          LOG.debug("Content length is 0. Peform HEAD {}", newMergedPath);
+          LOG.debug("Content length is 0. Perform HEAD {}", newMergedPath);
           StoredObject soDirect = cObj
               .getObject(tmp.getName());
           if (soDirect.getContentLength() > 0) {
