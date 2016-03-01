@@ -17,9 +17,9 @@
 
 package com.ibm.stocator.fs;
 
-import com.ibm.stocator.fs.common.Constants;
-import com.ibm.stocator.fs.common.IStoreClient;
-import com.ibm.stocator.fs.common.Utils;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.ContentSummary;
@@ -36,9 +36,9 @@ import org.apache.hadoop.util.Progressable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
+import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.common.IStoreClient;
+import com.ibm.stocator.fs.common.Utils;
 
 /**
  * Object store driver implementation
