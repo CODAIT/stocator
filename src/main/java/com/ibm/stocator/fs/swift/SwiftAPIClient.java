@@ -134,8 +134,8 @@ public class SwiftAPIClient implements IStoreClient {
       config.setAccessProvider(psap);
     } else {
       config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
-      config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-      config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
+      config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+      config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
     }
     LOG.debug("JOSS configuration completed");
     ObjectMapper mapper = new ObjectMapper();
