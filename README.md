@@ -39,53 +39,54 @@ Add driver reference in the `conf/core-site.xml` of Spark
    		<name>fs.swift2d.impl</name>
    		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
 	</property>
-
+	
+   	
 #### Swift Driver configuration
 The following is the list of the configuration keys.
 
 | Key | Info | Default value |
 | --- | ------------ | ------------- |
-|fs.swift2d.service.lvm.auth.url | Mandatory |
-|fs.swift2d.service.lvm.public | Optional. Values: true, false | false | 
-|fs.swift2d.service.lvm.tenant | Mandatory |
-|fs.swift2d.service.lvm.password |  Mandatory |
-|fs.swift2d.service.lvm.username | Mandatory |
-|fs.swift2d.service.lvm.block.size | Block size in MB | 128MB |
-|fs.swift2d.service.lvm.region | Mandatory for Keystone V3 | dallas
-|fs.swift2d.service.lvm.auth.method | Optional. Values: keystone, swiftauth, keystoneV3| keystoneV3
+|fs.swift2d.service.PROVIDER.auth.url | Mandatory |
+|fs.swift2d.service.PROVIDER.public | Optional. Values: true, false | false | 
+|fs.swift2d.service.PROVIDER.tenant | Mandatory |
+|fs.swift2d.service.PROVIDER.password |  Mandatory |
+|fs.swift2d.service.PROVIDER.username | Mandatory |
+|fs.swift2d.service.PROVIDER.block.size | Block size in MB | 128MB |
+|fs.swift2d.service.PROVIDER.region | Mandatory for Keystone V3 | dallas
+|fs.swift2d.service.PROVIDER.auth.method | Optional. Values: keystone, swiftauth, keystoneV3| keystoneV3
 
 Below is the internal Keystone V3 mapping
 
 | Driver configuration key | Keystone V3 key |
 | ------------------------ | --------------- |
-| fs.swift2d.service.lvm.username | user id |
-| fs.swift2d.service.lvm.tenant | project id |
+| fs.swift2d.service.PROVIDER.username | user id |
+| fs.swift2d.service.PROVIDER.tenant | project id |
 
 #### Example of core-site.xml keys
 ##### Keystone V2
 
 	<property>
-    	<name>fs.swift2d.service.lvm.auth.url</name>
+    	<name>fs.swift2d.service.PROVIDER.auth.url</name>
     	<value>http://IP:PORT/v2.0/tokens</value>
 	</property>
 	<property>
-    	<name>fs.swift2d.service.lvm.public</name>
+    	<name>fs.swift2d.service.PROVIDER.public</name>
     	<value>true</value>
 	</property>
 	<property>
-    	<name>fs.swift2d.service.lvm.tenant</name>
+    	<name>fs.swift2d.service.PROVIDER.tenant</name>
     	<value>TENANT</value>
 	</property>
 	<property>
-    	<name>fs.swift2d.service.lvm.password</name>
+    	<name>fs.swift2d.service.PROVIDER.password</name>
     	<value>PASSWORD</value>
 	</property>
 	<property>
-    	<name>fs.swift2d.service.lvm.username</name>
+    	<name>fs.swift2d.service.PROVIDER.username</name>
     	<value>USERNAME</value>
 	</property>
 	<property>
-    	<name>fs.swift2d.service.lvm.auth.method</name>
+    	<name>fs.swift2d.service.PROVIDER.auth.method</name>
     	<value>keystone</value>
 	</property>
 	
@@ -210,22 +211,22 @@ Follow
 
 	https://github.com/ehiggs/spark-terasort
 	
-You can run Terasort as follows
+You can run Terasort as follows (remember to change the word "PROVIDER" with your Swift provider name)
 Step 1:
 	
 	export MAVEN_OPTS="-Xmx2g -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=512m"
 
 Step 2:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraGen /spark-terasort/target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.lvm/terasort_in
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraGen /spark-terasort/target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.PROVIDER/terasort_in
 	
 Step 3:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraSort /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.lvm/terasort_in swift2d://teradata.lvm/terasort_out  
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraSort /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.PROVIDER/terasort_in swift2d://teradata.PROVIDER/terasort_out  
 	
 Step 4:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraValidate /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar swift2d://teradata.lvm/terasort_out swift2d://teradata.lvm/terasort_validate 
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraValidate /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar swift2d://teradata.PROVIDER/terasort_out swift2d://teradata.PROVIDER/terasort_validate 
 	
 ### Functional tests
 Copy 
