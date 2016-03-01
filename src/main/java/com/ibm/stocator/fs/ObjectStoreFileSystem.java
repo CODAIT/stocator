@@ -17,9 +17,9 @@
 
 package com.ibm.stocator.fs;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
+import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.common.IStoreClient;
+import com.ibm.stocator.fs.common.Utils;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.ContentSummary;
@@ -36,9 +36,9 @@ import org.apache.hadoop.util.Progressable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ibm.stocator.fs.common.Constants;
-import com.ibm.stocator.fs.common.IStoreClient;
-import com.ibm.stocator.fs.common.Utils;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
 
 /**
  * Object store driver implementation
@@ -106,7 +106,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   /**
    * There is no "directories" in the object store
-   * The general structure is <container</<object>
+   * The general structure is <container>/<object>
    * <object> may contain nested structure
    */
   @Override
@@ -159,7 +159,7 @@ public class ObjectStoreFileSystem extends FileSystem {
       objNameModified = storageClient.getDataRoot() + "/"
           + getObjectName(f.toString(), Constants.HADOOP_TEMPORARY)
           + "/" + f.getName();
-      LOG.debug("Tranformed to: {}", objNameModified);
+      LOG.debug("Transformed to: {}", objNameModified);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "binary/octet-stream", statistics);
