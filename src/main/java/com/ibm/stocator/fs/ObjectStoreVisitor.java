@@ -1,18 +1,17 @@
 /**
  * (C) Copyright IBM Corp. 2015, 2016
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.ibm.stocator.fs;
@@ -24,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
+import com.ibm.stocator.fs.s3.S3ApiClient;
 import com.ibm.stocator.fs.swift.SwiftAPIClient;
 
 /**
@@ -32,9 +32,13 @@ import com.ibm.stocator.fs.swift.SwiftAPIClient;
  */
 public class ObjectStoreVisitor {
   public static IStoreClient getStoreClient(String nameSpace,
-      URI fsuri, Configuration conf) throws IOException {
+                                            URI fsuri, Configuration conf)
+      throws IOException {
     if (nameSpace.equals(Constants.SWIFT)) {
       IStoreClient storeClient = new SwiftAPIClient(fsuri, conf);
+      return storeClient;
+    } else if (nameSpace.equals("s3")) {
+      IStoreClient storeClient = new S3ApiClient(fsuri, conf);
       return storeClient;
     }
     throw new IOException("No object store for: " + nameSpace);
