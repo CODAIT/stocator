@@ -106,7 +106,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   /**
    * There is no "directories" in the object store
-   * The general structure is <container</<object>
+   * The general structure is <container>/<object>
    * <object> may contain nested structure
    */
   @Override
@@ -159,7 +159,7 @@ public class ObjectStoreFileSystem extends FileSystem {
       objNameModified = storageClient.getDataRoot() + "/"
           + getObjectName(f.toString(), Constants.HADOOP_TEMPORARY)
           + "/" + f.getName();
-      LOG.debug("Tranformed to: {}", objNameModified);
+      LOG.debug("Transformed to: {}", objNameModified);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "binary/octet-stream", statistics);

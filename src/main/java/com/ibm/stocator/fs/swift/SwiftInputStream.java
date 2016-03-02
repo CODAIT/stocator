@@ -1,18 +1,17 @@
 /**
  * (C) Copyright IBM Corp. 2015, 2016
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package com.ibm.stocator.fs.swift;
@@ -54,8 +53,19 @@ class SwiftInputStream extends FSInputStream {
    */
   private StoredObject storedObject;
 
+  /**
+   * Move to a new position within the file relative to where the pointer is now.
+   * Always call from a synchronized clause
+   *
+   * @param offset offset
+   */
+  private synchronized void incPos(long offset) {
+    pos += offset;
+    LOG.debug("New pos is {}", pos);
+  }
+
   public SwiftInputStream(SwiftAPIClient storeNative, String hostName,
-      Path path) throws IOException {
+                          Path path) throws IOException {
     nativeStore = storeNative;
     LOG.debug("init: {}", path.toString());
     String objectName = path.toString().substring(hostName.length());
@@ -68,28 +78,38 @@ class SwiftInputStream extends FSInputStream {
 
   @Override
   public synchronized int read() throws IOException {
+    LOG.debug("Reading http stream for: {}", storedObject.getName());
     if (httpStream == null) {
       // not sure we need it. need to re-check.
       seek(0);
     }
     int result = -1;
     result = httpStream.read();
+    if (result != -1) {
+      incPos(1);
+    }
     return result;
   }
 
   @Override
   public synchronized int read(byte[] b, int off, int len) throws IOException {
-    int result = -1;
+    LOG.debug("Reading portion of http stream for: {}. Offset: {} Len: {}",
+        storedObject.getName(), off, len);
     if (httpStream == null) {
       // not sure we need it. need to re-check.
       seek(0);
     }
+    int result = -1;
     result = httpStream.read(b, off, len);
+    if (result != -1) {
+      incPos(result);
+    }
     return result;
   }
 
   @Override
   public synchronized void close() throws IOException {
+    LOG.debug("Closing http stream: {}", storedObject.getName());
     try {
       if (httpStream != null) {
         httpStream.close();
@@ -102,6 +122,44 @@ class SwiftInputStream extends FSInputStream {
   @Override
   public synchronized void seek(long targetPos) throws IOException {
     LOG.debug("seek method to: {}, for {}", targetPos, storedObject.getName());
+    if (targetPos < 0) {
+      throw new IOException("Negative Seek offset not supported");
+    }
+
+    if (httpStream != null) {
+      long offset = targetPos - pos;
+      if (offset == 0) {
+        LOG.debug("seek called on same position as the previous one. New HTTP Stream is not "
+                + "required.");
+        return;
+      }
+      long blockSize = nativeStore.getBlockSize();
+      if (offset < 0) {
+        LOG.debug("seek position is outside the current stream; offset: {}. New HTTP Stream is "
+                + "required.", offset);
+      } else if ((offset < blockSize)) {
+        //if the seek is in  range of that requested, scan forwards
+        //instead of closing and re-opening a new HTTP connection
+        LOG.debug("seek is within current stream; offset: {} blockSize: {}.", offset, blockSize);
+        int result = -1;
+        long byteRead;
+        for (byteRead = 0; byteRead < offset; byteRead++) {
+          result = httpStream.read();
+          if (result < 0) {
+            break;
+          }
+        }
+        incPos(byteRead);
+        if (targetPos == pos) {
+          LOG.debug("seek reached targetPos: {}. New HTTP Stream is not required.", targetPos);
+          return;
+        }
+        LOG.debug("seek failed to reach targetPos: {}. New HTTP Stream is required.", targetPos);
+      }
+      httpStream.close();
+    }
+    LOG.debug("seek method is opening a new HTTP Stream to: {}, for {}", targetPos,
+            storedObject.getName());
     DownloadInstructions instructions = new DownloadInstructions();
     AbstractRange range = new AbstractRange(targetPos, targetPos + nativeStore.getBlockSize()) {
 
@@ -117,7 +175,8 @@ class SwiftInputStream extends FSInputStream {
     };
     instructions.setRange(range);
     httpStream = storedObject.downloadObjectAsInputStream(instructions);
-    LOG.debug("Seek completed. Got http stream for: {}", storedObject.getName());
+    LOG.debug("Seek completed. Got HTTP Stream for: {}", storedObject.getName());
+    pos = targetPos;
   }
 
   @Override
