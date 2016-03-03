@@ -1,0 +1,15 @@
+## language: java
+
+## env:
+
+## global:
+
+## - MAVEN_OPTS="-Xmx2048m -XX:MaxPermSize=512m"
+
+language: java
+jdk:
+  - oraclejdk8
+
+script:
+  - git clone https://github.com/javaswift/joss.git target/joss && mvn clean install
+  - mvn clean install
