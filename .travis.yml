@@ -11,5 +11,4 @@ jdk:
   - oraclejdk8
 
 script:
-  - git clone https://github.com/javaswift/joss.git target/joss && mvn clean install
   - mvn clean install
