@@ -76,6 +76,7 @@ public interface IStoreClient {
    * @param hostName URL to host
    * @param path path to the object
    * @return FSDataInputStream to the object
+   * @throws IOException if connection error
    */
   public FSDataInputStream getObject(String hostName, Path path) throws IOException;
 
@@ -93,9 +94,9 @@ public interface IStoreClient {
    * Create object. Return output stream
    * @param objName name of the object
    * @param contentType content type
-   * @param statistics
+   * @param statistics the statistics for this file system
    * @return FSDataOutputStream
-   * @throws IOException
+   * @throws IOException if connection error
    */
   public FSDataOutputStream createObject(String objName, String contentType,
       Statistics statistics) throws IOException;
@@ -110,7 +111,8 @@ public interface IStoreClient {
    *
    * @param hostName URL to host
    * @param path path to the object
-   * @throws IOException
+   * @param recursive recursive flag
+   * @throws IOException if connection error
    */
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException;
 

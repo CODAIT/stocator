@@ -106,8 +106,8 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   /**
    * There is no "directories" in the object store
-   * The general structure is <container>/<object>
-   * <object> may contain nested structure
+   * The general structure is "container/object"
+   * and "object" may contain nested structure
    */
   @Override
   public boolean isDirectory(Path f) throws IOException {
