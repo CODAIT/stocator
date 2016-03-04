@@ -119,32 +119,36 @@ Below is the internal Keystone V3 mapping
 	
 ##### IBM Bluemix Object Service using Keystone V3
 
+In order to properly connect to an IBM Bluemix object store service, you need to open
+that service in the IBM Bluemix dashboard and inspect the service credentials and update
+the properties below with the correspondent values :
+
 	<property>
-    	<name>fs.swift2d.service.bmv3.auth.url</name>
-    	<value>https://identity.open.softlayer.com/v3/auth/tokens</value>
+	    <name>fs.swift2d.service.SERVICE_NAME.auth.url</name>
+	    <value>https://identity.open.softlayer.com/v3/auth/tokens</value>
 	</property>
 	<property>
-    	<name>fs.swift2d.service.bmv3.public</name>
-    	<value>true</value>
+	    <name>fs.swift2d.service.SERVICE_NAME.public</name>
+	    <value>true</value>
 	</property>
 	<property>
-	    <name>fs.swift2d.service.bmv3.tenant</name>
+	    <name>fs.swift2d.service.SERVICE_NAME.tenant</name>
 	    <value>PROJECTID</value>
 	</property>
 	<property>
-	    <name>fs.swift2d.service.bmv3.password</name>
+	    <name>fs.swift2d.service.SERVICE_NAME.password</name>
 	    <value>PASSWORD</value>
 	</property>
 	<property>
-	    <name>fs.swift2d.service.bmv3.username</name>
+	    <name>fs.swift2d.service.SERVICE_NAME.username</name>
 	    <value>USERID</value>
 	</property>
 	<property>
-	    <name>fs.swift2d.service.bmv3.auth.method</name>
+	    <name>fs.swift2d.service.SERVICE_NAME.auth.method</name>
 	    <value>keystoneV3</value>
 	</property>
 	<property>
-	    <name>fs.swift2d.service.bmv3.region</name>
+	    <name>fs.swift2d.service.SERVICE_NAME.region</name>
 	    <value>dallas</value>
 	</property>
 
