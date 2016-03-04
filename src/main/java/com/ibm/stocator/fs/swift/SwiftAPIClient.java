@@ -34,8 +34,10 @@ import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
-import org.javaswift.joss.model.PaginationMap;
+//import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
+import org.javaswift.joss.model.DirectoryOrObject;
+import org.javaswift.joss.model.Directory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -233,48 +235,39 @@ public class SwiftAPIClient implements IStoreClient {
   public FileStatus[] listContainer(String hostName, Path path) throws IOException {
     LOG.debug("List container: path parent: {}, name {}", path.getParent(), path.getName());
     Container cObj = mAccount.getContainer(container);
-    String obj = path.toString().substring(hostName.length());
-    if (obj.contains("/")) {
-      obj = obj + "/";
+    ArrayList<FileStatus> tmpResult = new ArrayList<>();
+    FileStatus fs;
+    Collection<DirectoryOrObject> elements;
+
+    if (path.getParent() == null) {
+      elements = cObj.listDirectory();
+      LOG.debug("Listing root directory");
+    } else {
+      Directory dir = new Directory(path.toString()
+              .substring(hostName.length()) + Path.SEPARATOR, Path.SEPARATOR_CHAR);
+      elements = cObj.listDirectory(dir);
+      LOG.debug("Directory {} listed", dir.getName());
     }
-    LOG.debug("Search: {}", obj);
-    ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    PaginationMap paginationMap = cObj.getPaginationMap(obj, 100);
-    FileStatus fs = null;
-    for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      LOG.debug("Going to list page {}", page);
-      Collection<StoredObject> res = cObj.list(paginationMap, page);
-      if (page == 0 && (res == null || res.isEmpty())) {
-        FileStatus[] emptyRes = {};
-        return emptyRes;
+
+    for (DirectoryOrObject e: elements) {
+      String newMergedPath = getMergedPath(hostName, path, e.getName());
+      if (e.isObject()) {
+        fs = new FileStatus(e.getAsObject().getContentLength(), false, 1, blockSize,
+                getLastModified(e.getAsObject().getLastModified()), 0, null, null, null,
+                new Path(newMergedPath));
+        LOG.debug("{} is a object", newMergedPath);
+      } else {
+        fs = new FileStatus(0, true, 1, blockSize,
+                0, 0, null, null, null,
+                new Path(newMergedPath));
+        LOG.debug("{} is a directory", newMergedPath);
       }
-      for (StoredObject tmp : res) {
-        fs = null;
-        String newMergedPath = getMergedPath(hostName, path, tmp.getName());
-        LOG.debug("inside listing loop: new name {}, old name {} size {}", newMergedPath,
-            tmp.getName(), tmp.getContentLength());
-        if (tmp.getContentLength() == 0) {
-          // we may hit a well knownn Swift bug.
-          // container listing reports 0 for large objects.
-          LOG.debug("Content length is 0. Peform HEAD {}", newMergedPath);
-          StoredObject soDirect = cObj
-              .getObject(tmp.getName());
-          if (soDirect.getContentLength() > 0) {
-            fs = new FileStatus(soDirect.getContentLength(), false, 1, blockSize,
-                getLastModified(soDirect.getLastModified()), 0, null,
-                null, null, new Path(newMergedPath));
-          }
-        } else if (tmp.getContentLength() > 0) {
-          fs = new FileStatus(tmp.getContentLength(), false, 1, blockSize,
-              getLastModified(tmp.getLastModified()), 0, null,
-              null, null, new Path(newMergedPath));
-        }
-        if (fs != null && fs.getLen() > 0) {
-          tmpResult.add(fs);
-        }
+      if (fs.getLen() > 0 || fs.isDirectory()) {
+        tmpResult.add(fs);
+        LOG.debug("{} added to results", e.getName());
       }
+
     }
-    LOG.debug("Going to return list of size: {}", tmpResult.size());
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 
@@ -287,7 +280,6 @@ public class SwiftAPIClient implements IStoreClient {
       if (objectName.startsWith(p.getName())) {
         return p.getParent() + objectName;
       }
-      return p.toString();
     }
     return hostName + objectName;
   }
