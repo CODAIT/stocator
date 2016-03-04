@@ -15,3 +15,6 @@ target/
 *.class
 *.log
 
+# Others
+.checkstyle
+.fbExcludeFilterFile
