@@ -253,7 +253,9 @@ To easy the debug process, Please modify `conf/log4j.properties` and add
 
 	log4j.logger.com.ibm.stocator=DEBUG
 
+## Before you sumit your pull request
+We ask that you include a line similar to the following as part of your pull request comments: “DCO 1.1 Signed-off-by: Random J Developer“. “DCO” stands for “Developer Certificate of Origin,” and refers to the same text used in the Linux Kernel community. By adding this simple comment, you tell the community that you wrote the code you are contributing, or you have the right to pass on the code that you are contributing.
+
 ## Next steps
 * Code tested with Hadoop 2.6.0.
 * Token expiration was not tested (re-authentication)
-* Amazon S3 support. It seems to be very easy to add support for S3. Just copy "swift" package into "s3" and use jet3st instead of Joss. One particular issue is that Amazon S3 requires content-length for object uploads. Hence each object creation should create local tmp file, calculate it's size and only then upload to S3.
