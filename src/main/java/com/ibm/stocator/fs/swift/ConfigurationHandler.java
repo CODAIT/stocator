@@ -64,13 +64,11 @@ public final class ConfigurationHandler {
    * @throws IOException if the configuration is invalid
    */
   public static Properties initialize(URI uri, Configuration conf) throws IOException {
-    LOG.debug("Swift driver: initialize start");
     String host = Utils.getHost(uri);
     String container = Utils.getContainerName(host);
     String service = Utils.getServiceName(host);
     LOG.debug("container: {}, service: {}", container , service);
     String prefix = SWIFT_SERVICE_PREFIX + service;
-    LOG.debug("Filesystem {}, using conf keys {}", uri, prefix);
     Properties props = new Properties();
     props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
     Utils.updateProperty(conf, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
@@ -89,7 +87,6 @@ public final class ConfigurationHandler {
     } else {
       Utils.updateProperty(conf, prefix,  REGION, props, SWIFT_REGION_PROPERTY, false);
     }
-    LOG.debug("Initialize completed successfully");
     return props;
   }
 

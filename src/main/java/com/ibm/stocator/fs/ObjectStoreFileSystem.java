@@ -69,7 +69,6 @@ public class ObjectStoreFileSystem extends FileSystem {
   @Override
   public void initialize(URI fsuri, Configuration conf) throws IOException {
     super.initialize(fsuri, conf);
-    LOG.debug("Initialize: {}", fsuri.toString());
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
@@ -78,7 +77,6 @@ public class ObjectStoreFileSystem extends FileSystem {
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(nameSpace, fsuri, conf);
       hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
-      LOG.debug("ObjectStoreFileSystem has been initialized");
     }
   }
 
@@ -92,7 +90,7 @@ public class ObjectStoreFileSystem extends FileSystem {
    */
   @Override
   protected void checkPath(Path path) {
-    LOG.debug("Check path: {}", path.toString());
+    LOG.trace("Check path: {}", path.toString());
   }
 
   /**
@@ -149,7 +147,6 @@ public class ObjectStoreFileSystem extends FileSystem {
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
       String objectName = storageClient.getDataRoot() + "/"
           + getObjectName(f.toString(), Constants.HADOOP_SUCCESS);
-      LOG.debug("Going to create {}", objectName);
       FSDataOutputStream outStream = storageClient.createObject(objectName,
           "application/directory", statistics);
       outStream.close();
@@ -159,7 +156,6 @@ public class ObjectStoreFileSystem extends FileSystem {
       objNameModified = storageClient.getDataRoot() + "/"
           + getObjectName(f.toString(), Constants.HADOOP_TEMPORARY)
           + "/" + f.getName();
-      LOG.debug("Transformed to: {}", objNameModified);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "binary/octet-stream", statistics);
@@ -285,7 +281,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * @return new object name
    */
   private String getObjectName(String path, String boundary) {
-    LOG.trace("Extract object name from: {} with boundary {}", path, boundary);
     String noPrefix = path.substring(hostNameScheme.length());
     int pIdx = path.indexOf(boundary);
     String objectName = "";
@@ -305,7 +300,6 @@ public class ObjectStoreFileSystem extends FileSystem {
         //path matches pattern in javadoc
         objectName = noPrefix.substring(0, npIdx - 1);
       }
-      LOG.debug("getObjectName - objectName: {}", objectName);
       return objectName;
     }
     return noPrefix;
