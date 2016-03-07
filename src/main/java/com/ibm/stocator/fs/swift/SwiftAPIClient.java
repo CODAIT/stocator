@@ -269,7 +269,7 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.debug("List container: path parent: {}, name {}", path.getParent(), path.getName());
     Container cObj = mAccount.getContainer(container);
     String obj = path.toString().substring(hostName.length());
-    if (obj.contains("/")) {
+    if (cObj.getObject(obj.concat("/_SUCCESS")).exists()) {
       obj = obj + "/";
     }
     LOG.debug("Search: {}", obj);
