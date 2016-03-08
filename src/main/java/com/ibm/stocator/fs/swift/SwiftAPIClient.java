@@ -34,14 +34,9 @@ import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
-<<<<<<< HEAD
 import org.javaswift.joss.model.DirectoryOrObject;
 import org.javaswift.joss.model.StoredObject;
-=======
-//import org.javaswift.joss.model.PaginationMap;
-import org.javaswift.joss.model.StoredObject;
-import org.javaswift.joss.model.DirectoryOrObject;
->>>>>>> f7de8acf047d9ea26674282d760df8d631298c93
+
 import org.javaswift.joss.model.Directory;
 
 import org.slf4j.Logger;
