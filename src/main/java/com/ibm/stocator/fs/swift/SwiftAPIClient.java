@@ -288,16 +288,21 @@ public class SwiftAPIClient implements IStoreClient {
         fs = new FileStatus(e.getAsObject().getContentLength(), false, 1, blockSize,
                 getLastModified(e.getAsObject().getLastModified()), 0, null, null, null,
                 new Path(newMergedPath));
-        LOG.debug("{} is a object", newMergedPath);
+        LOG.debug("{} is an object", newMergedPath);
+        if (fs.getLen() > 0) {
+          tmpResult.add(fs);
+          LOG.debug("{} added to results", e.getName());
+        }
       } else {
-        fs = new FileStatus(0, true, 1, blockSize,
-                0, 0, null, null, null,
-                new Path(newMergedPath));
-        LOG.debug("{} is a directory", newMergedPath);
-      }
-      if (fs.getLen() > 0 || fs.isDirectory()) {
-        tmpResult.add(fs);
-        LOG.debug("{} added to results", e.getName());
+        StoredObject success = cObj.getObject(e.getName() + Constants.HADOOP_SUCCESS);
+        if (success.exists()) {
+          fs = new FileStatus(0, true, 1, blockSize,
+                  0, 0, null, null, null,
+                  new Path(newMergedPath));
+          LOG.debug("{} is a directory", newMergedPath);
+          tmpResult.add(fs);
+          LOG.debug("{} added to results", e.getName());
+        }
       }
 
     }
