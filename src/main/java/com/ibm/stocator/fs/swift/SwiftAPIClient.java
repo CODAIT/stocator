@@ -277,8 +277,8 @@ public class SwiftAPIClient implements IStoreClient {
       elements = cObj.listDirectory();
       LOG.debug("Listing root directory");
     } else {
-      Directory dir = new Directory(path.toString()
-              .substring(hostName.length()) + Path.SEPARATOR, Path.SEPARATOR_CHAR);
+      Directory dir = new Directory(path.toString().substring(hostName.length())
+                                    + Path.SEPARATOR, Path.SEPARATOR_CHAR);
       elements = cObj.listDirectory(dir);
       LOG.debug("Directory {} listed", dir.getName());
     }
@@ -287,8 +287,8 @@ public class SwiftAPIClient implements IStoreClient {
       String newMergedPath = getMergedPath(hostName, path, e.getName());
       if (e.isObject()) {
         fs = new FileStatus(e.getAsObject().getContentLength(), false, 1, blockSize,
-                getLastModified(e.getAsObject().getLastModified()), 0, null, null, null,
-                new Path(newMergedPath));
+                            getLastModified(e.getAsObject().getLastModified()), 0, null, null, null,
+                            new Path(newMergedPath));
         LOG.debug("{} is an object", newMergedPath);
         if (fs.getLen() > 0) {
           tmpResult.add(fs);
@@ -298,15 +298,13 @@ public class SwiftAPIClient implements IStoreClient {
         StoredObject success = cObj.getObject(e.getName() + Constants.HADOOP_SUCCESS);
         if (success.exists()) {
           fs = new FileStatus(0, true, 1, blockSize,
-                  0, 0, null, null, null,
-                  new Path(newMergedPath));
+                              0, 0, null, null, null,
+                              new Path(newMergedPath));
           LOG.debug("{} is a directory", newMergedPath);
           tmpResult.add(fs);
           LOG.debug("{} added to results", e.getName());
         }
-
       }
-
     }
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
