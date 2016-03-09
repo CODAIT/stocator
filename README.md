@@ -140,7 +140,7 @@ the properties below with the correspondent values :
 	    <value>PASSWORD</value>
 	</property>
 	<property>
-	    <name>fs.swift2d.service.SERVICE_NAME.username</name>
+	    <name>fs.swift2d.service.SERVICE_NAME.userid</name>
 	    <value>USERID</value>
 	</property>
 	<property>
