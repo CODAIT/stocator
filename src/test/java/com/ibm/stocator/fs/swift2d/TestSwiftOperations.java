@@ -77,6 +77,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
     }
   }
 
+  @Test
   public void testSimilarNames() throws Exception {
     String prefix = "/aa";
     String[] names = {prefix, prefix + "12", prefix + "13"};
