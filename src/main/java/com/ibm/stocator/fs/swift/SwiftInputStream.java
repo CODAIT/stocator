@@ -61,7 +61,6 @@ class SwiftInputStream extends FSInputStream {
    */
   private synchronized void incPos(long offset) {
     pos += offset;
-    LOG.debug("New pos is {}", pos);
   }
 
   public SwiftInputStream(SwiftAPIClient storeNative, String hostName,
@@ -78,7 +77,6 @@ class SwiftInputStream extends FSInputStream {
 
   @Override
   public synchronized int read() throws IOException {
-    LOG.debug("Reading http stream for: {}", storedObject.getName());
     if (httpStream == null) {
       // not sure we need it. need to re-check.
       seek(0);
@@ -93,7 +91,7 @@ class SwiftInputStream extends FSInputStream {
 
   @Override
   public synchronized int read(byte[] b, int off, int len) throws IOException {
-    LOG.debug("Reading portion of http stream for: {}. Offset: {} Len: {}",
+    LOG.trace("Reading portion of http stream for: {}. Offset: {} Len: {}",
         storedObject.getName(), off, len);
     if (httpStream == null) {
       // not sure we need it. need to re-check.

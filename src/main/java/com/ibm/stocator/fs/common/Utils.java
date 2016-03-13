@@ -24,8 +24,11 @@ import java.util.Properties;
 import com.ibm.stocator.fs.swift.ConfigurationHandler;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class Utils {
   private static final Logger LOG = LoggerFactory.getLogger(ConfigurationHandler.class);
@@ -134,6 +137,23 @@ public class Utils {
     if (val != null) {
       props.setProperty(propsKey, val.trim());
     }
+  }
+
+  /**
+   * Extract Hadoop Task ID from path
+   * @param path
+   * @return task id
+   */
+  public static String extractTaskID(String path) {
+    if (path.contains(HADOOP_ATTEMPT)) {
+      String prf = path.substring(path.indexOf(HADOOP_ATTEMPT));
+      if (prf.contains("/")) {
+        return TaskAttemptID.forName(prf.substring(0, prf.indexOf("/")))
+            .toString().substring(HADOOP_ATTEMPT.length());
+      }
+      return TaskAttemptID.forName(prf).toString().substring(HADOOP_ATTEMPT.length());
+    }
+    return null;
   }
 
 }

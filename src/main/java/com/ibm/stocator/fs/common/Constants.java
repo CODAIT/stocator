@@ -38,6 +38,11 @@ public class Constants {
    * Hadoop identification for the temporary directory
    */
   public static final String HADOOP_TEMPORARY = "_temporary";
+
+  /*
+   * Hadoop identification for TASK_ID attempt
+   */
+  public static final String HADOOP_ATTEMPT = "attempt_";
   /*
    * Hadoop _SUCCESS object
    */

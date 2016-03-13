@@ -19,6 +19,7 @@ package com.ibm.stocator.fs.common;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -81,14 +82,15 @@ public interface IStoreClient {
   public FSDataInputStream getObject(String hostName, Path path) throws IOException;
 
   /**
-   * List container
+   * List container.
+   * Responsible to clean / filter temporal results from the failed tasks.
    * @param hostName URL to host
    * @param path path to the object
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
   public FileStatus[] listContainer(String hostName,
-      Path path) throws IOException;
+      Path path, boolean fullListing) throws IOException;
 
   /**
    * Create object. Return output stream
@@ -99,7 +101,7 @@ public interface IStoreClient {
    * @throws IOException if connection error
    */
   public FSDataOutputStream createObject(String objName, String contentType,
-      Statistics statistics) throws IOException;
+      Map<String, String> metadata, Statistics statistics) throws IOException;
   /**
    * Get driver schema
    * @return String schema of the object driver

@@ -26,6 +26,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Properties;
 
 import org.javaswift.joss.client.factory.AccountConfig;
@@ -67,6 +68,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 
 /**
  * Swift back-end driver
@@ -103,6 +105,19 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private long blockSize;
 
+  /*
+   * If true, automatic delete will be activated on the
+   * data generated from failed tasks
+   */
+  private boolean fModeAutomaticDelete;
+
+  /**
+   * Constructor method
+   *
+   * @param filesystemURI
+   * @param conf
+   * @throws IOException
+   */
   public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
     LOG.debug("Init : {}", filesystemURI.toString());
     String preferredRegion = null;
@@ -116,6 +131,8 @@ public class SwiftAPIClient implements IStoreClient {
     config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
     config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
+    fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
+        "false"));
     if (authMethod.equals("keystone")) {
       preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
       if (preferredRegion != null) {
@@ -230,10 +247,17 @@ public class SwiftAPIClient implements IStoreClient {
       LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, null);
       return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
     }
-
-    throw new FileNotFoundException(objectName + " does not exists");
+    LOG.debug("Not found {}", path.toString());
+    return null;
   }
 
+  /**
+   * Transform last modified time stamp to long format
+   *
+   * @param strTime
+   * @return time in long format
+   * @throws IOException
+   */
   private long getLastModified(String strTime) throws IOException {
     final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIME_PATTERN);
     try {
@@ -265,19 +289,21 @@ public class SwiftAPIClient implements IStoreClient {
     return null;
   }
 
-  public FileStatus[] listContainer(String hostName, Path path) throws IOException {
+  public FileStatus[] listContainer(String hostName, Path path,
+      boolean fullListing) throws IOException {
     LOG.debug("List container: path parent: {}, name {}", path.getParent(), path.getName());
     Container cObj = mAccount.getContainer(container);
-    String obj = path.toString().substring(hostName.length());
-    if (obj.contains("/")) {
-      obj = obj + "/";
+    String obj;
+    if (path.toString().startsWith(container)) {
+      obj = path.toString().substring(container.length() + 1);
+    } else {
+      obj = path.toString().substring(hostName.length());
     }
-    LOG.debug("Search: {}", obj);
+    LOG.debug("Listing: {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, 100);
     FileStatus fs = null;
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      LOG.debug("Going to list page {}", page);
       Collection<StoredObject> res = cObj.list(paginationMap, page);
       if (page == 0 && (res == null || res.isEmpty())) {
         FileStatus[] emptyRes = {};
@@ -286,15 +312,12 @@ public class SwiftAPIClient implements IStoreClient {
       for (StoredObject tmp : res) {
         fs = null;
         String newMergedPath = getMergedPath(hostName, path, tmp.getName());
-        LOG.debug("inside listing loop: new name {}, old name {} size {}", newMergedPath,
-            tmp.getName(), tmp.getContentLength());
         if (tmp.getContentLength() == 0) {
-          // we may hit a well knownn Swift bug.
+          // we may hit a well known Swift bug.
           // container listing reports 0 for large objects.
-          LOG.debug("Content length is 0. Peform HEAD {}", newMergedPath);
           StoredObject soDirect = cObj
               .getObject(tmp.getName());
-          if (soDirect.getContentLength() > 0) {
+          if (soDirect.getContentLength() > 0 || fullListing) {
             fs = new FileStatus(soDirect.getContentLength(), false, 1, blockSize,
                 getLastModified(soDirect.getLastModified()), 0, null,
                 null, null, new Path(newMergedPath));
@@ -304,12 +327,11 @@ public class SwiftAPIClient implements IStoreClient {
               getLastModified(tmp.getLastModified()), 0, null,
               null, null, new Path(newMergedPath));
         }
-        if (fs != null && fs.getLen() > 0) {
+        if ((fs != null && fs.getLen() > 0) || fullListing) {
           tmpResult.add(fs);
         }
       }
     }
-    LOG.debug("Going to return list of size: {}", tmpResult.size());
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 
@@ -336,7 +358,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
-      Statistics statistics) throws IOException {
+      Map<String, String> metadata, Statistics statistics) throws IOException {
     URL url = new URL(getAccessURL() + "/" + objName);
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
     try {
@@ -345,6 +367,11 @@ public class SwiftAPIClient implements IStoreClient {
       httpCon.setRequestMethod("PUT");
       httpCon.addRequestProperty("X-Auth-Token", getAuthToken());
       httpCon.addRequestProperty("Content-Type", contentType);
+      if (metadata != null && !metadata.isEmpty()) {
+        for (Map.Entry<String, String> entry : metadata.entrySet()) {
+          httpCon.addRequestProperty("X-Object-Meta-" + entry.getKey(), entry.getValue());
+        }
+      }
       return new FSDataOutputStream(new SwiftOutputStream(httpCon),
           statistics);
     } catch (IOException e) {
@@ -355,8 +382,10 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException {
+    String obj = path.toString().substring(hostName.length());
+    LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     StoredObject so = mAccount.getContainer(container)
-        .getObject(path.toString().substring(hostName.length()));
+        .getObject(obj);
     if (so.exists()) {
       so.delete();
     }

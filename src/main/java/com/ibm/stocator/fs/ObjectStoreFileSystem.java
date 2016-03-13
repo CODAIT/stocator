@@ -20,6 +20,8 @@ package com.ibm.stocator.fs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.ContentSummary;
@@ -39,6 +41,9 @@ import org.slf4j.LoggerFactory;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
+import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+
+import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 /**
  * Object store driver implementation
@@ -143,23 +148,20 @@ public class ObjectStoreFileSystem extends FileSystem {
       boolean overwrite, int bufferSize,
       short replication, long blockSize, Progressable progress) throws IOException {
     LOG.debug("Create method: {}", f.toString());
+    Map<String, String> metadata = new HashMap<String, String>();
     String objNameModified = "";
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
-      String objectName = storageClient.getDataRoot() + "/"
-          + getObjectName(f.toString(), Constants.HADOOP_SUCCESS);
+      String objectName = getObjectName(f, Constants.HADOOP_SUCCESS, false);
       FSDataOutputStream outStream = storageClient.createObject(objectName,
-          "application/directory", statistics);
+          "application/directory", metadata, statistics);
       outStream.close();
-      objNameModified = storageClient.getDataRoot() + "/"
-          + getObjectName(f.toString(), Constants.HADOOP_TEMPORARY);
+      objNameModified =  getObjectName(f, Constants.HADOOP_TEMPORARY, false);
+      metadata.put("Spark-Origin", "true");
     } else {
-      objNameModified = storageClient.getDataRoot() + "/"
-          + getObjectName(f.toString(), Constants.HADOOP_TEMPORARY)
-          + "/" + f.getName();
+      objNameModified = getObjectName(f, Constants.HADOOP_TEMPORARY, true);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
-        "binary/octet-stream", statistics);
-    getConf().set(f.toString(), "create");
+        "binary/octet-stream", metadata, statistics);
     return outStream;
   }
 
@@ -174,13 +176,26 @@ public class ObjectStoreFileSystem extends FileSystem {
    */
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
-    LOG.trace("rename from {} to {}", src.toString(), dst.toString());
+    LOG.debug("rename from {} to {}", src.toString(), dst.toString());
     return true;
   }
 
   public boolean delete(Path f, boolean recursive) throws IOException {
     LOG.debug("delete method: {}. recursive {}", f.toString(), recursive);
-    return storageClient.delete(hostNameScheme, f, recursive);
+    String objNameModified = getObjectName(f, Constants.HADOOP_TEMPORARY, true);
+    LOG.debug("Modified object name {}", objNameModified);
+    if (objNameModified.contains("_temporary")) {
+      return true;
+    }
+    FileStatus[] fsList = storageClient.listContainer(hostNameScheme,
+        new Path(objNameModified), true);
+    if (fsList.length > 0) {
+      LOG.debug("Found {} objects to delete", fsList.length);
+      for (FileStatus fs: fsList) {
+        storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+      }
+    }
+    return true;
   }
 
   @Override
@@ -195,7 +210,7 @@ public class ObjectStoreFileSystem extends FileSystem {
     if (f.toString().contains("_temporary")) {
       return res;
     }
-    return storageClient.listContainer(hostNameScheme, f);
+    return storageClient.listContainer(hostNameScheme, f, false);
   }
 
   @Override
@@ -210,11 +225,12 @@ public class ObjectStoreFileSystem extends FileSystem {
   }
 
   public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
+    LOG.debug("List status of {}", f.toString());
     FileStatus[] res = {};
     if (f.toString().contains("_temporary")) {
       return res;
     }
-    return storageClient.listContainer(hostNameScheme, f);
+    return storageClient.listContainer(hostNameScheme, f, false);
   }
 
   @Override
@@ -261,11 +277,6 @@ public class ObjectStoreFileSystem extends FileSystem {
   }
 
   @Override
-  public long getDefaultBlockSize() {
-    return super.getDefaultBlockSize();
-  }
-
-  @Override
   public long getDefaultBlockSize(Path f) {
     LOG.trace("Get default block size for: {}", f.toString());
     return super.getDefaultBlockSize(f);
@@ -278,9 +289,12 @@ public class ObjectStoreFileSystem extends FileSystem {
    * aa/bb/cc/one3.txt
    *
    * @param path
+   * @param boundary
+   * @param addTaskIdCompositeName
    * @return new object name
    */
-  private String getObjectName(String path, String boundary) {
+  private String getObjectName(Path fullPath, String boundary, boolean addTaskIdCompositeName) {
+    String path = fullPath.toString();
     String noPrefix = path.substring(hostNameScheme.length());
     int pIdx = path.indexOf(boundary);
     String objectName = "";
@@ -299,26 +313,47 @@ public class ObjectStoreFileSystem extends FileSystem {
       } else {
         //path matches pattern in javadoc
         objectName = noPrefix.substring(0, npIdx - 1);
+        if (addTaskIdCompositeName) {
+          String taskAttempt = Utils.extractTaskID(path);
+          String objName = fullPath.getName();
+          if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
+            objName = taskAttempt + "-" + fullPath.getName();
+          } else if (objName.startsWith(HADOOP_ATTEMPT)) {
+            objName = objName.substring(HADOOP_ATTEMPT.length());
+          }
+          objectName = objectName + "/" + objName;
+        }
       }
-      return objectName;
+      return storageClient.getDataRoot() + "/" + objectName;
     }
-    return noPrefix;
+    return storageClient.getDataRoot() + "/" + noPrefix;
   }
 
   @Override
   public FileStatus[] globStatus(Path pathPattern) throws IOException {
     LOG.debug("Glob status: {}", pathPattern.toString());
-    return super.globStatus(pathPattern);
+    return new ObjectStoreGlobber(this, pathPattern, DEFAULT_FILTER).glob();
   }
 
   @Override
   public FileStatus[] globStatus(Path pathPattern, PathFilter filter) throws IOException {
     LOG.debug("Glob status {} with path filter {}",pathPattern.toString(), filter.toString());
-    return super.globStatus(pathPattern, filter);
+    return new ObjectStoreGlobber(this, pathPattern, filter).glob();
   }
 
   @Override
   public Path getWorkingDirectory() {
     return null;
   }
+
+  /**
+   * Default Path filter
+   */
+  private static final PathFilter DEFAULT_FILTER = new PathFilter() {
+    @Override
+    public boolean accept(Path file) {
+      return true;
+    }
+  };
+
 }

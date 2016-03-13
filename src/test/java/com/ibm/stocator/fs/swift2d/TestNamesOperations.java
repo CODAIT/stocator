@@ -31,7 +31,7 @@ public class TestNamesOperations extends SwiftBaseTest {
   private String sparkPutFormat = "/{0}/_temporary/0/_temporary/"
       + "attempt_201612062056_0000_m_0000{1}_{2}/part-000{3}";
   // {1} = two digits number, starting wih 00
-  private String swiftDataFormat = "/{0}/part-000{1}";
+  private String swiftDataFormat = "/{0}/201612062056_0000_m_0000{1}_{2}-part-000{3}";
   private String sparkSuccessFormat = "/{0}/_SUCCESS";
 
   @Override
@@ -57,7 +57,7 @@ public class TestNamesOperations extends SwiftBaseTest {
       System.out.println(SwiftTestUtils.formatFilestat(stats, "\n"));
       for (int i = 0;i < 11; i++) {
         String id = String.format("%0" + 2 + "d", i);
-        params = new Object[]{objectName, id};
+        params = new Object[]{objectName, id, String.valueOf(i), id};
         Path path = new Path(getBaseURI(), MessageFormat.format(swiftDataFormat, params));
         System.out.println("Going to read " + path.toString());
         byte[] res = SwiftTestUtils.readDataset(getFs(),
@@ -66,7 +66,7 @@ public class TestNamesOperations extends SwiftBaseTest {
       }
       for (int i = 0;i < 11; i++) {
         String id = String.format("%0" + 2 + "d", i);
-        params = new Object[]{objectName, id};
+        params = new Object[]{objectName, id, String.valueOf(i), id};
         Path path = new Path(getBaseURI(), MessageFormat.format(swiftDataFormat, params));
         System.out.println("Going to delete " + path.toString());
         getFs().delete(path, false);

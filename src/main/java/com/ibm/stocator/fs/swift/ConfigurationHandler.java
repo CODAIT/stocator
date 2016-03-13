@@ -24,8 +24,6 @@ import java.util.Properties;
 import com.ibm.stocator.fs.common.Utils;
 
 import org.apache.hadoop.conf.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.ibm.stocator.fs.common.Constants.SWIFT_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
@@ -48,12 +46,13 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.BLOCK_SIZE;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_DELETE_TEMP_DATA;
 
 /**
  * Integrates Hadoop configuration with the Swift implementation
  */
 public final class ConfigurationHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(ConfigurationHandler.class);
 
   /**
    * Parse configuration properties from the core-site.xml and initialize
@@ -67,7 +66,6 @@ public final class ConfigurationHandler {
     String host = Utils.getHost(uri);
     String container = Utils.getContainerName(host);
     String service = Utils.getServiceName(host);
-    LOG.debug("container: {}, service: {}", container , service);
     String prefix = SWIFT_SERVICE_PREFIX + service;
     Properties props = new Properties();
     props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
@@ -77,6 +75,8 @@ public final class ConfigurationHandler {
     Utils.updateProperty(conf, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, true);
     Utils.updateProperty(conf, prefix, AUTH_METHOD, props, SWIFT_AUTH_METHOD_PROPERTY, false);
     Utils.updateProperty(conf, prefix, BLOCK_SIZE, props, SWIFT_BLOCK_SIZE_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, FMODE_DELETE_TEMP_DATA, props,
+        FMODE_AUTOMATIC_DELETE_PROPERTY, false);
     Utils.updateProperty(conf, prefix, PUBLIC, props, SWIFT_PUBLIC_PROPERTY, false);
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY, KEYSTONE_V3_AUTH);
     props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, authMethod);
