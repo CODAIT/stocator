@@ -11,7 +11,7 @@ Stocator is a generic connector, that may contain various implementations for ob
 ## Major features
 * Implements HDFS interface
 * No need to change or recompile Spark
-* Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store
+* Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model (work in progress)
 * There are no notions of directories (usually defined as empty files)
 * Object's name may contain "/"
 * Containers / buckets are automatically created
@@ -19,6 +19,7 @@ Stocator is a generic connector, that may contain various implementations for ob
 * (Swift Driver) Tested to read large objects (over 16GB)
 * Supports Swiftauth, Keystone V2, Keystone V2 Password Scope Authentication
 * Tested to work with vanilla Swift cluster, SoftLayer object store,  IBM Bluemix Object service
+* Supports speculate mode
 
 ## Build procedure
 
@@ -200,14 +201,14 @@ Listing container `newcontainer` will display
 
 	one1.txt
 	one1.txt/_SUCCESS
-	one1.txt/part-00000
-	one1.txt/part-00001
-	one1.txt/part-00002
-	one1.txt/part-00003
-	one1.txt/part-00004
-	one1.txt/part-00005
-	one1.txt/part-00006
-	one1.txt/part-00007
+	one1.txt/taskid-part-00000
+	one1.txt/taskid-part-00001
+	one1.txt/taskid-part-00002
+	one1.txt/taskid-part-00003
+	one1.txt/taskid-part-00004
+	one1.txt/taskid-part-00005
+	one1.txt/taskid-part-00006
+	one1.txt/taskid-part-00007
 
 ### Running Terasort
 
@@ -255,7 +256,3 @@ To easy the debug process, Please modify `conf/log4j.properties` and add
 
 ## Before you sumit your pull request
 We ask that you include a line similar to the following as part of your pull request comments: “DCO 1.1 Signed-off-by: Random J Developer“. “DCO” stands for “Developer Certificate of Origin,” and refers to the same text used in the Linux Kernel community. By adding this simple comment, you tell the community that you wrote the code you are contributing, or you have the right to pass on the code that you are contributing.
-
-## Next steps
-* Code tested with Hadoop 2.6.0.
-* Token expiration was not tested (re-authentication)
