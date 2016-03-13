@@ -115,7 +115,7 @@ public class SwiftAPIClient implements IStoreClient {
    * Constructor method
    *
    * @param filesystemURI
-   * @param conf
+   * @param conf Configuration
    * @throws IOException
    */
   public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
@@ -155,7 +155,6 @@ public class SwiftAPIClient implements IStoreClient {
       config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
       config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
     }
-    LOG.debug("JOSS configuration completed");
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
     mAccount = new AccountFactory(config).createAccount();
@@ -163,7 +162,6 @@ public class SwiftAPIClient implements IStoreClient {
     if (preferredRegion != null) {
       mAccess.setPreferredRegion(preferredRegion);
     }
-    LOG.debug("Url: {}, Token: {}", mAccess.getPublicURL(), mAccess.getToken());
     Container containerObj = mAccount.getContainer(container);
     if (!containerObj.exists()) {
       containerObj.create();
@@ -279,7 +277,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
-    LOG.debug("Get object metadata: {}", path);
+    LOG.debug("Get object: {}", path);
     try {
       SwiftInputStream sis = new SwiftInputStream(this, hostName, path);
       return new FSDataInputStream(sis);
@@ -335,6 +333,14 @@ public class SwiftAPIClient implements IStoreClient {
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 
+  /**
+   * Merge between two paths
+   *
+   * @param hostName
+   * @param p path
+   * @param objectName
+   * @return merged path
+   */
   private String getMergedPath(String hostName, Path p, String objectName) {
     if ((p.getParent() != null) && (p.getName() != null)
         && (p.getParent().toString().equals(hostName))) {

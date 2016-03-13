@@ -44,12 +44,14 @@ public interface IStoreClient {
 
   /**
    * Data root URI
+   *
    * @return data root URI
    */
   public String getDataRoot();
 
   /**
    * Meta data of the object
+   *
    * @param hostName URL to host
    * @param path path to the object
    * @return FileStatus with the object info
@@ -61,6 +63,7 @@ public interface IStoreClient {
 
   /**
    * Verify if object exists
+   *
    * @param hostName URL to host
    * @param path path to the object
    * @return true if object exists
@@ -84,6 +87,7 @@ public interface IStoreClient {
   /**
    * List container.
    * Responsible to clean / filter temporal results from the failed tasks.
+   *
    * @param hostName URL to host
    * @param path path to the object
    * @return arrays of FileStatus
@@ -94,6 +98,7 @@ public interface IStoreClient {
 
   /**
    * Create object. Return output stream
+   *
    * @param objName name of the object
    * @param contentType content type
    * @param statistics the statistics for this file system
@@ -102,8 +107,10 @@ public interface IStoreClient {
    */
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata, Statistics statistics) throws IOException;
+
   /**
    * Get driver schema
+   *
    * @return String schema of the object driver
    */
   public String getScheme();

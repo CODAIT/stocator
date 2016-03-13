@@ -81,11 +81,11 @@ public class Utils {
 
   /**
    * Extract host name from the URI
+   *
    * @param uri
    * @return host name
    */
   public static String getHost(URI uri) {
-    LOG.debug("Extract the host name from URI");
     String host = uri.getHost();
     if (host != null) {
       LOG.debug("Host is {}",host);
@@ -125,6 +125,7 @@ public class Utils {
    * @param props destination property set
    * @param propsKey key in the property set
    * @param required if the key is mandatory
+   * @throws IOException if there was no match for the key
    */
 
   public static void updateProperty(Configuration conf, String prefix, String key,
