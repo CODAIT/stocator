@@ -412,4 +412,16 @@ public class SwiftAPIClient implements IStoreClient {
     return mAccess.getInternalURL();
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * Swift driver doesn't require any local working directory
+   *
+   * @return path to the working directory
+   */
+  @Override
+  public Path getWorkingDirectory() {
+    return null;
+  }
+
 }

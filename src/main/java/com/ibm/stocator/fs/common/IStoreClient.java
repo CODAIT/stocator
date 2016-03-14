@@ -125,4 +125,11 @@ public interface IStoreClient {
    */
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException;
 
+  /**
+   * Some drivers requires local temporary directory
+   *
+   * @return working directory
+   */
+  public Path getWorkingDirectory();
+
 }
