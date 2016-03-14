@@ -151,7 +151,7 @@ public class ObjectStoreFileSystem extends FileSystem {
    *
    * Each object name is modified to contain task-id prefix.
    * Thus for example, create
-   * dataroot>/objectname/_temporary/0/_temporary/attempt_201603131849_0000_m_000019_0/
+   * dataroot/objectname/_temporary/0/_temporary/attempt_201603131849_0000_m_000019_0/
    * part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv
    * will be transformed to
    * PUT dataroot/object
