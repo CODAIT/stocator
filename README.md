@@ -43,7 +43,7 @@ Add driver reference in the `conf/core-site.xml` of Spark
 	
    	
 #### Swift Driver configuration
-The following is the list of the configuration keys.
+The following is the list of the configuration keys
 
 | Key | Info | Default value |
 | --- | ------------ | ------------- |
@@ -153,6 +153,10 @@ the properties below with the correspondent values :
 	    <value>dallas</value>
 	</property>
 
+## Providing configuration keys in run time
+It's possible to provide configuration keys in run time, without keeping them in core-sites.xml. Just use SparkContext variable with
+
+	sc.hadoopConfiguration.set("KEY","VALUE")
 
 ## Execution without compiling Spark
 It is possible to execute Spark with the new driver, without compiling Spark.
@@ -256,3 +260,10 @@ To easy the debug process, Please modify `conf/log4j.properties` and add
 
 ## Before you sumit your pull request
 We ask that you include a line similar to the following as part of your pull request comments: “DCO 1.1 Signed-off-by: Random J Developer“. “DCO” stands for “Developer Certificate of Origin,” and refers to the same text used in the Linux Kernel community. By adding this simple comment, you tell the community that you wrote the code you are contributing, or you have the right to pass on the code that you are contributing.
+
+## Need more information?
+Please follow our [wiki](https://github.com/SparkTC/stocator/wiki) for more details.
+More information about Stocator can be find at
+
+* [Fast Lane for Connecting Object Stores to Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
+* [Exabytes, Elephants, Objects and Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
