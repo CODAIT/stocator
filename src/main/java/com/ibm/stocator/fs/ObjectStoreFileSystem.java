@@ -175,19 +175,19 @@ public class ObjectStoreFileSystem extends FileSystem {
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
       // generate dataroot/objectname as 0 byte object of application/directory type
-      String objectName = getObjectName(f, Constants.HADOOP_SUCCESS, false);
+      String objectName = getObjectNameRoot(f, Constants.HADOOP_SUCCESS, false);
+      // mark that dataroot/objectname is an object created by Spark
+      metadata.put("Spark-Origin", "true");
       FSDataOutputStream outStream = storageClient.createObject(objectName,
           "application/directory", metadata, statistics);
       outStream.close();
       // now generate dataroot/objectname/_SUCCESS
-      objNameModified =  getObjectName(f, Constants.HADOOP_TEMPORARY, false);
-      // mark that _SUCCESS is an object created by Spark
-      metadata.put("Spark-Origin", "true");
+      objNameModified =  getObjectNameRoot(f, Constants.HADOOP_TEMPORARY, false);
     } else {
-      objNameModified = getObjectName(f, Constants.HADOOP_TEMPORARY, true);
+      objNameModified = getObjectNameRoot(f, Constants.HADOOP_TEMPORARY, true);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
-        "binary/octet-stream", metadata, statistics);
+        "binary/octet-stream", null, statistics);
     return outStream;
   }
 
@@ -209,15 +209,29 @@ public class ObjectStoreFileSystem extends FileSystem {
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
     LOG.debug("delete method: {}. recursive {}", f.toString(), recursive);
-    String objNameModified = getObjectName(f, Constants.HADOOP_TEMPORARY, true);
+    String objNameModified = getObjectNameRoot(f, Constants.HADOOP_TEMPORARY, true);
     LOG.debug("Modified object name {}", objNameModified);
-    if (objNameModified.contains("_temporary")) {
+    if (objNameModified.contains(Constants.HADOOP_TEMPORARY)) {
       return true;
     }
-    FileStatus[] fsList = storageClient.listContainer(hostNameScheme,
-        new Path(objNameModified), true);
+    Path pathToObj = new Path(objNameModified);
+    FileStatus[] fsList = storageClient.listContainer(hostNameScheme, pathToObj, true);
     if (fsList.length > 0) {
-      LOG.debug("Found {} objects to delete", fsList.length);
+      if (f.getName().startsWith(HADOOP_ATTEMPT)) {
+        // if object to be deleted starts with attempt_
+        // that means some task was aborted.
+        // We create identifier as dataroot/objectname.
+        // This is still not enough: if run time
+        // exception occurred - abort will not come and so identifier
+        // will be missed
+        String plainObjName = pathToObj.getParent().toString();
+        LOG.debug("Task abort. Going to create identifier {}", plainObjName);
+        Map<String, String> metadata = new HashMap<String, String>();
+        metadata.put("Spark-Origin", "true");
+        FSDataOutputStream outStream = storageClient.createObject(plainObjName,
+            "application/directory", metadata, statistics);
+        outStream.close();
+      }
       for (FileStatus fs: fsList) {
         storageClient.delete(hostNameScheme, fs.getPath(), recursive);
       }
@@ -234,7 +248,7 @@ public class ObjectStoreFileSystem extends FileSystem {
       LOG.debug("list status: {}", f.toString());
     }
     FileStatus[] res = {};
-    if (f.toString().contains("_temporary")) {
+    if (f.toString().contains(Constants.HADOOP_TEMPORARY)) {
       return res;
     }
     return storageClient.listContainer(hostNameScheme, f, false);
@@ -255,7 +269,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
     LOG.debug("List status of {}", f.toString());
     FileStatus[] res = {};
-    if (f.toString().contains("_temporary")) {
+    if (f.toString().contains(Constants.HADOOP_TEMPORARY)) {
       return res;
     }
     return storageClient.listContainer(hostNameScheme, f, false);
@@ -315,30 +329,26 @@ public class ObjectStoreFileSystem extends FileSystem {
    * schema://tone1.lvm/aa/bb/cc/one3.txt/_temporary/0/_temporary/
    * attempt_201610052038_0001_m_000007_15/part-00007 will extract get
    * aa/bb/cc/201610052038_0001_m_000007_15-one3.txt
-   * otherwse object name will be aa/bb/cc/one3.txt
+   * otherwise object name will be aa/bb/cc/one3.txt
    *
    * @param path path to extract from
    * @param boundary boundary to search in a path
    * @param addTaskIdCompositeName if true will add task-id to the object name
    * @return new object name
+   * @throws IOException if object name is missing
    */
-  private String getObjectName(Path fullPath, String boundary, boolean addTaskIdCompositeName) {
+  private String getObjectName(Path fullPath, String boundary,
+      boolean addTaskIdCompositeName) throws IOException {
     String path = fullPath.toString();
     String noPrefix = path.substring(hostNameScheme.length());
-    int pIdx = path.indexOf(boundary);
+    int npIdx = noPrefix.indexOf(boundary);
     String objectName = "";
-    if (pIdx > 0) {
-      int npIdx = noPrefix.indexOf(boundary);
-      if (npIdx == 0 && noPrefix.contains("/")) {
+    if (npIdx >= 0) {
+      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
+        //no object name present
         //schema://tone1.lvm/_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
-        //noPrefix == _temporary/0/_temporary/attempt_201610052038_0001_m_000007_15/part-00007
-        //no path in container reverse search for separator,
-        //use the part name (e.g. part-00007) as object name
-        objectName = noPrefix.substring(noPrefix.lastIndexOf("/") + 1, noPrefix.length());
-      } else if (npIdx == 0) {
-        //schema://tone1.lvm/_SUCCESS
-        //noPrefix == _SUCCESS
-        objectName = noPrefix;
+        //schema://tone1.lvm_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
+        throw new IOException("Object name is missing");
       } else {
         //path matches pattern in javadoc
         objectName = noPrefix.substring(0, npIdx - 1);
@@ -353,9 +363,24 @@ public class ObjectStoreFileSystem extends FileSystem {
           objectName = objectName + "/" + objName;
         }
       }
-      return storageClient.getDataRoot() + "/" + objectName;
+      return objectName;
     }
-    return storageClient.getDataRoot() + "/" + noPrefix;
+    return noPrefix;
+  }
+
+  /**
+   * Get object name with data root
+   *
+   * @param fullPath
+   * @param boundary
+   * @param addTaskIdCompositeName
+   * @return composite of data root and object name
+   * @throws IOException if object name is missing
+   */
+  private String getObjectNameRoot(Path fullPath, String boundary,
+      boolean addTaskIdCompositeName) throws IOException {
+    return storageClient.getDataRoot() + "/" + getObjectName(fullPath,
+        boundary, addTaskIdCompositeName);
   }
 
   @Override
