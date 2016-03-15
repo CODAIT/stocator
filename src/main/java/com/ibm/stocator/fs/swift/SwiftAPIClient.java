@@ -330,6 +330,7 @@ public class SwiftAPIClient implements IStoreClient {
         }
       }
     }
+    LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 

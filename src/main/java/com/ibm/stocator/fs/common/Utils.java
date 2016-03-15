@@ -21,17 +21,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 
-import com.ibm.stocator.fs.swift.ConfigurationHandler;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class Utils {
-  private static final Logger LOG = LoggerFactory.getLogger(ConfigurationHandler.class);
 
   public static final String BAD_HOST = " hostname '%s' must be in the form container.service";
 
@@ -88,7 +83,6 @@ public class Utils {
   public static String getHost(URI uri) {
     String host = uri.getHost();
     if (host != null) {
-      LOG.debug("Host is {}",host);
       return host;
     }
     host = uri.toString();
@@ -96,7 +90,6 @@ public class Utils {
     host = host.substring(sInd);
     int eInd = host.indexOf("/");
     host = host.substring(0,eInd);
-    LOG.debug("Manual host extract {}", host);
     return host;
   }
 
