@@ -105,7 +105,6 @@ public class SwiftOutputStream extends OutputStream {
       throw e;
     }
     mHttpCon.disconnect();
-    LOG.debug("Successfully closed");
   }
 
   @Override

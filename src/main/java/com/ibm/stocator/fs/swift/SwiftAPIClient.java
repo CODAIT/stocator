@@ -252,7 +252,7 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Transform last modified time stamp to long format
    *
-   * @param strTime
+   * @param strTime time in string format as returned from Swift
    * @return time in long format
    * @throws IOException
    */
@@ -287,8 +287,7 @@ public class SwiftAPIClient implements IStoreClient {
     return null;
   }
 
-  public FileStatus[] listContainer(String hostName, Path path,
-      boolean fullListing) throws IOException {
+  public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException {
     LOG.debug("List container: path parent: {}, name {}", path.getParent(), path.getName());
     Container cObj = mAccount.getContainer(container);
     String obj;

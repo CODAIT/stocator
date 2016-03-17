@@ -85,7 +85,7 @@ public interface IStoreClient {
   public FSDataInputStream getObject(String hostName, Path path) throws IOException;
 
   /**
-   * List container.
+   * List data root.
    * Responsible to clean / filter temporal results from the failed tasks.
    *
    * @param hostName URL to host
@@ -93,8 +93,7 @@ public interface IStoreClient {
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
-  public FileStatus[] listContainer(String hostName,
-      Path path, boolean fullListing) throws IOException;
+  public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException;
 
   /**
    * Create object. Return output stream
