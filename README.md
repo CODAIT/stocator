@@ -11,7 +11,7 @@ Stocator is a generic connector, that may contain various implementations for ob
 ## Major features
 * Implements HDFS interface
 * No need to change or recompile Spark
-* Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model (work in progress)
+* Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
 * There are no notions of directories (usually defined as empty files)
 * Object's name may contain "/"
 * Containers / buckets are automatically created
@@ -204,18 +204,18 @@ Compile Spark with Haddop support
 	val distData = sc.parallelize(data)
 	distData.saveAsTextFile("swift2d://newcontainer.SERVICENAME/one1.txt")
 
-Listing container `newcontainer` will display
+Listing container `newcontainer` directly with a REST client will display
 
 	one1.txt
 	one1.txt/_SUCCESS
-	one1.txt/taskid-part-00000
-	one1.txt/taskid-part-00001
-	one1.txt/taskid-part-00002
-	one1.txt/taskid-part-00003
-	one1.txt/taskid-part-00004
-	one1.txt/taskid-part-00005
-	one1.txt/taskid-part-00006
-	one1.txt/taskid-part-00007
+	one1.txt/part-00000-taskid
+	one1.txt/part-00001-taskid
+	one1.txt/part-00002-taskid
+	one1.txt/part-00003-taskid
+	one1.txt/part-00004-taskid
+	one1.txt/part-00005-taskid
+	one1.txt/part-00006-taskid
+	one1.txt/part-00007-taskid
 
 ### Running Terasort
 
