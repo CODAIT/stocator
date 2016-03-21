@@ -23,8 +23,6 @@ import java.io.IOException;
 import org.apache.hadoop.fs.GlobPattern;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A filter for POSIX glob pattern with brace expansions.
@@ -36,7 +34,6 @@ public class ObjectStoreGlobFilter implements PathFilter {
         return true;
       }
     };
-  public static final Logger LOG = LoggerFactory.getLogger(ObjectStoreGlobber.class.getName());
 
   private PathFilter userFilter = DEFAULT_FILTER;
   private GlobPattern pattern;
