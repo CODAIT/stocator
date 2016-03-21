@@ -54,7 +54,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
       createEmptyFile(new Path(getBaseURI(),
           MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})));
       FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-      System.out.println(SwiftTestUtils.formatFilestat(stats, "\n"));
+      Assert.assertTrue(11 == stats.length);
       for (int i = 0;i < 11; i++) {
         String id = String.format("%0" + 2 + "d", i);
         params = new Object[]{objectName, id, String.valueOf(i), id};
@@ -72,29 +72,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
         getFs().delete(path, false);
       }
       stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-      System.out.println(SwiftTestUtils.formatFilestat(stats, "\n"));
-
+      Assert.assertTrue(0 == stats.length);
     }
-  }
-
-  public void testSimilarNames() throws Exception {
-    String prefix = "/aa";
-    String[] names = {prefix, prefix + "12", prefix + "13"};
-    if (getFs() != null) {
-      for (String name: names) {
-        Path path = new Path(getBaseURI(), name);
-        createFile(path, data);
-      }
-    }
-    FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI() + prefix));
-    System.out.println(SwiftTestUtils.formatFilestat(stats, "\n"));
-    assertTrue(1 == stats.length);
-    for (int i = 0;i < names.length; i++) {
-      Path path = new Path(getBaseURI(), names[i]);
-      System.out.println("Going to delete " + path.toString());
-      getFs().delete(path, false);
-    }
-    stats = getFs().listStatus(new Path(getBaseURI() + prefix));
-    System.out.println(SwiftTestUtils.formatFilestat(stats, "\n"));
   }
 }

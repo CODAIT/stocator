@@ -54,7 +54,7 @@ public class TestNamesOperations extends SwiftBaseTest {
       createEmptyFile(new Path(getBaseURI(),
           MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})));
       FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-      System.out.println(SwiftTestUtils.formatFilestat(stats, "\n"));
+      Assert.assertTrue(11 == stats.length);
       for (int i = 0;i < 11; i++) {
         String id = String.format("%0" + 2 + "d", i);
         params = new Object[]{objectName, id, String.valueOf(i), id};
@@ -72,8 +72,7 @@ public class TestNamesOperations extends SwiftBaseTest {
         getFs().delete(path, false);
       }
       stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-      System.out.println(SwiftTestUtils.formatFilestat(stats, "\n"));
-
+      Assert.assertTrue(0 == stats.length);
     }
   }
 }

@@ -102,16 +102,6 @@ public class SwiftBaseTest extends Assert {
   }
 
   /**
-   * Take an unqualified path, and qualify it w.r.t the current filesystem
-   *
-   * @param pathString source path
-   * @return a qualified path instance
-   */
-  protected Path path(String pathString) {
-    return new Path(pathString);
-  }
-
-  /**
    * Get the filesystem
    *
    * @return the current FS
@@ -132,7 +122,7 @@ public class SwiftBaseTest extends Assert {
    * @throws IOException on any problem
    */
   protected void createFile(Path path, byte[] sourceData) throws IOException {
-    System.out.println("Going to upload " + path.toString());
+    System.out.println("Create " + path.toString());
     FSDataOutputStream out = fs.create(path);
     out.write(sourceData, 0, sourceData.length);
     out.close();

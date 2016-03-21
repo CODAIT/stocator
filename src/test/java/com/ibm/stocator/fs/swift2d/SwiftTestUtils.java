@@ -20,7 +20,6 @@ package com.ibm.stocator.fs.swift2d;
 import java.io.IOException;
 
 import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -49,14 +48,6 @@ public class SwiftTestUtils extends org.junit.Assert {
     return dest;
   }
 
-  public static String formatFilestat(FileStatus[] stats, String separator) {
-    StringBuilder buf = new StringBuilder(stats.length * 128);
-    for (int i = 0; i < stats.length; i++) {
-      buf.append(String.format("[%02d] %s", i, stats[i])).append(separator);
-    }
-    return buf.toString();
-  }
-
   /**
    * Random dataset
    *
@@ -72,21 +63,4 @@ public class SwiftTestUtils extends org.junit.Assert {
     }
     return dataset;
   }
-
-  /**
-   * Verify if path exists
-   *
-   * @param fs filesystem to examine
-   * @param message message to include in the assertion failure message
-   * @param path path in the filesystem
-   * @throws IOException IO problems
-   */
-  public static void assertPathExists(FileSystem fs,
-      String message, Path path) throws IOException {
-    if (!fs.exists(path)) {
-      fail(message + ": not found " + path + " in " + path.getParent());
-      SwiftTestUtils.formatFilestat(fs.listStatus(path.getParent()), "\n");
-    }
-  }
-
 }

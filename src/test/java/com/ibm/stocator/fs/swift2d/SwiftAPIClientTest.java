@@ -11,7 +11,6 @@ import com.ibm.stocator.fs.swift.SwiftAPIClient;
 public class SwiftAPIClientTest {
 
   private SwiftAPIClient mSwiftAPIClient;
-  private String hostName = "swift2d://out1003.lvm";
 
   @Before
   public final void before() {
