@@ -142,10 +142,9 @@ public class Utils {
     if (path.contains(HADOOP_ATTEMPT)) {
       String prf = path.substring(path.indexOf(HADOOP_ATTEMPT));
       if (prf.contains("/")) {
-        return TaskAttemptID.forName(prf.substring(0, prf.indexOf("/")))
-            .toString().substring(HADOOP_ATTEMPT.length());
+        return TaskAttemptID.forName(prf.substring(0, prf.indexOf("/"))).toString();
       }
-      return TaskAttemptID.forName(prf).toString().substring(HADOOP_ATTEMPT.length());
+      return TaskAttemptID.forName(prf).toString();
     }
     return null;
   }

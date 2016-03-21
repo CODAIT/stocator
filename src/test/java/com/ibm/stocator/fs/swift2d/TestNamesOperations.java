@@ -31,7 +31,7 @@ public class TestNamesOperations extends SwiftBaseTest {
   private String sparkPutFormat = "/{0}/_temporary/0/_temporary/"
       + "attempt_201612062056_0000_m_0000{1}_{2}/part-000{3}";
   // {1} = two digits number, starting wih 00
-  private String swiftDataFormat = "/{0}/201612062056_0000_m_0000{1}_{2}-part-000{3}";
+  private String swiftDataFormat = "/{0}/part-000{3}-attempt_201612062056_0000_m_0000{1}_{2}";
   private String sparkSuccessFormat = "/{0}/_SUCCESS";
 
   @Override

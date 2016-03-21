@@ -206,10 +206,21 @@ public class ObjectStoreFileSystem extends FileSystem {
       return true;
     }
     Path pathToObj = new Path(objNameModified);
-    FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true);
-    if (fsList.length > 0) {
-      for (FileStatus fs: fsList) {
-        storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+    if (f.getName().startsWith(HADOOP_ATTEMPT)) {
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true);
+      if (fsList.length > 0) {
+        for (FileStatus fs: fsList) {
+          if (fs.getPath().getName().endsWith(f.getName())) {
+            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+          }
+        }
+      }
+    } else {
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true);
+      if (fsList.length > 0) {
+        for (FileStatus fs: fsList) {
+          storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+        }
       }
     }
     return true;
@@ -309,7 +320,7 @@ public class ObjectStoreFileSystem extends FileSystem {
       String plainObjName = pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
       Map<String, String> metadata = new HashMap<String, String>();
-      metadata.put("Spark-Origin", "true");
+      metadata.put("Data-Origin", "stocator");
       FSDataOutputStream outStream = storageClient.createObject(plainObjName,
           "application/directory", metadata, statistics);
       outStream.close();
@@ -379,9 +390,7 @@ public class ObjectStoreFileSystem extends FileSystem {
           String taskAttempt = Utils.extractTaskID(path);
           String objName = fullPath.getName();
           if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
-            objName = taskAttempt + "-" + fullPath.getName();
-          } else if (objName.startsWith(HADOOP_ATTEMPT)) {
-            objName = objName.substring(HADOOP_ATTEMPT.length());
+            objName = fullPath.getName() + "-" + taskAttempt;
           }
           objectName = objectName + "/" + objName;
         }
