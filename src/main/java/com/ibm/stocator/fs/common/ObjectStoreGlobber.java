@@ -152,9 +152,8 @@ public class ObjectStoreGlobber {
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
       FileStatus[] candidates = listStatus(rootPlaceholder.getPath());
       for (FileStatus candidate : candidates) {
-        LOG.debug("Candidate found: ", candidate.getPath());
         if (globFilter.accept(candidate.getPath())) {
-          LOG.debug("Candidate accepted: ", candidate.getPath());
+          LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
           results.add(candidate);
         }
       }
