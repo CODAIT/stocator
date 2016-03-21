@@ -122,6 +122,16 @@ public class ObjectStoreGlobber {
     return authority;
   }
 
+  private String getPrefixUpToFirstWildcard(String path) {
+    for (int i = 0; i < path.length(); i++) {
+      char c = path.charAt(i);
+      if (c == '*' || c == '{' || c == '[' || c == '?') {
+        return path.substring(0, i);
+      }
+    }
+    return path;
+  }
+
   public FileStatus[] glob() throws IOException {
     // First we get the scheme and authority of the pattern that was passed
     // in.
@@ -129,33 +139,28 @@ public class ObjectStoreGlobber {
     String scheme = schemeFromPath(pathPattern);
     String authority = authorityFromPath(pathPattern);
 
-    // Next we strip off everything except the pathname itself, and expand all
-    // globs. Expansion is a process which turns "grouping" clauses,
-    // expressed as brackets, into separate path patterns.
-    //String pathPatternString = pathPattern.toUri().getPath();
-    //List<String> flattenedPatterns = ObjectStoreGlobExpander.expand(pathPatternString);
+    String pathPatternString = pathPattern.toUri().getPath();
+    String unescapePathString = unescapePathComponent(pathPatternString);
 
-    // Now loop over all flattened patterns. In every case, we'll be trying to
-    // match them to entries in the filesystem.
     ArrayList<FileStatus> results = new ArrayList<>(1);
-
-    FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
-          new Path(scheme, authority, Path.SEPARATOR));
     ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
 
     if (globFilter.hasPattern()) {
-      // Get a list of FileStatuses and filter out based on filter
+      // Get a list of FileStatuses and filter
+      String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
+      FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
+              new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
       FileStatus[] candidates = listStatus(rootPlaceholder.getPath());
       for (FileStatus candidate : candidates) {
-
-        LOG.debug("Candidate found {}", candidate.getPath().toString());
+        LOG.debug("Candidate found: ", candidate.getPath());
         if (globFilter.accept(candidate.getPath())) {
+          LOG.debug("Candidate accepted: ", candidate.getPath());
           results.add(candidate);
         }
       }
     } else {
-      // Get a list of FileStatuses based on path given
-      FileStatus candidateStatus = getFileStatus(pathPattern);
+      // Get a single FileStatus based on path given
+      FileStatus candidateStatus = getFileStatus(new Path(unescapePathString));
       if (candidateStatus != null && filter.accept(candidateStatus.getPath())) {
         results.add(candidateStatus);
       }
