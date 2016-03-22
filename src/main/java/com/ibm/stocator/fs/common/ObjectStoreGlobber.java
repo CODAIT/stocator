@@ -158,7 +158,7 @@ public class ObjectStoreGlobber {
       }
     } else {
       // Get a single FileStatus based on path given
-      FileStatus candidateStatus = getFileStatus(new Path(unescapePathString));
+      FileStatus candidateStatus = getFileStatus(new Path(pathPatternString));
       if (candidateStatus != null && filter.accept(candidateStatus.getPath())) {
         results.add(candidateStatus);
       }
