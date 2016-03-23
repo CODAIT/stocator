@@ -30,8 +30,6 @@ import org.apache.hadoop.fs.Path;
 /**
  * Internal object store driver interface
  * Each object back-end driver should implement this interface
- * Currently interface is based on the Swift API
- * Need to be adapted to cover more object stores, like Amazon S3
  */
 public interface IStoreClient {
 

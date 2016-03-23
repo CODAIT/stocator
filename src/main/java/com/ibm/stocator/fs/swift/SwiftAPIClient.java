@@ -115,10 +115,21 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private boolean fModeAutomaticDelete;
 
+  /*
+   * Contains map of object names that were written by Spark.
+   * Used in container listing
+   */
   private Map<String, Boolean> cachedSparkOriginated;
 
+  /*
+   * Contains map of objects that were created by successfull Spark jobs.
+   * Used in container listing
+   */
   private Map<String, Boolean> cachedSparkJobsStatus;
 
+  /*
+   * Page size for container listing
+   */
   private final int pageListSize = 100;
 
   /**
@@ -262,7 +273,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   /**
-   * Transform last modified time stamp to long format
+   * Transforms last modified time stamp from String to the long format
    *
    * @param strTime time in string format as returned from Swift
    * @return time in long format
@@ -360,7 +371,7 @@ public class SwiftAPIClient implements IStoreClient {
             continue;
           } else {
             // if we here - data created by spark and job completed successfully
-            // however there might parts of failed tasks that were not aborted
+            // however there be might parts of failed tasks that were not aborted
             // we need to make sure there are no failed attempts
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
@@ -521,7 +532,7 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Checks if container/object contains
    * container/object/_SUCCESS
-   * If so, this object belongs to successful Hadoop job
+   * If so, this object was created by successful Hadoop job
    *
    * @param objectName
    * @return boolean if job is successful
@@ -573,11 +584,11 @@ public class SwiftAPIClient implements IStoreClient {
 
   /**
    * Accepts any object name.
-   * If object name of the form
-   * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
+   * If object name is of the form
+   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
    *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
-   * Then a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
-   * Code testing that attempt_20160317132a_wrong_0000_m_000000_1 is valid
+   * Then a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
+   * Perform test that attempt_20160317132a_wrong_0000_m_000000_1 is valid
    * task id identifier
    *
    * @param objectName
