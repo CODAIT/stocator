@@ -140,7 +140,6 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException
    */
   public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
-    LOG.debug("Init : {}", filesystemURI.toString());
     String preferredRegion = null;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
@@ -257,7 +256,7 @@ public class SwiftAPIClient implements IStoreClient {
           isDirectory = true;
         }
       }
-      LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, lastModified);
+      LOG.trace("Got object. isDirectory: {}  lastModified: {}", isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
               getLastModified(lastModified), path);
     }
@@ -376,11 +375,11 @@ public class SwiftAPIClient implements IStoreClient {
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
-              LOG.debug("Collisiion found between {} and {}", previousElement.getName(),
+              LOG.trace("Collisiion found between {} and {}", previousElement.getName(),
                   tmp.getName());
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.debug("New canditate is {}. Removed {}", tmp.getName(),
+                LOG.trace("New canditate is {}. Removed {}", tmp.getName(),
                     previousElement.getName());
                 previousElement = tmp.getAsObject();
               }

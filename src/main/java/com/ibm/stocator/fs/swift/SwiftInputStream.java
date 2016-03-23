@@ -107,7 +107,7 @@ class SwiftInputStream extends FSInputStream {
 
   @Override
   public synchronized void close() throws IOException {
-    LOG.debug("Closing http stream: {}", storedObject.getName());
+    LOG.trace("Closing http stream: {}", storedObject.getName());
     try {
       if (httpStream != null) {
         httpStream.close();
@@ -127,18 +127,18 @@ class SwiftInputStream extends FSInputStream {
     if (httpStream != null) {
       long offset = targetPos - pos;
       if (offset == 0) {
-        LOG.debug("seek called on same position as the previous one. New HTTP Stream is not "
+        LOG.trace("seek called on same position as the previous one. New HTTP Stream is not "
                 + "required.");
         return;
       }
       long blockSize = nativeStore.getBlockSize();
       if (offset < 0) {
-        LOG.debug("seek position is outside the current stream; offset: {}. New HTTP Stream is "
+        LOG.trace("seek position is outside the current stream; offset: {}. New HTTP Stream is "
                 + "required.", offset);
       } else if ((offset < blockSize)) {
         //if the seek is in  range of that requested, scan forwards
         //instead of closing and re-opening a new HTTP connection
-        LOG.debug("seek is within current stream; offset: {} blockSize: {}.", offset, blockSize);
+        LOG.trace("seek is within current stream; offset: {} blockSize: {}.", offset, blockSize);
         int result = -1;
         long byteRead;
         for (byteRead = 0; byteRead < offset; byteRead++) {
@@ -149,14 +149,14 @@ class SwiftInputStream extends FSInputStream {
         }
         incPos(byteRead);
         if (targetPos == pos) {
-          LOG.debug("seek reached targetPos: {}. New HTTP Stream is not required.", targetPos);
+          LOG.trace("seek reached targetPos: {}. New HTTP Stream is not required.", targetPos);
           return;
         }
-        LOG.debug("seek failed to reach targetPos: {}. New HTTP Stream is required.", targetPos);
+        LOG.trace("seek failed to reach targetPos: {}. New HTTP Stream is required.", targetPos);
       }
       httpStream.close();
     }
-    LOG.debug("seek method is opening a new HTTP Stream to: {}, for {}", targetPos,
+    LOG.trace("seek method is opening a new HTTP Stream to: {}, for {}", targetPos,
             storedObject.getName());
     DownloadInstructions instructions = new DownloadInstructions();
     AbstractRange range = new AbstractRange(targetPos, targetPos + nativeStore.getBlockSize()) {
