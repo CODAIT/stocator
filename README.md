@@ -32,9 +32,6 @@ Checkout the Stocator source `https://github.com/SparkTC/stocator.git`
 ## Usage with Apache Spark
 New Swift's driver can be accessed via new schema `swift2d://`.
 The configuration template located under `conf/core-site.xml.template`.
-Please make sure hadoop configuration (provided via Spark) contains
-
-	mapreduce.fileoutputcommitter.marksuccessfuljobs=true
 
 ### Reference the new driver in the core-site.xml
 Add driver reference in the `conf/core-site.xml` of Spark
