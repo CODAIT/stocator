@@ -27,6 +27,18 @@
        <developerConnection>scm:git:git@github.com:SparkTC/stocator.git</developerConnection>
        <url>git@github.com:SparkTC/stocator.git</url>
     </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>sonatype-nexus-staging</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>sonatype-nexus-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
         <findbugs.path>build/findbugs</findbugs.path>
@@ -54,9 +66,9 @@
             <version>${joss.version}</version>
         </dependency>
         <dependency>
-	    <groupId>com.googlecode.json-simple</groupId>
-	    <artifactId>json-simple</artifactId>
-	    <version>1.1.1</version>
+        <groupId>com.googlecode.json-simple</groupId>
+        <artifactId>json-simple</artifactId>
+        <version>1.1.1</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
