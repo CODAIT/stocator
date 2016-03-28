@@ -28,6 +28,7 @@ Checkout the Stocator source `https://github.com/SparkTC/stocator.git`
 ### How to build Stocator
 * Change directory to `stocator`
 * Execute `mvn install`
+* If you want to build a jar with all thedependecies, please execute `mvn clean package -Pall-in-one`
 
 ## Usage with Apache Spark
 Stocator allows to access Swift via new schema `swift2d://`.
