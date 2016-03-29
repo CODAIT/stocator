@@ -57,7 +57,7 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpURLConnection mHttpCon;
   private int totalBytesWritten = 0;
-  private static final int MAX_PARTITION_SIZE = 512 * 1024;
+  private static final int MAX_PARTITION_SIZE = 5 * 1024 * 1024 * 1024;
   private int partitionCount = 0;
 
   /**
@@ -86,7 +86,6 @@ public class SwiftOutputStream extends OutputStream {
   @Override
   public void write(int b) throws IOException {
     mOutputStream.write(b);
-    LOG.info("write1 called");
   }
 
   @Override
@@ -97,29 +96,24 @@ public class SwiftOutputStream extends OutputStream {
     }
     mOutputStream.write(b, off, len);
     totalBytesWritten += len;
-    //LOG.info("{} bytes written", totalBytesWritten);
   }
 
   @Override
   public void write(byte[] b) throws IOException {
     mOutputStream.write(b);
-    LOG.info("writes2 called");
   }
 
   @Override
   public void close() throws IOException {
     mOutputStream.close();
-    LOG.info("{} bytes written", totalBytesWritten);
     InputStream is = null;
     try {
       // Status 400 and up should be read from error stream
       // Expecting here 201 Create or 202 Accepted
       if (mHttpCon.getResponseCode() >= 400) {
         is = mHttpCon.getErrorStream();
-        LOG.info("Error code: {}", mHttpCon.getResponseCode());
       } else {
         is = mHttpCon.getInputStream();
-        LOG.info("No error");
       }
       is.close();
     } catch (Exception e) {
@@ -140,11 +134,24 @@ public class SwiftOutputStream extends OutputStream {
   private void splitFileUpload() throws IOException {
     mOutputStream.close();
     URL oldURL = mHttpCon.getURL();
-    String objName = oldURL.getPath() + Integer.toString(++partitionCount);
-    URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority() + objName);
+    String prevSplitName = oldURL.getPath();
 
-    LOG.info("New URL path: {} {} {}", newURL.getProtocol(),
-            newURL.getAuthority(), objName);
+    StringBuilder currSplitName = new StringBuilder();
+
+    if (!prevSplitName.contains("split")) {
+      currSplitName = new StringBuilder(prevSplitName.substring(0,
+              prevSplitName.lastIndexOf('-') + 1));
+      currSplitName.append("split-" + String.format("%05d", ++partitionCount));
+      currSplitName.append(prevSplitName.substring(prevSplitName.lastIndexOf('-')));
+    } else {
+      String[] nameComponents = prevSplitName.split("split-\\d\\d\\d\\d\\d");
+      currSplitName.append(nameComponents[0]);
+      currSplitName.append("split-" + String.format("%05d", partitionCount++));
+      currSplitName.append(nameComponents[1]);
+    }
+
+    URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority()
+            + currSplitName.toString());
 
     try {
       mHttpCon.disconnect();
@@ -159,23 +166,12 @@ public class SwiftOutputStream extends OutputStream {
       Set<Map.Entry<String, List<String>>> properties = mHttpCon.getRequestProperties().entrySet();
       for (Map.Entry<String, List<String>> property : properties) {
         for (String value : property.getValue()) {
-          LOG.info("Key: {} Value: {}", property.getKey(), value);
           if (!(property.getKey().contains("POST") || property.getKey().contains("PUT"))) {
             newConn.setRequestProperty(property.getKey(), value);
-            LOG.info("Setting requests key: {} value: {}", property.getKey(), value);
           }
         }
       }
       newConn.setDoOutput(true);
-
-      LOG.info("Settings configured");
-
-      Set<Map.Entry<String, List<String>>> debugProps = newConn.getRequestProperties().entrySet();
-      for (Map.Entry<String, List<String>> property : debugProps) {
-        for (String value : property.getValue()) {
-          LOG.info("Key: {} set to value: {}", property.getKey(), value);
-        }
-      }
 
       mOutputStream = newConn.getOutputStream();
       mHttpCon = newConn;
