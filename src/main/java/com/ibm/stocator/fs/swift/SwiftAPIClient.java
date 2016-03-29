@@ -118,21 +118,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private boolean fModeAutomaticDelete;
 
-  /*
-   * Contains map of object names that were written by Spark.
-   * Used in container listing
-   */
   private Map<String, Boolean> cachedSparkOriginated;
 
-  /*
-   * Contains map of objects that were created by successfull Spark jobs.
-   * Used in container listing
-   */
   private Map<String, Boolean> cachedSparkJobsStatus;
 
-  /*
-   * Page size for container listing
-   */
   private final int pageListSize = 100;
 
   /**
@@ -275,7 +264,7 @@ public class SwiftAPIClient implements IStoreClient {
           isDirectory = true;
         }
       }
-      LOG.trace("Got object. isDirectory: {}  lastModified: {}", isDirectory, lastModified);
+      LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
               getLastModified(lastModified), path);
     }
@@ -291,7 +280,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   /**
-   * Transforms last modified time stamp from String to the long format
+   * Transform last modified time stamp to long format
    *
    * @param strTime time in string format as returned from Swift
    * @return time in long format
@@ -393,16 +382,16 @@ public class SwiftAPIClient implements IStoreClient {
             continue;
           } else {
             // if we here - data created by spark and job completed successfully
-            // however there be might parts of failed tasks that were not aborted
+            // however there might parts of failed tasks that were not aborted
             // we need to make sure there are no failed attempts
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
-              LOG.trace("Collisiion found between {} and {}", previousElement.getName(),
+              LOG.debug("Collisiion found between {} and {}", previousElement.getName(),
                   tmp.getName());
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.trace("New canditate is {}. Removed {}", tmp.getName(),
+                LOG.debug("New canditate is {}. Removed {}", tmp.getName(),
                     previousElement.getName());
                 previousElement = tmp.getAsObject();
               }
@@ -554,7 +543,7 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Checks if container/object contains
    * container/object/_SUCCESS
-   * If so, this object was created by successful Hadoop job
+   * If so, this object belongs to successful Hadoop job
    *
    * @param objectName
    * @return boolean if job is successful
@@ -606,11 +595,11 @@ public class SwiftAPIClient implements IStoreClient {
 
   /**
    * Accepts any object name.
-   * If object name is of the form
-   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
+   * If object name of the form
+   * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
    *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
-   * Then a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
-   * Perform test that attempt_20160317132a_wrong_0000_m_000000_1 is valid
+   * Then a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
+   * Code testing that attempt_20160317132a_wrong_0000_m_000000_1 is valid
    * task id identifier
    *
    * @param objectName
