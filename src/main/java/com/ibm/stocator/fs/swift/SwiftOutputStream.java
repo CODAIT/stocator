@@ -56,9 +56,11 @@ public class SwiftOutputStream extends OutputStream {
    * HTTP connection object
    */
   private HttpURLConnection mHttpCon;
-  private int totalBytesWritten = 0;
-  private static final int MAX_PARTITION_SIZE = 5 * 1024 * 1024 * 1024;
-  private int partitionCount = 0;
+
+  private static final long MAX_SPLIT_SIZE = 5L * 1024 * 1024 * 1024;
+  private long totalBytesWritten = 0L;
+  private int splitCount = 0;
+  private static final int INT_BYTE_SIZE = 4;
 
   /**
    * Default constructor
@@ -85,12 +87,17 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
+    if (totalBytesWritten + INT_BYTE_SIZE >= MAX_SPLIT_SIZE) {
+      splitFileUpload();
+      totalBytesWritten = 0;
+    }
     mOutputStream.write(b);
+    totalBytesWritten += INT_BYTE_SIZE;
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    if (totalBytesWritten + len >= MAX_PARTITION_SIZE) {
+    if (totalBytesWritten + len >= MAX_SPLIT_SIZE) {
       splitFileUpload();
       totalBytesWritten = 0;
     }
@@ -100,11 +107,17 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(byte[] b) throws IOException {
+    if (totalBytesWritten + b.length >= MAX_SPLIT_SIZE) {
+      splitFileUpload();
+      totalBytesWritten = 0;
+    }
     mOutputStream.write(b);
+    totalBytesWritten += b.length;
   }
 
   @Override
   public void close() throws IOException {
+    LOG.info("{} bytes written", totalBytesWritten);
     mOutputStream.close();
     InputStream is = null;
     try {
@@ -131,6 +144,9 @@ public class SwiftOutputStream extends OutputStream {
     mOutputStream.flush();
   }
 
+  /*
+   * Closes the old stream and sets up a new stream
+   */
   private void splitFileUpload() throws IOException {
     mOutputStream.close();
     URL oldURL = mHttpCon.getURL();
@@ -141,12 +157,12 @@ public class SwiftOutputStream extends OutputStream {
     if (!prevSplitName.contains("split")) {
       currSplitName = new StringBuilder(prevSplitName.substring(0,
               prevSplitName.lastIndexOf('-') + 1));
-      currSplitName.append("split-" + String.format("%05d", ++partitionCount));
+      currSplitName.append("split-" + String.format("%05d", ++splitCount));
       currSplitName.append(prevSplitName.substring(prevSplitName.lastIndexOf('-')));
     } else {
       String[] nameComponents = prevSplitName.split("split-\\d\\d\\d\\d\\d");
       currSplitName.append(nameComponents[0]);
-      currSplitName.append("split-" + String.format("%05d", partitionCount++));
+      currSplitName.append("split-" + String.format("%05d", ++splitCount));
       currSplitName.append(nameComponents[1]);
     }
 
