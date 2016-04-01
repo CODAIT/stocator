@@ -57,7 +57,7 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpURLConnection mHttpCon;
 
-  private static final long MAX_SPLIT_SIZE = 5L * 1024 * 1024 * 1024;
+  private long maxSplitSize;
   private long totalBytesWritten = 0L;
   private int splitCount = 0;
   private static final int INT_BYTE_SIZE = 4;
@@ -69,7 +69,7 @@ public class SwiftOutputStream extends OutputStream {
    * @throws IOException if failed to connect
    */
 
-  public SwiftOutputStream(HttpURLConnection httpCon) throws IOException {
+  public SwiftOutputStream(HttpURLConnection httpCon, long maxObjectSize) throws IOException {
     try {
       httpCon.setDoInput(true);
       httpCon.setRequestProperty("Connection", "close");
@@ -77,6 +77,7 @@ public class SwiftOutputStream extends OutputStream {
       httpCon.setRequestProperty("Transfer-Encoding","chunked");
       httpCon.setDoOutput(true);
       httpCon.setChunkedStreamingMode(STREAMING_CHUNK);
+      maxSplitSize = maxObjectSize;
       mOutputStream  = httpCon.getOutputStream();
       mHttpCon = httpCon;
     } catch (IOException e) {
@@ -87,7 +88,7 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
-    if (totalBytesWritten + INT_BYTE_SIZE >= MAX_SPLIT_SIZE) {
+    if (totalBytesWritten + INT_BYTE_SIZE >= maxSplitSize) {
       splitFileUpload();
       totalBytesWritten = 0;
     }
@@ -97,7 +98,7 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    if (totalBytesWritten + len >= MAX_SPLIT_SIZE) {
+    if (totalBytesWritten + len >= maxSplitSize) {
       splitFileUpload();
       totalBytesWritten = 0;
     }
@@ -107,7 +108,7 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(byte[] b) throws IOException {
-    if (totalBytesWritten + b.length >= MAX_SPLIT_SIZE) {
+    if (totalBytesWritten + b.length >= maxSplitSize) {
       splitFileUpload();
       totalBytesWritten = 0;
     }

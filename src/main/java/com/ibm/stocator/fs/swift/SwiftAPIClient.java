@@ -70,6 +70,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_METHOD_PROPERT
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_OBJECT_SIZE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
@@ -124,6 +125,8 @@ public class SwiftAPIClient implements IStoreClient {
 
   private final int pageListSize = 100;
 
+  private long maxObjectSize;
+
   /**
    * Constructor method
    *
@@ -136,11 +139,14 @@ public class SwiftAPIClient implements IStoreClient {
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     String preferredRegion = null;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
+
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
     blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
-        "128")).longValue() * 1024 * 1024L;
+        "128")) * 1024 * 1024;
+    maxObjectSize = Long.valueOf(props.getProperty(SWIFT_OBJECT_SIZE_PROPERTY,
+        "5120")) * 1024 * 1024;
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
@@ -460,7 +466,7 @@ public class SwiftAPIClient implements IStoreClient {
           httpCon.addRequestProperty("X-Object-Meta-" + entry.getKey(), entry.getValue());
         }
       }
-      return new FSDataOutputStream(new SwiftOutputStream(httpCon),
+      return new FSDataOutputStream(new SwiftOutputStream(httpCon, maxObjectSize),
           statistics);
     } catch (IOException e) {
       LOG.error(e.getMessage());
