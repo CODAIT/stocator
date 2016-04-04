@@ -126,6 +126,7 @@ public class SwiftAPIClient implements IStoreClient {
   private final int pageListSize = 100;
 
   private long maxObjectSize;
+  private static final long DEFAULT_MAX_OBJECT_SIZE = 5L * 1024 * 1024 * 1024;
 
   /**
    * Constructor method
@@ -147,6 +148,11 @@ public class SwiftAPIClient implements IStoreClient {
         "128")) * 1024 * 1024;
     maxObjectSize = Long.valueOf(props.getProperty(SWIFT_OBJECT_SIZE_PROPERTY,
         "5120")) * 1024 * 1024;
+    if (maxObjectSize > DEFAULT_MAX_OBJECT_SIZE) {
+      LOG.warn("Maximum object size cannot be set to {} bytes, setting to default value of {}.",
+               maxObjectSize, DEFAULT_MAX_OBJECT_SIZE);
+      maxObjectSize = DEFAULT_MAX_OBJECT_SIZE;
+    }
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
