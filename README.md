@@ -54,8 +54,7 @@ The following is the list of the configuration keys
 | Key | Info | Default value |
 | --- | ------------ | ------------- |
 |fs.swift2d.service.SERVICE_NAME.auth.url | Mandatory |
-|fs.swift2d.service.SERVICE_NAME.public | Optional. Values: true, false |
-false |
+|fs.swift2d.service.SERVICE_NAME.public | Optional. Values: true, false | false |
 |fs.swift2d.service.SERVICE_NAME.tenant | Mandatory |
 |fs.swift2d.service.SERVICE_NAME.password |  Mandatory |
 |fs.swift2d.service.SERVICE_NAME.username | Mandatory |
