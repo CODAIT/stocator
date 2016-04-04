@@ -66,6 +66,7 @@ public class ObjectStoreFileSystem extends FileSystem {
    * Host name with schema, e.g. schema://dataroot.conf-entry/
    */
   private String hostNameScheme;
+  private URI uri;
 
   @Override
   public String getScheme() {
@@ -78,6 +79,7 @@ public class ObjectStoreFileSystem extends FileSystem {
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
+    uri = fsuri;
     setConf(conf);
     String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
     if (storageClient == null) {
@@ -88,7 +90,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public URI getUri() {
-    return null;
+    return uri;
   }
 
   /**
@@ -194,7 +196,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
     LOG.debug("rename from {} to {}", src.toString(), dst.toString());
-    return true;
+    return storageClient.rename(hostNameScheme, src, dst);
   }
 
   @Override

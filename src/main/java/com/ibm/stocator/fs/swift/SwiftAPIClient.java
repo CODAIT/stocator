@@ -457,6 +457,34 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
+  public boolean rename(String hostName, Path src, Path dst) throws IOException {
+    String source = container + "/" + src.toString().substring(hostName.length());
+    String destination = container + "/" + dst.toString().substring(hostName.length());
+    URL url = new URL(getAccessURL() + "/" + destination);
+    try {
+      HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
+      httpCon.setDoOutput(true);
+      httpCon.setFixedLengthStreamingMode(0);
+      httpCon.setRequestMethod("PUT");
+      httpCon.addRequestProperty("X-Auth-Token", getAuthToken());
+      httpCon.addRequestProperty("X-Copy-From", source);
+      httpCon.getInputStream();
+      httpCon.disconnect();
+      if (this.exists(hostName, dst)) {
+        LOG.info("Copy successful");
+        try {
+          delete(hostName, src, false);
+        } catch (IOException d) {
+          throw new IOException("Could not delete source file.");
+        }
+      }
+    } catch (IOException e) {
+      throw new IOException("Could not copy source file.");
+    }
+    return true;
+  }
+
+  @Override
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException {
     String obj = path.toString();
     if (path.toString().startsWith(hostName)) {
