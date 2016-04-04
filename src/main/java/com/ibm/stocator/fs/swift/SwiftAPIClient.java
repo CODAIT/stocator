@@ -148,7 +148,7 @@ public class SwiftAPIClient implements IStoreClient {
         "128")) * 1024 * 1024;
     maxObjectSize = Long.valueOf(props.getProperty(SWIFT_OBJECT_SIZE_PROPERTY,
         "5120")) * 1024 * 1024;
-    if (maxObjectSize > DEFAULT_MAX_OBJECT_SIZE) {
+    if (maxObjectSize > DEFAULT_MAX_OBJECT_SIZE || maxObjectSize < 0) {
       LOG.warn("Maximum object size cannot be set to {} bytes, setting to default value of {}.",
                maxObjectSize, DEFAULT_MAX_OBJECT_SIZE);
       maxObjectSize = DEFAULT_MAX_OBJECT_SIZE;
