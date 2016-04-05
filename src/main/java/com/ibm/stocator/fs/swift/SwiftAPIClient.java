@@ -457,9 +457,14 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public boolean rename(String hostName, Path src, Path dst) throws IOException {
-    String source = container + "/" + src.toString().substring(hostName.length());
-    String destination = container + "/" + dst.toString().substring(hostName.length());
+  public boolean rename(Path src, Path dst) throws IOException {
+    String source = Utils.getContainerName(Utils.getHostName(src)) + "/"
+            + Utils.getObjectName(src);
+    String destination =  Utils.getContainerName(Utils.getHostName(dst)) + "/"
+            + Utils.getObjectName(dst);
+    String srcHost = getScheme() + "://" + Utils.getHostName(src) + "/";
+    String dstHost = getScheme() + "://" + Utils.getHostName(dst) + "/";
+
     URL url = new URL(getAccessURL() + "/" + destination);
     try {
       HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
@@ -470,10 +475,10 @@ public class SwiftAPIClient implements IStoreClient {
       httpCon.addRequestProperty("X-Copy-From", source);
       httpCon.getInputStream();
       httpCon.disconnect();
-      if (this.exists(hostName, dst)) {
+      if (this.exists(dstHost, dst)) {
         LOG.info("Copy successful");
         try {
-          delete(hostName, src, false);
+          delete(srcHost, src, false);
         } catch (IOException d) {
           throw new IOException("Could not delete source file.");
         }
