@@ -57,6 +57,9 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpURLConnection mHttpCon;
 
+  /*
+   * Maximum size to be written to a Swift object before a new object is created.
+   */
   private long maxSplitSize;
   private long totalBytesWritten = 0L;
   private int splitCount = 0;
@@ -152,31 +155,20 @@ public class SwiftOutputStream extends OutputStream {
     mOutputStream.close();
     URL oldURL = mHttpCon.getURL();
     String prevSplitName = oldURL.getPath();
-
-    StringBuilder currSplitName = new StringBuilder();
-
-    if (!prevSplitName.contains("split")) {
-      currSplitName = new StringBuilder(prevSplitName.substring(0,
-              prevSplitName.lastIndexOf('-') + 1));
-      currSplitName.append("split-" + String.format("%05d", ++splitCount));
-      currSplitName.append(prevSplitName.substring(prevSplitName.lastIndexOf('-')));
+    String currSplitName;
+    if (splitCount == 0) {
+      currSplitName = new StringBuilder(prevSplitName).insert(prevSplitName.lastIndexOf('-') + 1,
+              "split-" + String.format("%05d", ++splitCount) + "-").toString();
     } else {
-      String[] nameComponents = prevSplitName.split("split-\\d\\d\\d\\d\\d");
-      currSplitName.append(nameComponents[0]);
-      currSplitName.append("split-" + String.format("%05d", ++splitCount));
-      currSplitName.append(nameComponents[1]);
+      currSplitName = prevSplitName.replaceAll("split-\\d\\d\\d\\d\\d",
+              "split-" + String.format("%05d", ++splitCount));
     }
-
-    URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority()
-            + currSplitName.toString());
-
+    URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority() + currSplitName);
     try {
       mHttpCon.disconnect();
       HttpURLConnection newConn = (HttpURLConnection) newURL.openConnection();
-
       newConn.setDoInput(true);
       newConn.setRequestMethod("PUT");
-
       newConn.setReadTimeout(READ_TIMEOUT);
       newConn.setChunkedStreamingMode(STREAMING_CHUNK);
 
@@ -189,7 +181,6 @@ public class SwiftOutputStream extends OutputStream {
         }
       }
       newConn.setDoOutput(true);
-
       mOutputStream = newConn.getOutputStream();
       mHttpCon = newConn;
     } catch (IOException e) {

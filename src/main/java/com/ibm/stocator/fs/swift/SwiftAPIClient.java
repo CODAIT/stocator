@@ -136,6 +136,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final int pageListSize = 100;
 
+  /*
+   * Maximum size for a Swift Object
+   * Default is 5GB
+   */
   private long maxObjectSize;
   private static final long DEFAULT_MAX_OBJECT_SIZE = 5L * 1024 * 1024 * 1024;
 
