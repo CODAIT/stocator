@@ -19,6 +19,7 @@ package com.ibm.stocator.fs.common;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
@@ -72,6 +73,33 @@ public class Utils {
       throw badHostName(hostname);
     }
     return service;
+  }
+
+  /**
+   * Test if hostName of the form container.service
+   *
+   * @param uri
+   * @return true if hostName of the form container.service
+   */
+  public static boolean validSchema(URI uri) {
+    String hostName = Utils.getHost(uri);
+    int i = hostName.indexOf(".");
+    if (i < 0) {
+      return false;
+    }
+    String service = hostName.substring(i + 1);
+    if (service.isEmpty() || service.contains(".")) {
+      return false;
+    }
+    return true;
+  }
+
+  public static boolean validSchema(String path) throws IOException {
+    try {
+      return validSchema(new URI(path));
+    } catch (URISyntaxException e) {
+      throw new IOException(e.getMessage());
+    }
   }
 
   /**
@@ -149,4 +177,60 @@ public class Utils {
     return null;
   }
 
+  /**
+   * Transform http://hostname/v1/auth_id/container/object to
+   * http://hostname/v1/auth_id
+   *
+   * @param publicURL
+   * @return accessURL
+   * @throws IOexception if path is malformed
+   */
+  public static String extractAccessURL(String publicURL) throws IOException {
+    try {
+      String hostName = new URI(publicURL).getAuthority();
+      int  start = publicURL.indexOf("//") + 2 + hostName.length() + 1;
+      for (int i = 0; i < 2; i++) {
+        start = publicURL.indexOf("/", start) + 1;
+      }
+      String authURL = publicURL.substring(0, start);
+      if (authURL.endsWith("/")) {
+        authURL = authURL.substring(0, authURL.length() - 1);
+      }
+      return authURL;
+    } catch (URISyntaxException e) {
+      throw new IOException("Public URL: " + publicURL + " is not valid");
+    }
+  }
+
+  /**
+   * Extracts container name from http://hostname/v1/auth_id/container/object
+   *
+   * @param publicURL
+   * @param accessURL
+   * @return container name
+   */
+  public static String extractDataRoot(String publicURL, String accessURL) {
+    String reminder = publicURL.substring(accessURL.length() + 1);
+    String container = null;
+    if (reminder.indexOf("/") > 0) {
+      container =  reminder.substring(0, reminder.indexOf("/"));
+    } else {
+      container = reminder;
+    }
+    if (container.endsWith("/")) {
+      container = container.substring(0, container.length() - 1);
+    }
+    return container;
+  }
+
+  /**
+   * Extracts container/object  from http://hostname/v1/auth_id/container/object
+   *
+   * @param publicURL
+   * @param accessURL
+   * @return reminder of the URI
+   */
+  public static String extractReminder(String publicURL, String accessURL) {
+    return publicURL.substring(accessURL.length());
+  }
 }

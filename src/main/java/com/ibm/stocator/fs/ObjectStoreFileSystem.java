@@ -82,7 +82,13 @@ public class ObjectStoreFileSystem extends FileSystem {
     String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(nameSpace, fsuri, conf);
-      hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
+      if (Utils.validSchema(fsuri.toString())) {
+        hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
+      } else {
+        String accessURL = Utils.extractAccessURL(fsuri.toString());
+        hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
+            accessURL) + "/";
+      }
     }
   }
 

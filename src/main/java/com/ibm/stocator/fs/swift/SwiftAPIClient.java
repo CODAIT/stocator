@@ -53,6 +53,8 @@ import org.apache.hadoop.fs.FileSystem.Statistics;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
+import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
+import com.ibm.stocator.fs.swift.auth.DummyAccountFactory;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -73,6 +75,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 
 /**
  * Swift back-end driver
@@ -95,7 +98,7 @@ public class SwiftAPIClient implements IStoreClient {
   /*
    * should use public or private URL
    */
-  private final boolean usePublicURL;
+  private boolean usePublicURL;
   /*
    * JOSS account object
    */
@@ -140,52 +143,68 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException
    */
   public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
+    cachedSparkOriginated = new HashMap<String, Boolean>();
+    cachedSparkJobsStatus = new HashMap<String, Boolean>();
     String preferredRegion = null;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
-    container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
-    String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
-    usePublicURL = "true".equals(isPubProp);
-    blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
-        "128")).longValue() * 1024 * 1024L;
     AccountConfig config = new AccountConfig();
-    config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
-    config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
-    String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
-    if (authMethod.equals("keystone")) {
-      preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
-      if (preferredRegion != null) {
-        config.setPreferredRegion(preferredRegion);
-      }
-      config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
-      config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-      config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
-    } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
-      preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
-      config.setPreferredRegion(preferredRegion);
-      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
-      String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
-      String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
-      PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-          config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
-      config.setAccessProvider(psap);
-    } else {
-      config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
-      config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-      config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
-    }
+    blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
+        "128")).longValue() * 1024 * 1024L;
+    String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
-    mAccount = new AccountFactory(config).createAccount();
+
+    if (authMethod.equals(PUBLIC_ACCESS)) {
+      // we need to extract container name and path from the public URL
+      String publicURL = filesystemURI.toString().replace("swift2d", "https");
+      LOG.debug("publicURL: {}", publicURL);
+      String accessURL = Utils.extractAccessURL(publicURL);
+      LOG.debug("auth url {}", accessURL);
+      config.setAuthUrl(accessURL);
+      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+      container = Utils.extractDataRoot(publicURL, accessURL);
+      DummyAccessProvider p = new DummyAccessProvider(accessURL);
+      config.setAccessProvider(p);
+      mAccount = new DummyAccountFactory(config).createAccount();
+    } else {
+      container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
+      String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
+      usePublicURL = "true".equals(isPubProp);
+      config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
+      config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
+
+      if (authMethod.equals("keystone")) {
+        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
+        if (preferredRegion != null) {
+          config.setPreferredRegion(preferredRegion);
+        }
+        config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
+        config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+        config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
+      } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
+        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
+        config.setPreferredRegion(preferredRegion);
+        config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+        String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
+        String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
+        PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
+            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
+        config.setAccessProvider(psap);
+      } else {
+        config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
+        config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+        config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
+      }
+      mAccount = new AccountFactory(config).createAccount();
+    }
     mAccess = mAccount.authenticate();
     if (preferredRegion != null) {
       mAccess.setPreferredRegion(preferredRegion);
     }
-    cachedSparkOriginated = new HashMap<String, Boolean>();
-    cachedSparkJobsStatus = new HashMap<String, Boolean>();
     Container containerObj = mAccount.getContainer(container);
-    if (!containerObj.exists()) {
+    if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();
     }
   }
@@ -220,7 +239,7 @@ public class SwiftAPIClient implements IStoreClient {
       we return the FileStatus as a directory.
       Containers have to lastModified.
      */
-    if (path.toString().equals(hostName)) {
+    if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
       LOG.debug("Object metadata requested on container!");
       return new FileStatus(0L, true, 1, blockSize, 0L, path);
     }
@@ -338,7 +357,11 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(container)) {
       obj = path.toString().substring(container.length() + 1);
     } else {
-      obj = path.toString().substring(hostName.length());
+      if (path.toString().length() + 1 == hostName.length()) {
+        obj = "";
+      } else {
+        obj = path.toString().substring(hostName.length());
+      }
     }
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();

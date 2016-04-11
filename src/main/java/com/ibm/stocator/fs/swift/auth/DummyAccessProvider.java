@@ -1,0 +1,73 @@
+/**
+ * (C) Copyright IBM Corp. 2015, 2016
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package com.ibm.stocator.fs.swift.auth;
+
+import java.io.IOException;
+
+import org.javaswift.joss.client.factory.AuthenticationMethod.AccessProvider;
+import org.javaswift.joss.model.Access;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Dummy authentication for public containers
+ *
+ */
+public class DummyAccessProvider implements AccessProvider {
+
+  /*
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(DummyAccessProvider.class);
+
+  /*
+   * Access URL
+   */
+  private String accessUrl;
+
+  /**
+   * Dummy Authentication
+   *
+   * @param url
+   */
+  public DummyAccessProvider(String url) {
+    accessUrl = url;
+  }
+
+  /**
+   * Authentication logic
+   *
+   * @return Access
+   * @throws IOException
+   */
+  public Access passwordScopeAuth() throws IOException {
+    DummyAccess access = new DummyAccess(accessUrl);
+    return access;
+  }
+
+  @Override
+  public Access authenticate() {
+    try {
+      return passwordScopeAuth();
+    } catch (IOException e) {
+      LOG.error(e.getMessage());
+      return null;
+    }
+  }
+}
