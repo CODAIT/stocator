@@ -20,4 +20,4 @@ jdk:
   - oraclejdk8
 
 script:
-  - mvn clean install
+  - mvn -Pdistribution clean install
