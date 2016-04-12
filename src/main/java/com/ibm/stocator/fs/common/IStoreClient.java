@@ -88,6 +88,7 @@ public interface IStoreClient {
    *
    * @param hostName URL to host
    * @param path path to the object
+   * @param fullListing if true, return all the content, including 0 byte size objects
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
@@ -98,6 +99,7 @@ public interface IStoreClient {
    *
    * @param objName name of the object
    * @param contentType content type
+   * @param metadata the metadata to create with an object
    * @param statistics the statistics for this file system
    * @return FSDataOutputStream
    * @throws IOException if connection error
