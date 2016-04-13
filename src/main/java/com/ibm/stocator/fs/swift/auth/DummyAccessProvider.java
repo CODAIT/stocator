@@ -42,7 +42,7 @@ public class DummyAccessProvider implements AccessProvider {
   /**
    * Dummy Authentication
    *
-   * @param url
+   * @param url access url
    */
   public DummyAccessProvider(String url) {
     accessUrl = url;

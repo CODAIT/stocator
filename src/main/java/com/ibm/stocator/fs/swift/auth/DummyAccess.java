@@ -41,7 +41,7 @@ public class DummyAccess implements Access{
   /**
    * Dummy Authentication
    *
-   * @param url
+   * @param url the access  url
    */
   public DummyAccess(String url) {
     LOG.debug("Dummy access");
