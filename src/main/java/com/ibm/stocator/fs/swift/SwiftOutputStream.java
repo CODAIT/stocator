@@ -56,8 +56,8 @@ public class SwiftOutputStream extends OutputStream {
   /**
    * Default constructor
    *
-   * @param httpCon
-   * @throws IOException
+   * @param httpCon URL connection
+   * @throws IOException if failed to connect
    */
   public SwiftOutputStream(HttpURLConnection httpCon) throws IOException {
     try {

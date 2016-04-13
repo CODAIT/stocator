@@ -17,8 +17,6 @@
 
 package com.ibm.stocator.fs.swift.auth;
 
-import java.io.IOException;
-
 import org.javaswift.joss.client.factory.AuthenticationMethod.AccessProvider;
 import org.javaswift.joss.model.Access;
 
@@ -53,21 +51,15 @@ public class DummyAccessProvider implements AccessProvider {
   /**
    * Authentication logic
    *
-   * @return Access
-   * @throws IOException
+   * @return Access JOSS authentication object
    */
-  public Access passwordScopeAuth() throws IOException {
+  public Access passwordScopeAuth() {
     DummyAccess access = new DummyAccess(accessUrl);
     return access;
   }
 
   @Override
   public Access authenticate() {
-    try {
-      return passwordScopeAuth();
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-      return null;
-    }
+    return passwordScopeAuth();
   }
 }

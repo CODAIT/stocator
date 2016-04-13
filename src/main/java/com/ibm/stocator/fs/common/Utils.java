@@ -46,7 +46,7 @@ public class Utils {
    *
    * @param hostname hostname to split
    * @return the container
-   * @throws IOException
+   * @throws IOException if hostname is invalid
    */
   public static String getContainerName(String hostname) throws IOException {
     int i = hostname.indexOf(".");
@@ -78,7 +78,7 @@ public class Utils {
   /**
    * Test if hostName of the form container.service
    *
-   * @param uri
+   * @param uri schema URI
    * @return true if hostName of the form container.service
    */
   public static boolean validSchema(URI uri) {
@@ -105,7 +105,7 @@ public class Utils {
   /**
    * Extract host name from the URI
    *
-   * @param uri
+   * @param uri object store uri
    * @return host name
    */
   public static String getHost(URI uri) {
@@ -163,7 +163,7 @@ public class Utils {
 
   /**
    * Extract Hadoop Task ID from path
-   * @param path
+   * @param path path to extract attempt id
    * @return task id
    */
   public static String extractTaskID(String path) {
@@ -181,9 +181,9 @@ public class Utils {
    * Transform http://hostname/v1/auth_id/container/object to
    * http://hostname/v1/auth_id
    *
-   * @param publicURL
-   * @return accessURL
-   * @throws IOexception if path is malformed
+   * @param publicURL public url
+   * @return accessURL access url
+   * @throws IOException if path is malformed
    */
   public static String extractAccessURL(String publicURL) throws IOException {
     try {
@@ -205,8 +205,8 @@ public class Utils {
   /**
    * Extracts container name from http://hostname/v1/auth_id/container/object
    *
-   * @param publicURL
-   * @param accessURL
+   * @param publicURL public url
+   * @param accessURL access url
    * @return container name
    */
   public static String extractDataRoot(String publicURL, String accessURL) {
@@ -226,8 +226,8 @@ public class Utils {
   /**
    * Extracts container/object  from http://hostname/v1/auth_id/container/object
    *
-   * @param publicURL
-   * @param accessURL
+   * @param publicURL pubic url
+   * @param accessURL access url
    * @return reminder of the URI
    */
   public static String extractReminder(String publicURL, String accessURL) {

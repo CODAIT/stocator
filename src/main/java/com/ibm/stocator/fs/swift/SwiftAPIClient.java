@@ -138,9 +138,9 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Constructor method
    *
-   * @param filesystemURI
+   * @param filesystemURI The URI to the object store
    * @param conf Configuration
-   * @throws IOException
+   * @throws IOException when initialization is failed
    */
   public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
@@ -295,7 +295,7 @@ public class SwiftAPIClient implements IStoreClient {
    *
    * @param strTime time in string format as returned from Swift
    * @return time in long format
-   * @throws IOException
+   * @throws IOException if failed to parse time stamp
    */
   private long getLastModified(String strTime) throws IOException {
     final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIME_PATTERN);
@@ -344,11 +344,11 @@ public class SwiftAPIClient implements IStoreClient {
    * in all the cases format is objectname-taskid where
    * taskid may vary, depends how many tasks were re-submitted
 
-   * @param hostName
-   * @param path
-   * @param fullListing
+   * @param hostName hostname
+   * @param path path to the object
+   * @param fullListing if true, will return objects of size 0
    * @return Array of Hadoop FileStatus
-   * @throws IOException
+   * @throws IOException in case of network failure
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException {
     LOG.debug("List container: raw path parent", path.toString());

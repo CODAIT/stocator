@@ -40,7 +40,7 @@ public class ObjectStoreGlobExpander {
    * slash character ("/") in a curly bracket pair.
    * @param filePattern file pattern
    * @return expanded file patterns
-   * @throws IOException
+   * @throws IOException if failed to parse
    */
   public static List<String> expand(String filePattern) throws IOException {
     List<String> fullyExpanded = new ArrayList<String>();

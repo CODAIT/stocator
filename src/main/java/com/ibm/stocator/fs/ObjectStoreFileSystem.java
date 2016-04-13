@@ -162,15 +162,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * PUT dataroot/object
    * /201603131849_0000_m_000019_0-part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv
    *
-   * @param f
-   * @param permission
-   * @param overwrite
-   * @param bufferSize
-   * @param replication
-   * @param blockSize
-   * @param progress
-   * @return FSDataOutputStream to write data in
-   * @throws IOException
    */
   public FSDataOutputStream create(Path f, FsPermission permission,
       boolean overwrite, int bufferSize,
@@ -292,10 +283,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * by failed jobs or tasks.
    * dataroot/object created as a 0 size object with type application/directory
    *
-   * @param f path to create
-   * @param permission
-   * @return boolean on success or failure
-   * @throws IOException
    */
   @Override
   public boolean mkdirs(Path f, FsPermission permission) throws IOException {
@@ -313,9 +300,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * by failed jobs or tasks.
    * dataroot/object created as a 0 size object with type application/directory
    *
-   * @param f path to create
-   * @return boolean on success or failure
-   * @throws IOException
    */
   @Override
   public boolean mkdirs(Path f) throws IOException {

@@ -120,6 +120,7 @@ public interface IStoreClient {
    * @param hostName URL to host
    * @param path path to the object
    * @param recursive recursive flag
+   * @return if the path was deleted
    * @throws IOException if connection error
    */
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException;

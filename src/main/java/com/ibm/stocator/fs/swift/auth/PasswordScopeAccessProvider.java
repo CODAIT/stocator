@@ -76,11 +76,11 @@ public class PasswordScopeAccessProvider implements AccessProvider {
    * Support for Keystone V3 API
    * Password Scoped Authentication
    *
-   * @param userId
-   * @param password
-   * @param projectId
-   * @param authUrl
-   * @param prefferedRegion
+   * @param userId user id
+   * @param password password
+   * @param projectId project id
+   * @param authUrl authentication url
+   * @param prefferedRegion Keystone preffered region
    */
   public PasswordScopeAccessProvider(String userId, String password,
       String projectId, String authUrl, String prefferedRegion) {
@@ -94,8 +94,8 @@ public class PasswordScopeAccessProvider implements AccessProvider {
   /**
    * Authentication logic
    *
-   * @return Access
-   * @throws IOException
+   * @return Access JOSS access object
+   * @throws IOException if failed to parse the response
    */
   public Access passwordScopeAuth() throws IOException {
     InputStreamReader reader = null;

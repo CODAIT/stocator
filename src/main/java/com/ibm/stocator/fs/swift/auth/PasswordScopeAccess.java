@@ -59,9 +59,9 @@ public class PasswordScopeAccess implements Access{
    * Parse Keystone V3 API
    * Password Scoped Authentication
    *
-   * @param jsonResponse
-   * @param manualToken1
-   * @param prefRegion
+   * @param jsonResponse response from the Keystone
+   * @param manualToken1 manual token if present
+   * @param prefRegion Keystone preffered region
    */
   public PasswordScopeAccess(JSONObject jsonResponse, String manualToken1,
       String prefRegion) {
