@@ -121,7 +121,7 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    LOG.info("{} bytes written", totalBytesWritten);
+    LOG.trace("{} bytes written", totalBytesWritten);
     mOutputStream.close();
     InputStream is = null;
     try {
