@@ -44,17 +44,19 @@ public class TestSwiftOperations extends SwiftBaseTest {
     if (getFs() != null) {
       String objectName = "data7.txt";
       Object[] params;
+      // create 11 objects
       for (int i = 0;i < 11; i++) {
         String id = String.format("%0" + 2 + "d", i);
         params = new Object[]{objectName, id, String.valueOf(i), id};
         Path path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
         createFile(path, data);
       }
-      // print created objects
+      // create _SUCCESS object
       createEmptyFile(new Path(getBaseURI(),
           MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})));
       FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
       Assert.assertTrue(11 == stats.length);
+      // read 11 objects
       for (int i = 0;i < 11; i++) {
         String id = String.format("%0" + 2 + "d", i);
         params = new Object[]{objectName, id, String.valueOf(i), id};
@@ -64,6 +66,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
             path, data.length);
         Assert.assertArrayEquals(data, res);
       }
+      // delete 11 objects
       for (int i = 0;i < 11; i++) {
         String id = String.format("%0" + 2 + "d", i);
         params = new Object[]{objectName, id, String.valueOf(i), id};
@@ -71,6 +74,9 @@ public class TestSwiftOperations extends SwiftBaseTest {
         System.out.print(".");
         getFs().delete(path, false);
       }
+      // delete _SUCCESS object
+      getFs().delete(new Path(getBaseURI(),
+              MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})), false);
       stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
       Assert.assertTrue(0 == stats.length);
     }
