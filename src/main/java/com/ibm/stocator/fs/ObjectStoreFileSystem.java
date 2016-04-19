@@ -175,7 +175,7 @@ public class ObjectStoreFileSystem extends FileSystem {
       objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
-        "binary/octet-stream", null, statistics);
+        "application/octet-stream", null, statistics);
     return outStream;
   }
 
