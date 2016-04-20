@@ -9,17 +9,19 @@ Stocator is implicitly designed for the object stores, it has very a different a
 Stocator is a generic connector, that may contain various implementations for object stores. It initially provided with complete Swift driver, based on the JOSS package. Stocator can be very easily extended with more object store implementations, like support for Amazon S3.
 
 ## Major features
-* Implements HDFS interface
+* Implements Hadoop FileSystem interface
 * No need to change or recompile Spark
 * Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
-* There are no notions of directories (usually defined as empty files)
-* Object's name may contain "/"
+* Object's name may contain "/" and thus simulate directory structure
 * Containers / buckets are automatically created
-* (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to OpenStack Swift
+* (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to OpenStack Swift, removes the need to store object locally prior uploading it.
 * (Swift Driver) Tested to read large objects (over 16GB)
 * Supports Swiftauth, Keystone V2, Keystone V2 Password Scope Authentication
 * Tested to work with vanilla Swift cluster, SoftLayer object store,  IBM Bluemix Object service
 * Supports speculate mode
+* (Swift Driver) Allows to access public containers, without authentication. For example
+
+		sc.textFile("swift2d://dal05.objectstorage.softlayer.net/v1/AUTH_ID/CONT/data.csv")
 
 ## Build procedure
 
@@ -31,13 +33,13 @@ Checkout the Stocator source `https://github.com/SparkTC/stocator.git`
 * If you want to build a jar with all thedependecies, please execute `mvn clean package -Pall-in-one`
 
 ## Usage with Apache Spark
-Stocator allows to access Swift via new schema `swift2d://`.
+Stocator allows to access Swift via unique schema `swift2d://`.
 The configuration template located under `conf/core-site.xml.template`.
-Stocator requires
+Stocator verifies that 
 
 	mapreduce.fileoutputcommitter.marksuccessfuljobs=true
 
-Usually there is nothing special to do. The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not present at all in the Spark's configuration
+The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not exists at all in the Spark's configuration
 
 ### Reference the new driver in the core-site.xml
 Add driver reference in the `conf/core-site.xml` of Spark
@@ -262,7 +264,7 @@ Please follow the [development guide](https://github.com/SparkTC/development-gui
 
 To easy the debug process, Please modify `conf/log4j.properties` and add
 
-	log4j.logger.com.ibm.stocator=DEBUG
+	log4j.logger.com.ibm.stocator=ALL
 
 ## Before you sumit your pull request
 We ask that you include a line similar to the following as part of your pull request comments: “DCO 1.1 Signed-off-by: Random J Developer“. “DCO” stands for “Developer Certificate of Origin,” and refers to the same text used in the Linux Kernel community. By adding this simple comment, you tell the community that you wrote the code you are contributing, or you have the right to pass on the code that you are contributing.
