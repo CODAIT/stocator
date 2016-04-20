@@ -135,6 +135,8 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final int pageListSize = 100;
 
+  private final long bufferSize = 65536;
+
   /**
    * Constructor method
    *
@@ -319,8 +321,13 @@ public class SwiftAPIClient implements IStoreClient {
 
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
     LOG.debug("Get object: {}", path);
+    String objName = path.toString();
+    if (path.toString().startsWith(hostName)) {
+      objName = path.toString().substring(hostName.length());
+    }
+    URL url = new URL(getAccessURL() + "/" + container + "/" + objName);
     try {
-      SwiftInputStream sis = new SwiftInputStream(this, hostName, path);
+      SwiftInputStream sis = new SwiftInputStream(this, new Path(url.toString()), bufferSize);
       return new FSDataInputStream(sis);
     } catch (IOException e) {
       LOG.error(e.getMessage());
