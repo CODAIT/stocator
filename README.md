@@ -270,6 +270,11 @@ To easy the debug process, Please modify `conf/log4j.properties` and add
 We ask that you include a line similar to the following as part of your pull request comments: “DCO 1.1 Signed-off-by: Random J Developer“. “DCO” stands for “Developer Certificate of Origin,” and refers to the same text used in the Linux Kernel community. By adding this simple comment, you tell the community that you wrote the code you are contributing, or you have the right to pass on the code that you are contributing.
 
 ## Need more information?
+### Stocator Mailing list
+Join Stocator mailing list by sending email to `stocator+subscribe@googlegroups.com`.
+Use `stocator@googlegroups.com` to post questions.
+
+### Additional resources
 Please follow our [wiki](https://github.com/SparkTC/stocator/wiki) for more details.
 More information about Stocator can be find at
 
