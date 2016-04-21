@@ -168,11 +168,11 @@ It's possible to provide configuration keys in run time, without keeping them in
 
 ## Execution without compiling Spark
 It is possible to execute Spark with the new driver, without compiling Spark.
-Directory `stocator/target` contains standalone jar `stocator-1.0.0-jar-with-dependencies.jar`.
+Directory `stocator/target` contains standalone jar `stocator-1.0.1-jar-with-dependencies.jar`.
  
 Run Spark with 
 
-	./bin/spark-shell --jars stocator-1.0.0-jar-with-dependencies.jar
+	./bin/spark-shell --jars stocator-1.0.1-jar-with-dependencies.jar
 ## Execution with Spark compilation
 
 ### Configure maven build in Spark
@@ -183,7 +183,7 @@ Both main `pom.xml` and `core/pom.xml` should be modified.
      <dependency>
           <groupId>com.ibm.stocator</groupId>
           <artifactId>stocator</artifactId>
-          <version>1.0.0</version>
+          <version>1.0.1</version>
           <scope>${hadoop.deps.scope}</scope>
       </dependency>
 
