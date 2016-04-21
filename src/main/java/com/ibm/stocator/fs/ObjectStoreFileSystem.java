@@ -66,6 +66,7 @@ public class ObjectStoreFileSystem extends FileSystem {
    * Host name with schema, e.g. schema://dataroot.conf-entry/
    */
   private String hostNameScheme;
+  private URI uri;
 
   @Override
   public String getScheme() {
@@ -80,6 +81,7 @@ public class ObjectStoreFileSystem extends FileSystem {
     }
     setConf(conf);
     String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
+    uri = fsuri;
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(nameSpace, fsuri, conf);
       if (Utils.validSchema(fsuri.toString())) {
@@ -94,7 +96,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public URI getUri() {
-    return null;
+    return uri;
   }
 
   /**
