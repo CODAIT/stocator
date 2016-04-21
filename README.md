@@ -177,17 +177,21 @@ Run Spark with
 
 ### Configure maven build in Spark
 Both main `pom.xml` and `core/pom.xml` should be modified.
+ 
+ add to the `<properties>` of the main pom.xml
+	
+	 	<stocator.version>1.0.1</stocator.version>
 
- main pom.xml
+ add `stocator` dependency to the main pom.xml
 
      <dependency>
           <groupId>com.ibm.stocator</groupId>
           <artifactId>stocator</artifactId>
-          <version>1.0.1</version>
+          <version>${stocator.version}</version>
           <scope>${hadoop.deps.scope}</scope>
       </dependency>
 
- core/pom.xml
+modify `core/pom.xml` to include `stocator`
 
     <dependency>
           <groupId>com.ibm.stocator</groupId>
@@ -207,7 +211,7 @@ Compile Spark with Haddop support
 
 	val data = Array(1, 2, 3, 4, 5, 6, 7, 8)
 	val distData = sc.parallelize(data)
-	distData.saveAsTextFile("swift2d://newcontainer.SERVICENAME/one1.txt")
+	distData.saveAsTextFile("swift2d://newcontainer.SERVICE_NAME/one1.txt")
 
 Listing container `newcontainer` directly with a REST client will display
 
