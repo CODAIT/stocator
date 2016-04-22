@@ -104,8 +104,7 @@ public class Utils {
     int sInd = host.indexOf("//") + 2;
     host = host.substring(sInd);
     int eInd = host.indexOf("/");
-    host = host.substring(0,eInd);
-    return host;
+    return host.substring(0,eInd);
   }
 
   /**

@@ -465,6 +465,10 @@ public class SwiftAPIClient implements IStoreClient {
     String srcHost = getScheme() + "://" + Utils.getHostName(src) + "/";
     String dstHost = getScheme() + "://" + Utils.getHostName(dst) + "/";
 
+    if (Utils.getObjectName(src).startsWith("_temporary")) {
+      return true;
+    }
+
     URL url = new URL(getAccessURL() + "/" + destination);
     try {
       HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
