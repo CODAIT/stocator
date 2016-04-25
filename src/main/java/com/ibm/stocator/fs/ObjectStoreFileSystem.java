@@ -67,6 +67,8 @@ public class ObjectStoreFileSystem extends FileSystem {
    */
   private String hostNameScheme;
 
+  private URI uri;
+
   @Override
   public String getScheme() {
     return storageClient.getScheme();
@@ -78,6 +80,7 @@ public class ObjectStoreFileSystem extends FileSystem {
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
+    uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
     String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
     if (storageClient == null) {
@@ -94,7 +97,12 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public URI getUri() {
-    return null;
+    try {
+      return storageClient.getAccessURI();
+    } catch (IOException e) {
+      LOG.error(e.getMessage());
+      return uri;
+    }
   }
 
   /**

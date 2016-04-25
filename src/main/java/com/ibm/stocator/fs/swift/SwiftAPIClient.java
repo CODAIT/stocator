@@ -505,6 +505,11 @@ public class SwiftAPIClient implements IStoreClient {
     return mAccess.getToken();
   }
 
+  @Override
+  public URI getAccessURI() throws IOException {
+    return URI.create(getAccessURL());
+  }
+
   /**
    * Get authenticated URL
    */
