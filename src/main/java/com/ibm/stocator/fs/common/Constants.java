@@ -46,4 +46,19 @@ public class Constants {
    * Hadoop _SUCCESS object
    */
   public static final String HADOOP_SUCCESS = "_SUCCESS";
+
+  /*
+   * User agent for HTTP requests
+   */
+  public static final String USER_AGENT_HTTP_HEADER = "User-Agent";
+
+  /*
+   * Stocator user agent identifier
+   */
+  public static final String STOCATOR_USER_AGENT = "stocator";
+
+  /*
+   * HTTP Range header
+   */
+  public static final String RANGES_HTTP_HEADER = "Range";
 }

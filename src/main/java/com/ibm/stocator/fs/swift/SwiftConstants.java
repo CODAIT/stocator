@@ -25,6 +25,7 @@ import com.ibm.stocator.fs.common.Constants;
 public class SwiftConstants {
   public static final String SWIFT_CONTAINER_PROPERTY = Constants.FS_SWIFT + ".CONTAINER-NAME";
   public static final String KEYSTONE_V3_AUTH = "keystoneV3";
+  public static final String PUBLIC_ACCESS = "publicAccess";
 
   public static final String PUBLIC = ".public";
   public static final String SWIFT_PUBLIC_PROPERTY = Constants.FS_SWIFT + PUBLIC;

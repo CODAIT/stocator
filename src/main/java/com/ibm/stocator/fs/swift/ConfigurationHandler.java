@@ -48,6 +48,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_DELETE_TEMP_DATA;
+import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 
 /**
  * Integrates Hadoop configuration with the Swift implementation
@@ -64,30 +65,33 @@ public final class ConfigurationHandler {
    */
   public static Properties initialize(URI uri, Configuration conf) throws IOException {
     String host = Utils.getHost(uri);
-    String container = Utils.getContainerName(host);
-    String service = Utils.getServiceName(host);
-    String prefix = SWIFT_SERVICE_PREFIX + service;
     Properties props = new Properties();
-    props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
-    Utils.updateProperty(conf, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
-    Utils.updateProperty(conf, prefix, USERNAME, props, SWIFT_USERNAME_PROPERTY, true);
-    Utils.updateProperty(conf, prefix, PASSWORD, props, SWIFT_PASSWORD_PROPERTY, true);
-    Utils.updateProperty(conf, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, true);
-    Utils.updateProperty(conf, prefix, AUTH_METHOD, props, SWIFT_AUTH_METHOD_PROPERTY, false);
-    Utils.updateProperty(conf, prefix, BLOCK_SIZE, props, SWIFT_BLOCK_SIZE_PROPERTY, false);
-    Utils.updateProperty(conf, prefix, FMODE_DELETE_TEMP_DATA, props,
-        FMODE_AUTOMATIC_DELETE_PROPERTY, false);
-    Utils.updateProperty(conf, prefix, PUBLIC, props, SWIFT_PUBLIC_PROPERTY, false);
-    String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY, KEYSTONE_V3_AUTH);
-    props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, authMethod);
-    if (authMethod.equals(KEYSTONE_V3_AUTH)) {
-      Utils.updateProperty(conf, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
-      props.setProperty(SWIFT_PROJECT_ID_PROPERTY, props.getProperty(SWIFT_TENANT_PROPERTY));
-      props.setProperty(SWIFT_USER_ID_PROPERTY, props.getProperty(SWIFT_USERNAME_PROPERTY));
+    if (!Utils.validSchema(uri)) {
+      props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, PUBLIC_ACCESS);
     } else {
-      Utils.updateProperty(conf, prefix,  REGION, props, SWIFT_REGION_PROPERTY, false);
+      String container = Utils.getContainerName(host);
+      String service = Utils.getServiceName(host);
+      String prefix = SWIFT_SERVICE_PREFIX + service;
+      props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
+      Utils.updateProperty(conf, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
+      Utils.updateProperty(conf, prefix, USERNAME, props, SWIFT_USERNAME_PROPERTY, true);
+      Utils.updateProperty(conf, prefix, PASSWORD, props, SWIFT_PASSWORD_PROPERTY, true);
+      Utils.updateProperty(conf, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, true);
+      Utils.updateProperty(conf, prefix, AUTH_METHOD, props, SWIFT_AUTH_METHOD_PROPERTY, false);
+      Utils.updateProperty(conf, prefix, BLOCK_SIZE, props, SWIFT_BLOCK_SIZE_PROPERTY, false);
+      Utils.updateProperty(conf, prefix, FMODE_DELETE_TEMP_DATA, props,
+          FMODE_AUTOMATIC_DELETE_PROPERTY, false);
+      Utils.updateProperty(conf, prefix, PUBLIC, props, SWIFT_PUBLIC_PROPERTY, false);
+      String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY, KEYSTONE_V3_AUTH);
+      props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, authMethod);
+      if (authMethod.equals(KEYSTONE_V3_AUTH)) {
+        Utils.updateProperty(conf, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
+        props.setProperty(SWIFT_PROJECT_ID_PROPERTY, props.getProperty(SWIFT_TENANT_PROPERTY));
+        props.setProperty(SWIFT_USER_ID_PROPERTY, props.getProperty(SWIFT_USERNAME_PROPERTY));
+      } else {
+        Utils.updateProperty(conf, prefix,  REGION, props, SWIFT_REGION_PROPERTY, false);
+      }
     }
     return props;
   }
-
 }

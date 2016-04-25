@@ -68,6 +68,8 @@ public class ObjectStoreFileSystem extends FileSystem {
   private String hostNameScheme;
   private URI uri;
 
+  private URI uri;
+
   @Override
   public String getScheme() {
     return storageClient.getScheme();
@@ -79,18 +81,29 @@ public class ObjectStoreFileSystem extends FileSystem {
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
-    uri = fsuri;
+    uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
     String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(nameSpace, fsuri, conf);
-      hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
+      if (Utils.validSchema(fsuri.toString())) {
+        hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
+      } else {
+        String accessURL = Utils.extractAccessURL(fsuri.toString());
+        hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
+            accessURL) + "/";
+      }
     }
   }
 
   @Override
   public URI getUri() {
-    return uri;
+    try {
+      return storageClient.getAccessURI();
+    } catch (IOException e) {
+      LOG.error(e.getMessage());
+      return uri;
+    }
   }
 
   /**
@@ -158,15 +171,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * PUT dataroot/object
    * /201603131849_0000_m_000019_0-part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv
    *
-   * @param f
-   * @param permission
-   * @param overwrite
-   * @param bufferSize
-   * @param replication
-   * @param blockSize
-   * @param progress
-   * @return FSDataOutputStream to write data in
-   * @throws IOException
    */
   public FSDataOutputStream create(Path f, FsPermission permission,
       boolean overwrite, int bufferSize,
@@ -180,7 +184,7 @@ public class ObjectStoreFileSystem extends FileSystem {
       objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
-        "binary/octet-stream", null, statistics);
+        "application/octet-stream", null, statistics);
     return outStream;
   }
 
@@ -288,10 +292,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * by failed jobs or tasks.
    * dataroot/object created as a 0 size object with type application/directory
    *
-   * @param f path to create
-   * @param permission
-   * @return boolean on success or failure
-   * @throws IOException
    */
   @Override
   public boolean mkdirs(Path f, FsPermission permission) throws IOException {
@@ -309,9 +309,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * by failed jobs or tasks.
    * dataroot/object created as a 0 size object with type application/directory
    *
-   * @param f path to create
-   * @return boolean on success or failure
-   * @throws IOException
    */
   @Override
   public boolean mkdirs(Path f) throws IOException {

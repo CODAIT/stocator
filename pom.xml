@@ -4,7 +4,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -48,7 +48,8 @@
         <hadoop.version>2.6.0</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.7</jackson.version>
-        <httpcomponents.version>4.4.4</httpcomponents.version>
+        <httpcomponents.httpcore.version>4.3.2</httpcomponents.httpcore.version>
+        <httpcomponents.httpclient.version>4.3.3</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
     </properties>
@@ -57,8 +58,18 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <scope>compile</scope>
             <version>${hadoop.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+               <exclusion>
+                   <groupId>javax.servlet</groupId>
+                   <artifactId>*</artifactId>
+               </exclusion>
+               <exclusion>
+                   <groupId>javax.servlet.jsp</groupId>
+                   <artifactId>*</artifactId>
+               </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.javaswift</groupId>
@@ -66,9 +77,9 @@
             <version>${joss.version}</version>
         </dependency>
         <dependency>
-        <groupId>com.googlecode.json-simple</groupId>
-        <artifactId>json-simple</artifactId>
-        <version>1.1.1</version>
+	        <groupId>com.googlecode.json-simple</groupId>
+	        <artifactId>json-simple</artifactId>
+	        <version>1.1.1</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
@@ -84,13 +95,31 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-mapreduce-client-core</artifactId>
             <version>${hadoop.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                   <groupId>javax.servlet</groupId>
+                   <artifactId>*</artifactId>
+               </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <scope>compile</scope>
+            <scope>provided</scope>
             <type>test-jar</type>
             <version>${hadoop.version}</version>
+            <exclusions>
+               <exclusion>
+                   <groupId>javax.servlet</groupId>
+                   <artifactId>*</artifactId>
+               </exclusion>
+               <exclusion>
+                   <groupId>javax.servlet.jsp</groupId>
+                   <artifactId>*</artifactId>
+               </exclusion>
+            </exclusions>
+
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -102,17 +131,37 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
+		<dependency>
+		    <groupId>commons-lang</groupId>
+		    <artifactId>commons-lang</artifactId>
+		    <version>2.6</version>
+		</dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpcomponents.httpclient.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-logging</artifactId>
+                    <groupId>commons-logging</groupId>
+                </exclusion>
+               <exclusion>
+                   <groupId>javax.servlet</groupId>
+                   <artifactId>*</artifactId>
+               </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>${httpcomponents.httpcore.version}</version>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>${httpcomponents.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -304,6 +353,9 @@
                             <descriptorRefs>
                                 <descriptorRef>jar-with-dependencies</descriptorRef>
                             </descriptorRefs>
+                            <excludes>
+                                <exclude>javax-servlet:servlet-api:*</exclude>
+                            </excludes>
                         </configuration>
                         <executions>
                             <execution>

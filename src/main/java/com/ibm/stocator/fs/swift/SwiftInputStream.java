@@ -1,12 +1,14 @@
 /**
- * (C) Copyright IBM Corp. 2015, 2016
- * <p/>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,98 +18,163 @@
 
 package com.ibm.stocator.fs.swift;
 
-import java.io.FileNotFoundException;
+import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 
-import org.javaswift.joss.headers.object.range.AbstractRange;
-import org.javaswift.joss.instructions.DownloadInstructions;
-import org.javaswift.joss.model.StoredObject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.fs.Path;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.ibm.stocator.fs.common.exception.ConnectionClosedException;
+
+/**
+ * Swift input stream
+ */
 class SwiftInputStream extends FSInputStream {
 
+  /*
+   * Logger
+   */
   private static final Logger LOG = LoggerFactory.getLogger(SwiftInputStream.class);
-
   /*
-   * File nativeStore instance
+   * Buffer size
    */
-  private final SwiftAPIClient nativeStore;
-
+  private final long bufferSize;
   /*
-   * Data input stream
+   * Swift API client
    */
-  private InputStream httpStream;
-
+  private final SwiftAPIClient apiClient;
   /*
-   * Current position
+   * Swift input stream wrapper
+   */
+  private SwiftInputStreamWrapper httpStream;
+  /*
+   * Data patch
+   */
+  private Path path;
+  /*
+   * Position in the buffer
    */
   private long pos = 0;
-
   /*
-   * Reference to the stored object
+   * content length
    */
-  private StoredObject storedObject;
+  private long contentLength = -1;
+  /*
+   * range diff
+   */
+  private long rangeOffset = 0;
 
   /**
-   * Move to a new position within the file relative to where the pointer is now.
-   * Always call from a synchronized clause
+   * Constructor
    *
-   * @param offset offset
+   * @param apiClientT Swift API client
+   * @param pathT data patch
+   * @param bufferSizeT buffer size
+   * @throws IOException if something went wrong
    */
-  private synchronized void incPos(long offset) {
-    pos += offset;
+  public SwiftInputStream(SwiftAPIClient apiClientT, Path pathT,
+      long bufferSizeT) throws IOException {
+    apiClient = apiClientT;
+    path = pathT;
+    bufferSize = bufferSizeT;
+    SwiftGETResponse response = SwiftAPIDirect.getObject(path,
+        apiClient.getAccount().authenticate().getToken());
+    httpStream = response.getStreamWrapper();
   }
 
-  public SwiftInputStream(SwiftAPIClient storeNative, String hostName,
-                          Path path) throws IOException {
-    nativeStore = storeNative;
-    LOG.debug("init: {}", path.toString());
-    String objectName = path.toString().substring(hostName.length());
-    storedObject = nativeStore.getAccount().getContainer(nativeStore.getDataRoot())
-        .getObject(objectName);
-    if (!storedObject.exists()) {
-      throw new FileNotFoundException(objectName + " is not exists");
-    }
+  /**
+   * Get to new position
+   *
+   * @param diff how much to move
+   */
+  private synchronized void movePosition(int diff) {
+    pos += diff;
+    rangeOffset += diff;
+  }
+
+  /**
+   * Update beginning of the buffer
+   *
+   * @param seekPos new position
+   * @param contentLengthT content length
+   */
+  private synchronized void updateStartOfBufferPosition(long seekPos,
+      long contentLengthT) {
+    pos = seekPos;
+    rangeOffset = 0;
+    contentLength = contentLengthT;
+    LOG.trace("Move: pos={}; bufferOffset={}; contentLength={}", pos,
+        rangeOffset, contentLength);
   }
 
   @Override
   public synchronized int read() throws IOException {
-    if (httpStream == null) {
-      // not sure we need it. need to re-check.
-      seek(0);
-    }
+    isConnectionOpen();
     int result = -1;
-    result = httpStream.read();
+    try {
+      result = httpStream.read();
+    } catch (IOException e) {
+      LOG.debug("IOException in reading {}" + path);
+      LOG.debug(e.getMessage());
+      if (reopenBuffer()) {
+        LOG.debug("Reopen successfull");
+        result = httpStream.read();
+      }
+    }
     if (result != -1) {
-      incPos(1);
+      movePosition(1);
     }
     return result;
   }
 
   @Override
   public synchronized int read(byte[] b, int off, int len) throws IOException {
-    LOG.trace("Reading portion of http stream for: {}. Offset: {} Len: {}",
-        storedObject.getName(), off, len);
-    if (httpStream == null) {
-      // not sure we need it. need to re-check.
-      seek(0);
-    }
+    LOG.trace("{}: read from {} length {}", path.toString(), off, len);
     int result = -1;
-    result = httpStream.read(b, off, len);
-    if (result != -1) {
-      incPos(result);
+    try {
+      isConnectionOpen();
+      result = httpStream.read(b, off, len);
+    } catch (ConnectionClosedException e) {
+      LOG.warn("Connection was closed during reading {}, try to reopen", path);
+      LOG.warn(e.getMessage());
+      return result;
+    } catch (IOException e) {
+      LOG.warn("IOException during reading {}, try to reopen", path);
+      LOG.warn(e.getMessage());
+      if (reopenBuffer()) {
+        result = httpStream.read(b, off, len);
+      }
+    }
+    if (result > 0) {
+      movePosition(result);
     }
     return result;
   }
 
+  /**
+   * Attempt to reopen the buffer
+   *
+   * @return true on success
+   * @throws IOException if failed to reopen
+   */
+  private boolean reopenBuffer() throws IOException {
+    close();
+    boolean success = false;
+    try {
+      loadIntoBuffer(pos);
+      success = true;
+    } catch (EOFException eof) {
+      LOG.debug(eof.getMessage());
+    }
+    return success;
+  }
+
   @Override
   public synchronized void close() throws IOException {
-    LOG.trace("Closing http stream: {}", storedObject.getName());
     try {
       if (httpStream != null) {
         httpStream.close();
@@ -117,64 +184,81 @@ class SwiftInputStream extends FSInputStream {
     }
   }
 
+  /**
+   * Check if connection is open
+   *
+   * @throws ConnectionClosedException if closed
+   */
+  private void isConnectionOpen() throws ConnectionClosedException {
+    if (httpStream == null) {
+      throw new ConnectionClosedException("http stream is null");
+    }
+  }
+
+  /**
+   * Pass over bytes
+   *
+   * @param bytes
+   * @return
+   * @throws IOException
+   */
+  private int chompBytes(long bytes) throws IOException {
+    int count = 0;
+    if (httpStream != null) {
+      int result;
+      for (long i = 0; i < bytes; i++) {
+        result = httpStream.read();
+        if (result < 0) {
+          throw new IOException("Error while chomping");
+        }
+        count++;
+        movePosition(1);
+      }
+    }
+    return count;
+  }
+
   @Override
   public synchronized void seek(long targetPos) throws IOException {
-    LOG.debug("seek method to: {}, for {}", targetPos, storedObject.getName());
     if (targetPos < 0) {
-      throw new IOException("Negative Seek offset not supported");
+      throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK);
     }
-
-    if (httpStream != null) {
-      long offset = targetPos - pos;
-      if (offset == 0) {
-        LOG.trace("seek called on same position as the previous one. New HTTP Stream is not "
-                + "required.");
+    long offset = targetPos - pos;
+    LOG.trace("{} : seek to {} from {}; offset {} ", path.toString(), targetPos, pos, offset);
+    if (offset == 0) {
+      return;
+    }
+    if (offset < 0) {
+      LOG.debug("negative seek");
+    } else if ((rangeOffset + offset < bufferSize)) {
+      try {
+        chompBytes(offset);
+      } catch (IOException e) {
+        LOG.error(e.getMessage());
+      }
+      if (targetPos - pos == 0) {
         return;
       }
-      long blockSize = nativeStore.getBlockSize();
-      if (offset < 0) {
-        LOG.trace("seek position is outside the current stream; offset: {}. New HTTP Stream is "
-                + "required.", offset);
-      } else if ((offset < blockSize)) {
-        //if the seek is in  range of that requested, scan forwards
-        //instead of closing and re-opening a new HTTP connection
-        LOG.trace("seek is within current stream; offset: {} blockSize: {}.", offset, blockSize);
-        int result = -1;
-        long byteRead;
-        for (byteRead = 0; byteRead < offset; byteRead++) {
-          result = httpStream.read();
-          if (result < 0) {
-            break;
-          }
-        }
-        incPos(byteRead);
-        if (targetPos == pos) {
-          LOG.trace("seek reached targetPos: {}. New HTTP Stream is not required.", targetPos);
-          return;
-        }
-        LOG.trace("seek failed to reach targetPos: {}. New HTTP Stream is required.", targetPos);
-      }
-      httpStream.close();
+    } else {
+      LOG.debug("Seek is larger then buffer size " + bufferSize);
     }
-    LOG.trace("seek method is opening a new HTTP Stream to: {}, for {}", targetPos,
-            storedObject.getName());
-    DownloadInstructions instructions = new DownloadInstructions();
-    AbstractRange range = new AbstractRange(targetPos, targetPos + nativeStore.getBlockSize()) {
+    close();
+    loadIntoBuffer(targetPos);
+  }
 
-      @Override
-      public long getTo(int arg0) {
-        return offset;
-      }
-
-      @Override
-      public long getFrom(int arg0) {
-        return length;
-      }
-    };
-    instructions.setRange(range);
-    httpStream = storedObject.downloadObjectAsInputStream(instructions);
-    LOG.debug("Seek completed. Got HTTP Stream for: {}", storedObject.getName());
-    pos = targetPos;
+  /**
+   * Load data into the buffer
+   *
+   * @param targetPos offset
+   * @throws IOException if something went wrong
+   */
+  private void loadIntoBuffer(long targetPos) throws IOException {
+    long length = targetPos + bufferSize;
+    LOG.debug("Reading {} bytes starting at {}", length, targetPos);
+    SwiftGETResponse response = SwiftAPIDirect.getObject(path,
+        apiClient.getAccount().authenticate().getToken(), targetPos, targetPos + length - 1);
+    httpStream = response.getStreamWrapper();
+    updateStartOfBufferPosition(targetPos, response.getResponseSize());
   }
 
   @Override
@@ -182,15 +266,9 @@ class SwiftInputStream extends FSInputStream {
     return pos;
   }
 
-  /**
-   * multiple data sources not yet supported
-   *
-   * @param targetPos new target position
-   * @return true if new data source set successfull
-   * @throws IOException
-   */
   @Override
   public boolean seekToNewSource(long targetPos) throws IOException {
     return false;
   }
+
 }

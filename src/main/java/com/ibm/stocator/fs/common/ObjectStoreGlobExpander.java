@@ -38,9 +38,9 @@ public class ObjectStoreGlobExpander {
    * Expand globs in the given <code>filePattern</code> into a collection of
    * file patterns so that in the expanded set no file pattern has a
    * slash character ("/") in a curly bracket pair.
-   * @param filePattern
+   * @param filePattern file pattern
    * @return expanded file patterns
-   * @throws IOException
+   * @throws IOException if failed to parse
    */
   public static List<String> expand(String filePattern) throws IOException {
     List<String> fullyExpanded = new ArrayList<String>();
@@ -61,7 +61,6 @@ public class ObjectStoreGlobExpander {
   /**
    * Expand the leftmost outer curly bracket pair containing a
    * slash character ("/") in <code>filePattern</code>.
-   * @param filePattern
    * @return expanded file patterns
    * @throws IOException
    */
@@ -130,7 +129,7 @@ public class ObjectStoreGlobExpander {
   /**
    * Finds the index of the leftmost opening curly bracket containing a
    * slash character ("/") in <code>filePattern</code>.
-   * @param filePattern
+   * @param filePattern file pattern
    * @return the index of the leftmost opening curly bracket containing a
    * slash character ("/"), or -1 if there is no such bracket
    * @throws IOException

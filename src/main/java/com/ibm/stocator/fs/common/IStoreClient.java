@@ -19,6 +19,7 @@ package com.ibm.stocator.fs.common;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -88,6 +89,7 @@ public interface IStoreClient {
    *
    * @param hostName URL to host
    * @param path path to the object
+   * @param fullListing if true, return all the content, including 0 byte size objects
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
@@ -98,6 +100,7 @@ public interface IStoreClient {
    *
    * @param objName name of the object
    * @param contentType content type
+   * @param metadata the metadata to create with an object
    * @param statistics the statistics for this file system
    * @return FSDataOutputStream
    * @throws IOException if connection error
@@ -125,6 +128,7 @@ public interface IStoreClient {
    * @param hostName URL to host
    * @param path path to the object
    * @param recursive recursive flag
+   * @return if the path was deleted
    * @throws IOException if connection error
    */
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException;
@@ -135,5 +139,12 @@ public interface IStoreClient {
    * @return working directory
    */
   public Path getWorkingDirectory();
+
+  /**
+   * Return authenticated access URI
+   * @return access URI
+   * @throws IOException if something went wrong
+   */
+  public URI getAccessURI() throws IOException;
 
 }
