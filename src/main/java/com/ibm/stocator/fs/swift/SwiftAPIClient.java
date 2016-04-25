@@ -42,6 +42,9 @@ import org.javaswift.joss.model.StoredObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -495,30 +498,23 @@ public class SwiftAPIClient implements IStoreClient {
     String srcHost = getScheme() + "://" + Utils.getHostName(src) + "/";
     String dstHost = getScheme() + "://" + Utils.getHostName(dst) + "/";
 
-    if (Utils.getObjectName(src).startsWith("_temporary")) {
+    if (Utils.getObjectName(src).startsWith("_temporary") ||
+            Utils.getObjectName(src).contains("/_temporary")) {
       return true;
     }
 
-    URL url = new URL(getAccessURL() + "/" + destination);
-    try {
-      HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
-      httpCon.setDoOutput(true);
-      httpCon.setFixedLengthStreamingMode(0);
-      httpCon.setRequestMethod("PUT");
-      httpCon.addRequestProperty("X-Auth-Token", getAuthToken());
-      httpCon.addRequestProperty("X-Copy-From", source);
-      httpCon.getInputStream();
-      httpCon.disconnect();
-      if (this.exists(dstHost, dst)) {
-        LOG.info("Copy successful");
-        try {
-          delete(srcHost, src, false);
-        } catch (IOException d) {
-          throw new IOException("Could not delete source file.");
-        }
+    PutMethod put = new PutMethod(getAccessURL() + "/" + destination);
+    put.addRequestHeader(new Header("X-Auth-Token", getAuthToken()));
+    put.addRequestHeader(new Header("X-Copy-From", source));
+    HttpClient client = new HttpClient();
+    int statusCode = client.executeMethod(put);
+    if (this.exists(dstHost, dst)) {
+      try {
+        delete(srcHost, src, false);
+      } catch (IOException d) {
+        throw new IOException("Could not delete source file.");
       }
-    } catch (IOException e) {
-      throw new IOException("Could not copy source file.");
+      LOG.info("Successfully renamed {} to {}", source, destination);
     }
     return true;
   }

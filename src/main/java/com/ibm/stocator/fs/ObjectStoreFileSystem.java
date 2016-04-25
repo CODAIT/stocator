@@ -66,7 +66,6 @@ public class ObjectStoreFileSystem extends FileSystem {
    * Host name with schema, e.g. schema://dataroot.conf-entry/
    */
   private String hostNameScheme;
-  private URI uri;
 
   private URI uri;
 

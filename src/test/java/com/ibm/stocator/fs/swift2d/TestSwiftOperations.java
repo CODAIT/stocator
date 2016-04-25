@@ -81,4 +81,41 @@ public class TestSwiftOperations extends SwiftBaseTest {
       Assert.assertTrue(0 == stats.length);
     }
   }
+
+  @Test
+  public void testRename() throws Exception {
+    if (getFs() != null) {
+      String object = "file1";
+      Path source = new Path(getBaseURI() + "/" + object);
+      createFile(source, data);
+      Path destination = new Path(getBaseURI() + "/" + "renamed");
+
+      //Check rename operation returns true
+      Assert.assertTrue(getFs().rename(source, destination));
+
+      // Check renamed file exists and old file is deleted
+      Assert.assertFalse(getFs().exists(source));
+      Assert.assertTrue(getFs().exists(destination));
+      getFs().delete(destination, false);
+    }
+  }
+
+  @Test
+  public void testRenameTemp() throws Exception {
+    if (getFs() != null) {
+      String object = "file1/_temporary";
+      Path source = new Path(getBaseURI() + "/" + object);
+      createFile(source, data);
+      Path destination = new Path(getBaseURI() + "/" + "renamed");
+
+      // Check rename operation returns true
+      Assert.assertTrue(getFs().rename(source, destination));
+
+      // Check _temporary file still exists and is not renamed
+      Assert.assertTrue(getFs().exists(source));
+      Assert.assertFalse(getFs().exists(destination));
+      getFs().delete(source, false);
+    }
+  }
+
 }
