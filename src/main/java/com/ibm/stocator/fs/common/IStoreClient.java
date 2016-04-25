@@ -19,6 +19,7 @@ package com.ibm.stocator.fs.common;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -131,5 +132,12 @@ public interface IStoreClient {
    * @return working directory
    */
   public Path getWorkingDirectory();
+
+  /**
+   * Return authenticated access URI
+   * @return access URI
+   * @throws IOException if something went wrong
+   */
+  public URI getAccessURI() throws IOException;
 
 }

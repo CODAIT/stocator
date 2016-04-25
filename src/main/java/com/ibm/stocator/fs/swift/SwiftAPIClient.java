@@ -143,6 +143,8 @@ public class SwiftAPIClient implements IStoreClient {
   private long maxObjectSize;
   private static final long DEFAULT_MAX_OBJECT_SIZE = 5L * 1024 * 1024 * 1024;
 
+  private final long bufferSize = 65536;
+
   /**
    * Constructor method
    *
@@ -335,8 +337,13 @@ public class SwiftAPIClient implements IStoreClient {
 
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
     LOG.debug("Get object: {}", path);
+    String objName = path.toString();
+    if (path.toString().startsWith(hostName)) {
+      objName = path.toString().substring(hostName.length());
+    }
+    URL url = new URL(getAccessURL() + "/" + container + "/" + objName);
     try {
-      SwiftInputStream sis = new SwiftInputStream(this, hostName, path);
+      SwiftInputStream sis = new SwiftInputStream(this, new Path(url.toString()), bufferSize);
       return new FSDataInputStream(sis);
     } catch (IOException e) {
       LOG.error(e.getMessage());
@@ -512,6 +519,11 @@ public class SwiftAPIClient implements IStoreClient {
 
   private String getAuthToken() {
     return mAccess.getToken();
+  }
+
+  @Override
+  public URI getAccessURI() throws IOException {
+    return URI.create(getAccessURL());
   }
 
   /**

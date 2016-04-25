@@ -9,17 +9,19 @@ Stocator is implicitly designed for the object stores, it has very a different a
 Stocator is a generic connector, that may contain various implementations for object stores. It initially provided with complete Swift driver, based on the JOSS package. Stocator can be very easily extended with more object store implementations, like support for Amazon S3.
 
 ## Major features
-* Implements HDFS interface
+* Implements Hadoop FileSystem interface
 * No need to change or recompile Spark
 * Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
-* There are no notions of directories (usually defined as empty files)
-* Object's name may contain "/"
+* Object's name may contain "/" and thus simulate directory structure
 * Containers / buckets are automatically created
-* (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to OpenStack Swift
+* (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to OpenStack Swift, removes the need to store object locally prior uploading it.
 * (Swift Driver) Tested to read large objects (over 16GB)
 * Supports Swiftauth, Keystone V2, Keystone V2 Password Scope Authentication
 * Tested to work with vanilla Swift cluster, SoftLayer object store,  IBM Bluemix Object service
 * Supports speculate mode
+* (Swift Driver) Allows to access public containers, without authentication. For example
+
+		sc.textFile("swift2d://dal05.objectstorage.softlayer.net/v1/AUTH_ID/CONT/data.csv")
 
 ## Build procedure
 
@@ -31,13 +33,13 @@ Checkout the Stocator source `https://github.com/SparkTC/stocator.git`
 * If you want to build a jar with all thedependecies, please execute `mvn clean package -Pall-in-one`
 
 ## Usage with Apache Spark
-Stocator allows to access Swift via new schema `swift2d://`.
+Stocator allows to access Swift via unique schema `swift2d://`.
 The configuration template located under `conf/core-site.xml.template`.
-Stocator requires
+Stocator verifies that 
 
 	mapreduce.fileoutputcommitter.marksuccessfuljobs=true
 
-Usually there is nothing special to do. The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not present at all in the Spark's configuration
+The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not exists at all in the Spark's configuration
 
 ### Reference the new driver in the core-site.xml
 Add driver reference in the `conf/core-site.xml` of Spark
@@ -166,26 +168,30 @@ It's possible to provide configuration keys in run time, without keeping them in
 
 ## Execution without compiling Spark
 It is possible to execute Spark with the new driver, without compiling Spark.
-Directory `stocator/target` contains standalone jar `stocator-1.0.0-jar-with-dependencies.jar`.
+Directory `stocator/target` contains standalone jar `stocator-1.0.1-jar-with-dependencies.jar`.
  
 Run Spark with 
 
-	./bin/spark-shell --jars stocator-1.0.0-jar-with-dependencies.jar
+	./bin/spark-shell --jars stocator-1.0.1-jar-with-dependencies.jar
 ## Execution with Spark compilation
 
 ### Configure maven build in Spark
 Both main `pom.xml` and `core/pom.xml` should be modified.
+ 
+ add to the `<properties>` of the main pom.xml
+	
+	 	<stocator.version>1.0.1</stocator.version>
 
- main pom.xml
+ add `stocator` dependency to the main pom.xml
 
      <dependency>
           <groupId>com.ibm.stocator</groupId>
           <artifactId>stocator</artifactId>
-          <version>1.0.0</version>
+          <version>${stocator.version}</version>
           <scope>${hadoop.deps.scope}</scope>
       </dependency>
 
- core/pom.xml
+modify `core/pom.xml` to include `stocator`
 
     <dependency>
           <groupId>com.ibm.stocator</groupId>
@@ -205,7 +211,7 @@ Compile Spark with Haddop support
 
 	val data = Array(1, 2, 3, 4, 5, 6, 7, 8)
 	val distData = sc.parallelize(data)
-	distData.saveAsTextFile("swift2d://newcontainer.SERVICENAME/one1.txt")
+	distData.saveAsTextFile("swift2d://newcontainer.SERVICE_NAME/one1.txt")
 
 Listing container `newcontainer` directly with a REST client will display
 
@@ -262,12 +268,17 @@ Please follow the [development guide](https://github.com/SparkTC/development-gui
 
 To easy the debug process, Please modify `conf/log4j.properties` and add
 
-	log4j.logger.com.ibm.stocator=DEBUG
+	log4j.logger.com.ibm.stocator=ALL
 
 ## Before you sumit your pull request
 We ask that you include a line similar to the following as part of your pull request comments: “DCO 1.1 Signed-off-by: Random J Developer“. “DCO” stands for “Developer Certificate of Origin,” and refers to the same text used in the Linux Kernel community. By adding this simple comment, you tell the community that you wrote the code you are contributing, or you have the right to pass on the code that you are contributing.
 
 ## Need more information?
+### Stocator Mailing list
+Join Stocator mailing list by sending email to `stocator+subscribe@googlegroups.com`.
+Use `stocator@googlegroups.com` to post questions.
+
+### Additional resources
 Please follow our [wiki](https://github.com/SparkTC/stocator/wiki) for more details.
 More information about Stocator can be find at
 
