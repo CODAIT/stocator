@@ -20,8 +20,11 @@ package  com.ibm.stocator.fs.swift2d;
 import java.io.IOException;
 import java.text.MessageFormat;
 
+import com.ibm.stocator.fs.common.ObjectStoreGlobFilter;
+import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -110,4 +113,51 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Assert.assertTrue(0 == results.length);
   }
 
+  @Test
+  public void testAsteriskWildcard() throws Exception {
+
+    if (getFs() != null) {
+      String[] objectNames = {"Dir/SubDir/File1", "Dir/SubDir/File2", "Dir/File1"};
+      for (String name : objectNames) {
+        Path path = new Path(getBaseURI() + "/" + name);
+        createFile(path, data);
+      }
+
+      try {
+        Path wildcard = new Path(getBaseURI() + "/*"); // All files
+        ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
+                new ObjectStoreGlobFilter(""));
+        FileStatus[] results = globber.glob();
+        Assert.assertEquals(3, results.length);
+
+        wildcard = new Path(getBaseURI() + "/Dir/*"); // Files in "Dir" directory
+        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+        results = globber.glob();
+        Assert.assertEquals(3, results.length);
+
+        wildcard = new Path(getBaseURI() + "/Dir/SubDir/*"); // Files in "SubDir" directory
+        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+        results = globber.glob();
+        Assert.assertEquals(2, results.length);
+
+        wildcard = new Path(getBaseURI() + "/*1"); // Files ending in "1"
+        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+        results = globber.glob();
+        Assert.assertEquals(2, results.length);
+
+        wildcard = new Path(getBaseURI() + "/Dir/SubDir/*2"); // Files in "SubDir" ending with "2"
+        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+        results = globber.glob();
+        Assert.assertEquals(1, results.length);
+
+      } catch (AssertionError e) {
+        //Cleanup files
+        for (String name : objectNames) {
+          Path path = new Path(getBaseURI() + "/" + name);
+          getFs().delete(path, false);
+        }
+      }
+    }
+
+  }
 }
