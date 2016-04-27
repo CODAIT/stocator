@@ -24,7 +24,6 @@ import com.ibm.stocator.fs.common.ObjectStoreGlobFilter;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
