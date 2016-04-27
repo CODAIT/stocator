@@ -148,10 +148,9 @@ public class TestSwiftOperations extends SwiftBaseTest {
         wildcard = new Path(getBaseURI() + "/Dir/SubDir/*2"); // Files in "SubDir" ending with "2"
         globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
         results = globber.glob();
-        Assert.assertEquals(1, results.length);
-
-      } catch (AssertionError e) {
-        //Cleanup files
+        Assert.assertEquals(0, results.length);
+      } finally {
+        //Clean up files
         for (String name : objectNames) {
           Path path = new Path(getBaseURI() + "/" + name);
           getFs().delete(path, false);
