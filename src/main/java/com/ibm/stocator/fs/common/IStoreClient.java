@@ -117,10 +117,11 @@ public interface IStoreClient {
 
   /**
    * Rename an object
+   * @param hostName URL to host
    * @param source Path to copy the object from
    * @param destination Path to copy the object to
    */
-  public boolean rename(Path source, Path destination) throws IOException;
+  public boolean rename(String hostName, Path source, Path destination) throws IOException;
 
   /**
    * Delete an object

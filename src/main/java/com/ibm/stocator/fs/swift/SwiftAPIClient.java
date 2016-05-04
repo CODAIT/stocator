@@ -490,31 +490,42 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public boolean rename(Path src, Path dst) throws IOException {
-    String source = Utils.getContainerName(Utils.getHostName(src)) + "/"
-            + Utils.getObjectName(src);
-    String destination =  Utils.getContainerName(Utils.getHostName(dst)) + "/"
-            + Utils.getObjectName(dst);
-    String srcHost = getScheme() + "://" + Utils.getHostName(src) + "/";
-    String dstHost = getScheme() + "://" + Utils.getHostName(dst) + "/";
+  public boolean rename(String hostName, Path src, Path dst) throws IOException {
 
     if (Utils.getObjectName(src).startsWith("_temporary")
-            || Utils.getObjectName(src).contains("/_temporary")) {
+        || Utils.getObjectName(src).contains("/_temporary")) {
       return true;
     }
 
-    PutMethod put = new PutMethod(getAccessURL() + "/" + destination);
-    put.addRequestHeader(new Header("X-Auth-Token", getAuthToken()));
-    put.addRequestHeader(new Header("X-Copy-From", source));
-    HttpClient client = new HttpClient();
-    int statusCode = client.executeMethod(put);
-    if (this.exists(dstHost, dst)) {
-      try {
-        delete(srcHost, src, false);
-      } catch (IOException d) {
-        throw new IOException("Could not delete source file.");
+    FileStatus[] objects = this.list(hostName, src, true);
+
+    if (objects.length == 0) {
+      throw new IOException("The following object does not exist: " + src.toString());
+    }
+
+    for (FileStatus stat : objects) {
+
+      Path newDst = new Path(stat.getPath().toString().replaceAll(src.toString(), dst.toString()));
+      String source = Utils.getContainerName(Utils.getHostName(stat.getPath())) + "/"
+              + Utils.getObjectName(stat.getPath());
+      String destination =  Utils.getContainerName(Utils.getHostName(newDst)) + "/"
+              + Utils.getObjectName(newDst);
+      String srcHost = getScheme() + "://" + Utils.getHostName(stat.getPath()) + "/";
+      String dstHost = getScheme() + "://" + Utils.getHostName(dst) + "/";
+
+      PutMethod put = new PutMethod(getAccessURL() + "/" + destination);
+      put.addRequestHeader(new Header("X-Auth-Token", getAuthToken()));
+      put.addRequestHeader(new Header("X-Copy-From", source));
+      HttpClient client = new HttpClient();
+      int statusCode = client.executeMethod(put);
+      if (this.exists(dstHost, dst)) {
+        try {
+          delete(srcHost, src, false);
+        } catch (IOException d) {
+          throw new IOException("Could not delete source file.");
+        }
+        LOG.info("Successfully renamed {} to {}", source, destination);
       }
-      LOG.info("Successfully renamed {} to {}", source, destination);
     }
     return true;
   }
