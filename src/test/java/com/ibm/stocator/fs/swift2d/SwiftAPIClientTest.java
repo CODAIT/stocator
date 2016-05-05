@@ -58,4 +58,21 @@ public class SwiftAPIClientTest {
     result = Whitebox.invokeMethod(mSwiftAPIClient, "extractUnifiedObjectName", input);
     Assert.assertEquals(input, result);
   }
+
+  @Test
+  public void nameWithoutTaskIDTest() throws Exception {
+    String objectName = "a/b/c/gil.data/"
+            + "part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv";
+
+    String input = objectName;
+    input = objectName
+            + "-attempt_201603171328_0000_m_000000_1";
+    String result = Whitebox.invokeMethod(mSwiftAPIClient, "nameWithoutTaskID", input);
+    Assert.assertEquals(objectName, result);
+
+    input = objectName
+            + "attempt_20160317132a_wrong_0000_m_000000_1";
+    result = Whitebox.invokeMethod(mSwiftAPIClient, "nameWithoutTaskID", input);
+    Assert.assertEquals(input, result);
+  }
 }
