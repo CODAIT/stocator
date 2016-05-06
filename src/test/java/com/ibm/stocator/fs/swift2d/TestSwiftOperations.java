@@ -83,21 +83,21 @@ public class TestSwiftOperations extends SwiftBaseTest {
   }
 
   @Test
-  public void testRename() throws Exception {
+  public void testCopy() throws Exception {
     if (getFs() != null) {
       String object = "file1";
       Path source = new Path(getBaseURI() + "/" + object);
       createFile(source, data);
-      Path destination = new Path(getBaseURI() + "/" + "renamed");
+      Path destination = new Path(getBaseURI() + "/" + "copied");
 
       try {
         //Check rename operation returns true
-        Assert.assertTrue(getFs().rename(source, destination));
+        Assert.assertTrue(getFs().copy(source, destination));
 
-        // Check renamed file exists and old file is deleted
-        Assert.assertFalse(getFs().exists(source));
+        // Check copied file exists
         Assert.assertTrue(getFs().exists(destination));
       } finally {
+        getFs().delete(source, false);
         getFs().delete(destination, false);
       }
     }
@@ -106,27 +106,31 @@ public class TestSwiftOperations extends SwiftBaseTest {
   @Test
   public void testRenameDirectory() throws Exception {
     if (getFs() != null) {
-      String[] objects = {"DirA", "DirA/file1", "DirA/file2"};
-      Path sourceDir = new Path(getBaseURI() + "/" + objects[0]);
+      String dirName = "Dir1";
+      String[] objects = {"file1", "file2", "subDirB/file3"};
+      Path sourceDir = new Path(getBaseURI() + "/" + dirName);
+      createEmptyFile(sourceDir);
       for (String object : objects) {
-        Path source = new Path(getBaseURI() + "/" + object);
+        Path source = new Path(sourceDir.toString() + "/" + object);
         createFile(source, data);
       }
-
+      Path destinationDir = new Path(getBaseURI() + "/" + "copied");
       try {
-        Path destination = new Path(getBaseURI() + "/" + "renamed");
         //Check rename operation returns true
-        Assert.assertTrue(getFs().rename(sourceDir, destination));
+        Assert.assertTrue(getFs().copy(sourceDir, destinationDir));
 
         for (String object : objects) {
-          Path source = new Path(getBaseURI() + "/" + object);
-
-          // Check renamed file exists and old file is deleted
-          //Assert.assertFalse(getFs().exists(source));
-          Assert.assertTrue(getFs().exists(destination));
+          Path dst = new Path(destinationDir.toString() + "/" + object);
+          // Check renamed files exists and
+          Assert.assertTrue(getFs().exists(dst));
         }
       } finally {
-        // TODO Cleanup files generated
+        for (String object : objects) {
+          getFs().delete(new Path(sourceDir.toString() + "/" + object), false);
+          getFs().delete(new Path(destinationDir.toString() + "/" + object), false);
+        }
+        getFs().delete(sourceDir, false);
+        getFs().delete(destinationDir, false);
       }
     }
   }
@@ -141,12 +145,13 @@ public class TestSwiftOperations extends SwiftBaseTest {
 
       try {
         // Check rename operation returns true
-        Assert.assertTrue(getFs().rename(source, destination));
+        Assert.assertTrue(getFs().copy(source, destination));
 
         // Check _temporary file still exists and is not renamed
         Assert.assertTrue(getFs().exists(source));
         Assert.assertFalse(getFs().exists(destination));
       } finally {
+        getFs().delete(source, false);
         getFs().delete(destination, false);
       }
     }
@@ -158,13 +163,16 @@ public class TestSwiftOperations extends SwiftBaseTest {
       String object = "file1";
       Path source = new Path(getBaseURI() + "/" + object);
       createFile(source, data);
-      Path destination = new Path("swift2d://dummyContainer.bmv3" + "/" + "renamed");
-      System.out.println(destination.toString());
+      Path destination = new Path("swift2d://testContainer.bmv3/renamed");
 
       // Check rename operation returns true
-      Assert.assertTrue(getFs().rename(source, destination));
-
-      // Clean up files generated
+      Assert.assertTrue(getFs().copy(source, destination));
+      try {
+        Assert.assertTrue(getFs().exists(source));
+      } finally {
+        getFs().delete(source, true);
+        getFs().delete(destination, true);
+      }
     }
   }
 

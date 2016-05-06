@@ -490,7 +490,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public boolean rename(String hostName, Path src, Path dst) throws IOException {
+  public boolean copy(String hostName, Path src, Path dst) throws IOException {
 
     if (Utils.getObjectName(src).startsWith("_temporary")
         || Utils.getObjectName(src).contains("/_temporary")) {
@@ -518,13 +518,8 @@ public class SwiftAPIClient implements IStoreClient {
       put.addRequestHeader(new Header("X-Copy-From", source));
       HttpClient client = new HttpClient();
       int statusCode = client.executeMethod(put);
-      if (this.exists(dstHost, dst)) {
-        try {
-          delete(srcHost, src, false);
-        } catch (IOException d) {
-          throw new IOException("Could not delete source file.");
-        }
-        LOG.info("Successfully renamed {} to {}", source, destination);
+      if (this.exists(dstHost, dst) && statusCode == 201) {
+        LOG.info("Successfully copied {} to {}", source, destination);
       }
     }
     return true;

@@ -116,12 +116,12 @@ public interface IStoreClient {
   public String getScheme();
 
   /**
-   * Rename an object
+   * Copy an object
    * @param hostName URL to host
    * @param source Path to copy the object from
    * @param destination Path to copy the object to
    */
-  public boolean rename(String hostName, Path source, Path destination) throws IOException;
+  public boolean copy(String hostName, Path source, Path destination) throws IOException;
 
   /**
    * Delete an object
