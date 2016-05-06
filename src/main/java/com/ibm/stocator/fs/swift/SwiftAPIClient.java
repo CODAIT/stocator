@@ -392,7 +392,7 @@ public class SwiftAPIClient implements IStoreClient {
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
         if (isSparkOrigin(unifiedObjectName) && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessfull(unifiedObjectName)) {
+          if (!isJobSuccessful(unifiedObjectName)) {
             LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
             if (fModeAutomaticDelete) {
               delete(hostName, new Path(tmp.getName()), true);
@@ -571,7 +571,7 @@ public class SwiftAPIClient implements IStoreClient {
    * @param objectName
    * @return boolean if job is successful
    */
-  private boolean isJobSuccessfull(String objectName) {
+  private boolean isJobSuccessful(String objectName) {
     if (cachedSparkJobsStatus.containsKey(objectName)) {
       return cachedSparkJobsStatus.get(objectName).booleanValue();
     }
