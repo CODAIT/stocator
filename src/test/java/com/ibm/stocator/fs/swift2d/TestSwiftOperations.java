@@ -84,96 +84,93 @@ public class TestSwiftOperations extends SwiftBaseTest {
 
   @Test
   public void testCopy() throws Exception {
-    if (getFs() != null) {
-      String object = "file1";
-      Path source = new Path(getBaseURI() + "/" + object);
-      createFile(source, data);
-      Path destination = new Path(getBaseURI() + "/" + "copied");
+    Assume.assumeNotNull(getFs());
+    String object = "file1";
+    Path source = new Path(getBaseURI() + "/" + object);
+    createFile(source, data);
+    Path destination = new Path(getBaseURI() + "/" + "copied");
 
-      try {
-        //Check rename operation returns true
-        Assert.assertTrue(getFs().copy(source, destination));
+    try {
+      //Check copy operation returns true
+      Assert.assertTrue(getFs().copy(source, destination));
 
-        // Check copied file exists
-        Assert.assertTrue(getFs().exists(destination));
-      } finally {
-        getFs().delete(source, false);
-        getFs().delete(destination, false);
-      }
+      // Check copied file exists
+      Assert.assertTrue(getFs().exists(destination));
+    } finally {
+      getFs().delete(source, false);
+      getFs().delete(destination, false);
     }
   }
 
   @Test
   public void testRenameDirectory() throws Exception {
-    if (getFs() != null) {
-      String dirName = "Dir1";
-      String[] objects = {"file1", "file2", "subDirB/file3"};
-      Path sourceDir = new Path(getBaseURI() + "/" + dirName);
-      createEmptyFile(sourceDir);
-      for (String object : objects) {
-        Path source = new Path(sourceDir.toString() + "/" + object);
-        createFile(source, data);
-      }
-      Path destinationDir = new Path(getBaseURI() + "/" + "copied");
-      try {
-        //Check rename operation returns true
-        Assert.assertTrue(getFs().copy(sourceDir, destinationDir));
-
-        for (String object : objects) {
-          Path dst = new Path(destinationDir.toString() + "/" + object);
-          // Check renamed files exists and
-          Assert.assertTrue(getFs().exists(dst));
-        }
-      } finally {
-        for (String object : objects) {
-          getFs().delete(new Path(sourceDir.toString() + "/" + object), false);
-          getFs().delete(new Path(destinationDir.toString() + "/" + object), false);
-        }
-        getFs().delete(sourceDir, false);
-        getFs().delete(destinationDir, false);
-      }
+    Assume.assumeNotNull(getFs());
+    String dirName = "Dir1";
+    String[] objects = {"file1", "file2", "subDirB/file3"};
+    Path sourceDir = new Path(getBaseURI() + "/" + dirName);
+    createEmptyFile(sourceDir);
+    for (String object : objects) {
+      Path source = new Path(sourceDir.toString() + "/" + object);
+      createFile(source, data);
     }
+    Path destinationDir = new Path(getBaseURI() + "/" + "copied");
+    try {
+      //Check copy operation returns true
+      Assert.assertTrue(getFs().copy(sourceDir, destinationDir));
+
+      for (String object : objects) {
+        Path dst = new Path(destinationDir.toString() + "/" + object);
+        // Check copied files exists
+        Assert.assertTrue(getFs().exists(dst));
+      }
+    } finally {
+      for (String object : objects) {
+        getFs().delete(new Path(sourceDir.toString() + "/" + object), false);
+        getFs().delete(new Path(destinationDir.toString() + "/" + object), false);
+      }
+      getFs().delete(sourceDir, false);
+      getFs().delete(destinationDir, false);
+    }
+
   }
 
   @Test
   public void testRenameTemp() throws Exception {
-    if (getFs() != null) {
-      String object = "file1/_temporary";
-      Path source = new Path(getBaseURI() + "/" + object);
-      createFile(source, data);
-      Path destination = new Path(getBaseURI() + "/" + "renamed");
+    Assume.assumeNotNull(getFs());
+    String object = "file1/_temporary";
+    Path source = new Path(getBaseURI() + "/" + object);
+    createFile(source, data);
+    Path destination = new Path(getBaseURI() + "/" + "renamed");
 
-      try {
-        // Check rename operation returns true
-        Assert.assertTrue(getFs().copy(source, destination));
-
-        // Check _temporary file still exists and is not renamed
-        Assert.assertTrue(getFs().exists(source));
-        Assert.assertFalse(getFs().exists(destination));
-      } finally {
-        getFs().delete(source, false);
-        getFs().delete(destination, false);
-      }
+    try {
+      // Check copy operation returns true
+      Assert.assertTrue(getFs().copy(source, destination));
+      
+      // Check _temporary file still exists and is not copied
+      Assert.assertTrue(getFs().exists(source));
+      Assert.assertFalse(getFs().exists(destination));
+    } finally {
+      getFs().delete(source, false);
+      getFs().delete(destination, false);
     }
+
   }
 
   @Test
   public void testRenameDifferentContainers() throws Exception {
-    if (getFs() != null) {
-      String object = "file1";
-      Path source = new Path(getBaseURI() + "/" + object);
-      createFile(source, data);
-      Path destination = new Path("swift2d://testContainer.bmv3/renamed");
+    Assume.assumeNotNull(getFs());
+    String object = "file1";
+    Path source = new Path(getBaseURI() + "/" + object);
+    createFile(source, data);
+    Path destination = new Path("swift2d://testContainer.bmv3/renamed");
 
-      // Check rename operation returns true
-      Assert.assertTrue(getFs().copy(source, destination));
-      try {
-        Assert.assertTrue(getFs().exists(source));
-      } finally {
-        getFs().delete(source, true);
-        getFs().delete(destination, true);
-      }
+    // Check copy operation returns true
+    Assert.assertTrue(getFs().copy(source, destination));
+    try {
+      Assert.assertTrue(getFs().exists(source));
+    } finally {
+      getFs().delete(source, true);
+      getFs().delete(destination, true);
     }
   }
-
 }
