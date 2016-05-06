@@ -22,6 +22,7 @@ import java.text.MessageFormat;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class CollisionTest extends SwiftBaseTest {
@@ -48,78 +49,75 @@ public class CollisionTest extends SwiftBaseTest {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    if (getFs() != null) {
-      getFs().delete(new Path(getBaseURI(), objectName), true);
-      FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName));
-      Assert.assertTrue(stats.length == 0);
-      getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId));
-      getFs().delete(new Path(getBaseURI(), objectName1), true);
-      FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
-      Assert.assertTrue(stats1.length == 0);
-      getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId1));
-    }
+    Assume.assumeNotNull(getFs());
+    getFs().delete(new Path(getBaseURI(), objectName), true);
+    FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName));
+    Assert.assertTrue(stats.length == 0);
+    getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId));
+    getFs().delete(new Path(getBaseURI(), objectName1), true);
+    FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
+    Assert.assertTrue(stats1.length == 0);
+    getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId1));
   }
 
   @Test
   public void testDataObject() throws Exception {
-    if (getFs() != null) {
-      //check that object is of Spark origin
-      Assert.assertTrue(true == getFs().exists(new Path(getBaseURI(), objectName)));
-      Object[] params;
-      for (int i = 0;i < parts; i++) {
-        String id = String.format("%0" + 2 + "d", i);
-        params = new Object[]{objectName, id, String.valueOf(i), id};
-        Path path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
-        createFile(path, smData);
-        // create failed tasks
-        params = new Object[]{objectName, id, String.valueOf(i + 1), id};
-        path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
-        createFile(path, smData);
-        // create failed tasks
-        params = new Object[]{objectName, id, String.valueOf(i + 2), id};
-        path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
-        createFile(path, data);
-      }
-      // print created objects
-      createEmptyFile(new Path(getBaseURI(), sparkSuccessFormat));
-      FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName));
-      Assert.assertTrue(stats.length == parts);
-      Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectNameTmp), true));
-      Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectName), true));
-      FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName));
-      Assert.assertTrue(stats1.length == 0);
+    Assume.assumeNotNull(getFs());
+    //check that object is of Spark origin
+    Assert.assertTrue(true == getFs().exists(new Path(getBaseURI(), objectName)));
+    Object[] params;
+    for (int i = 0;i < parts; i++) {
+      String id = String.format("%0" + 2 + "d", i);
+      params = new Object[]{objectName, id, String.valueOf(i), id};
+      Path path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
+      createFile(path, smData);
+      // create failed tasks
+      params = new Object[]{objectName, id, String.valueOf(i + 1), id};
+      path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
+      createFile(path, smData);
+      // create failed tasks
+      params = new Object[]{objectName, id, String.valueOf(i + 2), id};
+      path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
+      createFile(path, data);
     }
+    // print created objects
+    createEmptyFile(new Path(getBaseURI(), sparkSuccessFormat));
+    FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName));
+    Assert.assertTrue(stats.length == parts);
+    Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectNameTmp), true));
+    Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectName), true));
+    FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName));
+    Assert.assertTrue(stats1.length == 0);
   }
 
   @Test
   public void testDataCompositeObject() throws Exception {
-    if (getFs() != null) {
-      //check that object is of Spark origin
-      Assert.assertTrue(true == getFs().exists(new Path(getBaseURI(), objectName1)));
-      Object[] params;
-      for (int i = 0;i < parts; i++) {
-        String id = String.format("%0" + 2 + "d", i);
-        params = new Object[]{objectName1, id, String.valueOf(i), id};
-        Path path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
-        createFile(path, smData);
-        // create failed tasks
-        params = new Object[]{objectName1, id, String.valueOf(i + 1), id};
-        path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
-        createFile(path, smData);
-        // create failed tasks
-        params = new Object[]{objectName1, id, String.valueOf(i + 2), id};
-        path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
-        createFile(path, data);
-      }
-      // print created objects
-      createEmptyFile(new Path(getBaseURI(), sparkSuccessFormat1));
-      FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName1));
-      Assert.assertTrue(stats.length == parts);
-      Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectNameTmp1), true));
-      Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectName1), true));
-      FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
-      Assert.assertTrue(stats1.length == 0);
+    Assume.assumeNotNull(getFs());
+    //check that object is of Spark origin
+    Assert.assertTrue(true == getFs().exists(new Path(getBaseURI(), objectName1)));
+    Object[] params;
+    for (int i = 0;i < parts; i++) {
+      String id = String.format("%0" + 2 + "d", i);
+      params = new Object[]{objectName1, id, String.valueOf(i), id};
+      Path path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
+      createFile(path, smData);
+      // create failed tasks
+      params = new Object[]{objectName1, id, String.valueOf(i + 1), id};
+      path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
+      createFile(path, smData);
+      // create failed tasks
+      params = new Object[]{objectName1, id, String.valueOf(i + 2), id};
+      path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
+      createFile(path, data);
     }
+    // print created objects
+    createEmptyFile(new Path(getBaseURI(), sparkSuccessFormat1));
+    FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName1));
+    Assert.assertTrue(stats.length == parts);
+    Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectNameTmp1), true));
+    Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectName1), true));
+    FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
+    Assert.assertTrue(stats1.length == 0);
   }
 
 }
