@@ -145,7 +145,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
     try {
       // Check copy operation returns true
       Assert.assertTrue(getFs().copy(source, destination));
-      
       // Check _temporary file still exists and is not copied
       Assert.assertTrue(getFs().exists(source));
       Assert.assertFalse(getFs().exists(destination));
