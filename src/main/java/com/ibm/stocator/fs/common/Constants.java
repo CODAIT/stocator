@@ -23,6 +23,18 @@ package com.ibm.stocator.fs.common;
 public class Constants {
 
   /*
+   * Swift name space identifier
+   */
+  public static final String SWIFT = "swift";
+  /*
+   * Swift2d configuration prefix in the core-site.xml
+   */
+  public static final String FS_SWIFT = "fs." + SWIFT;
+  /*
+   * Swift2d configuration key in the core-site.xml
+   */
+  public static final String SWIFT_SERVICE_PREFIX = FS_SWIFT + ".service.";
+  /*
    * Swift2d name space identifier
    */
   public static final String SWIFT2D = "swift2d";
