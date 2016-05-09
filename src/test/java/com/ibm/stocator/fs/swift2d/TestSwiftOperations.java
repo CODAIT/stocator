@@ -103,7 +103,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
   }
 
   @Test
-  public void testRenameDirectory() throws Exception {
+  public void testCopyDirectory() throws Exception {
     Assume.assumeNotNull(getFs());
     String dirName = "Dir1";
     String[] objects = {"file1", "file2", "subDirB/file3"};
@@ -135,7 +135,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
   }
 
   @Test
-  public void testRenameTemp() throws Exception {
+  public void testCopyTemp() throws Exception {
     Assume.assumeNotNull(getFs());
     String object = "file1/_temporary";
     Path source = new Path(getBaseURI() + "/" + object);
@@ -156,7 +156,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
   }
 
   @Test
-  public void testRenameDifferentContainers() throws Exception {
+  public void testCopyDifferentContainers() throws Exception {
     Assume.assumeNotNull(getFs());
     String object = "file1";
     Path source = new Path(getBaseURI() + "/" + object);
