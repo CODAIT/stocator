@@ -23,17 +23,17 @@ package com.ibm.stocator.fs.common;
 public class Constants {
 
   /*
-   * Swift name space identifier
+   * Swift2d name space identifier
    */
-  public static final String SWIFT = "swift2d";
+  public static final String SWIFT2D = "swift2d";
   /*
-   * Swift configuration prefix in the core-site.xml
+   * Swift2d configuration prefix in the core-site.xml
    */
-  public static final String FS_SWIFT = "fs." + SWIFT;
+  public static final String FS_SWIFT2D = "fs." + SWIFT2D;
   /*
-   * Swift configuration key in the core-site.xml
+   * Swift2d configuration key in the core-site.xml
    */
-  public static final String SWIFT_SERVICE_PREFIX = FS_SWIFT + ".service.";
+  public static final String SWIFT2D_SERVICE_PREFIX = FS_SWIFT2D + ".service.";
   /*
    * Hadoop identification for the temporary directory
    */

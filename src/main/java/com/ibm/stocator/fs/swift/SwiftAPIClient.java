@@ -213,7 +213,7 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public String getScheme() {
-    return Constants.SWIFT;
+    return Constants.SWIFT2D;
   }
 
   @Override
