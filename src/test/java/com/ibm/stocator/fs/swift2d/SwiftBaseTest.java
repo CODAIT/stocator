@@ -22,6 +22,7 @@ import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -82,6 +83,12 @@ public class SwiftBaseTest extends Assert {
 
   @After
   public void tearDown() throws Exception {
+    // Clean up generated files
+    Path rootDir = new Path(getBaseURI());
+    FileStatus[] files = getFs().listStatus(rootDir);
+    for (FileStatus file : files) {
+      getFs().delete(file.getPath(), false);
+    }
   }
 
   @AfterClass

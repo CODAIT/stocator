@@ -157,8 +157,13 @@ public class SwiftOutputStream extends OutputStream {
     String prevSplitName = oldURL.getPath();
     String currSplitName;
     if (splitCount == 0) {
-      currSplitName = new StringBuilder(prevSplitName).insert(prevSplitName.lastIndexOf('-') + 1,
-              "split-" + String.format("%05d", ++splitCount) + "-").toString();
+      if (prevSplitName.contains("partition-\\d\\d\\d\\d\\d")) {
+        currSplitName = new StringBuilder(prevSplitName).insert(prevSplitName.lastIndexOf('-') + 1,
+                "split-" + String.format("%05d", ++splitCount) + "-").toString();
+      } else {
+        currSplitName = new StringBuilder(prevSplitName).append("-split-"
+                + String.format("%05d", ++splitCount)).toString();
+      }
     } else {
       currSplitName = prevSplitName.replaceAll("split-\\d\\d\\d\\d\\d",
               "split-" + String.format("%05d", ++splitCount));
