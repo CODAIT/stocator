@@ -25,6 +25,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,15 +159,17 @@ public class SwiftOutputStream extends OutputStream {
     String prevSplitName = oldURL.getPath();
     String currSplitName;
     if (splitCount == 0) {
-      if (prevSplitName.contains("partition-\\d\\d\\d\\d\\d")) {
-        currSplitName = new StringBuilder(prevSplitName).insert(prevSplitName.lastIndexOf('-') + 1,
+      Pattern p = Pattern.compile("part-\\d\\d\\d\\d\\d-");
+      Matcher m = p.matcher(prevSplitName);
+      if (m.find()) {
+        currSplitName = new StringBuilder(prevSplitName).insert(m.end(),
                 "split-" + String.format("%05d", ++splitCount) + "-").toString();
       } else {
         currSplitName = new StringBuilder(prevSplitName).append("-split-"
                 + String.format("%05d", ++splitCount)).toString();
       }
     } else {
-      currSplitName = prevSplitName.replaceAll("split-\\d\\d\\d\\d\\d",
+      currSplitName = prevSplitName.replace("split-\\d\\d\\d\\d\\d",
               "split-" + String.format("%05d", ++splitCount));
     }
     URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority() + currSplitName);
