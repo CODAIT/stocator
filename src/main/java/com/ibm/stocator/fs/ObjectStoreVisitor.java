@@ -33,7 +33,7 @@ import com.ibm.stocator.fs.swift.SwiftAPIClient;
 public class ObjectStoreVisitor {
   public static IStoreClient getStoreClient(String nameSpace,
       URI fsuri, Configuration conf) throws IOException {
-    if (nameSpace.equals(Constants.SWIFT)) {
+    if (nameSpace.equals(Constants.SWIFT2D)) {
       IStoreClient storeClient = new SwiftAPIClient(fsuri, conf);
       return storeClient;
     }
