@@ -77,7 +77,6 @@ public final class ConfigurationHandler {
       String prefix = SWIFT_SERVICE_PREFIX + service;
       String prefix2D = SWIFT2D_SERVICE_PREFIX + service;
       props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
-
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, USERNAME, props, SWIFT_USERNAME_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, PASSWORD, props, SWIFT_PASSWORD_PROPERTY, true);
@@ -86,10 +85,11 @@ public final class ConfigurationHandler {
           false);
       Utils.updateProperty(conf, prefix2D, prefix, BLOCK_SIZE, props, SWIFT_BLOCK_SIZE_PROPERTY,
           false);
+
       Utils.updateProperty(conf, prefix2D, prefix, OBJECT_SIZE, props, SWIFT_OBJECT_SIZE_PROPERTY,
           false);
       Utils.updateProperty(conf, prefix2D, prefix, FMODE_DELETE_TEMP_DATA, props,
-                FMODE_AUTOMATIC_DELETE_PROPERTY, false);
+          FMODE_AUTOMATIC_DELETE_PROPERTY, false);
       Utils.updateProperty(conf, prefix2D, prefix, PUBLIC, props, SWIFT_PUBLIC_PROPERTY, false);
       String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY, KEYSTONE_V3_AUTH);
       props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, authMethod);

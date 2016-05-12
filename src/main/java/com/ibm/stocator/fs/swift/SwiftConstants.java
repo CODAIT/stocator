@@ -58,7 +58,7 @@ public class SwiftConstants {
   public static final String SWIFT_BLOCK_SIZE_PROPERTY = Constants.FS_SWIFT2D + BLOCK_SIZE;
 
   public static final String OBJECT_SIZE = ".object.size";
-  public static final String SWIFT_OBJECT_SIZE_PROPERTY = Constants.FS_SWIFT + OBJECT_SIZE;
+  public static final String SWIFT_OBJECT_SIZE_PROPERTY = Constants.FS_SWIFT2D + OBJECT_SIZE;
 
   public static final String FMODE_DELETE_TEMP_DATA = ".failure.mode.delete";
   public static final String FMODE_AUTOMATIC_DELETE_PROPERTY = Constants.FS_SWIFT2D
