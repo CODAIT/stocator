@@ -83,11 +83,13 @@ public class SwiftBaseTest extends Assert {
 
   @After
   public void tearDown() throws Exception {
-    // Clean up generated files
-    Path rootDir = new Path(getBaseURI());
-    FileStatus[] files = getFs().listStatus(rootDir);
-    for (FileStatus file : files) {
-      getFs().delete(file.getPath(), false);
+    if (getBaseURI() != null) {
+      // Clean up generated files
+      Path rootDir = new Path(getBaseURI());
+      FileStatus[] files = getFs().listStatus(rootDir);
+      for (FileStatus file : files) {
+        getFs().delete(file.getPath(), false);
+      }
     }
   }
 
