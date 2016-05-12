@@ -169,7 +169,7 @@ public class SwiftOutputStream extends OutputStream {
                 + String.format("%05d", ++splitCount)).toString();
       }
     } else {
-      currSplitName = prevSplitName.replace("split-\\d\\d\\d\\d\\d",
+      currSplitName = prevSplitName.replaceAll("split-\\d\\d\\d\\d\\d",
               "split-" + String.format("%05d", ++splitCount));
     }
     URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority() + currSplitName);
