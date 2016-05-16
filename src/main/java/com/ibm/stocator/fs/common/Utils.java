@@ -27,8 +27,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ibm.stocator.fs.swift.SwiftAPIClient;
-
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class Utils {
@@ -38,7 +36,7 @@ public class Utils {
   /*
    * Logger
    */
-  private static final Logger LOG = LoggerFactory.getLogger(SwiftAPIClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
 
   /**
    * IOException if the host name is not comply with container.service
