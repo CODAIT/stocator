@@ -1,8 +1,8 @@
 Stocator - Storage Connector for Apache Spark
 ==============================
-Apache Spark can work with multiple data sources that include object stores like Amazon S3, OpenStack Swift, IBM SoftLayer, and more. To access an object store, Spark uses Hadoop modules that contain drivers to the various object stores. 
+Apache Spark can work with multiple data sources that include object stores like Amazon S3, OpenStack Swift, IBM SoftLayer, and more. To access an object store, Apache Spark uses Hadoop modules that contain drivers to the various object stores. 
 
-Spark needs only small set of object store functionalities. Specifically, Spark requires object listing, objects creation, read objects, and getting data partitions. Hadoop drivers, however, must be compliant with the Hadoop eco system. This means they support many more operations, such as shell operations on directories, including move, copy, rename, etc. (these are not native object store operations). Moreover, Hadoop Map Reduce Client is designed to work with file systems and not object stores. The temp files and folders it uses for every write operation are renamed, copied, and deleted. This leads to dozens of useless requests targeted at the object store. It’s clear that Hadoop is designed to work with file systems and not object stores.
+Apache Spark needs only small set of object store functionalities. Specifically, Apache Spark requires object listing, objects creation, read objects, and getting data partitions. Hadoop drivers, however, must be compliant with the Hadoop eco system. This means they support many more operations, such as shell operations on directories, including move, copy, rename, etc. (these are not native object store operations). Moreover, Hadoop Map Reduce Client is designed to work with file systems and not object stores. The temp files and folders it uses for every write operation are renamed, copied, and deleted. This leads to dozens of useless requests targeted at the object store. It’s clear that Hadoop is designed to work with file systems and not object stores.
 
 Stocator is implicitly designed for the object stores, it has very a different architecture from the existing Hadoop driver. It doesn’t depends on the Hadoop modules and interacts directly with object stores.
 
@@ -10,7 +10,7 @@ Stocator is a generic connector, that may contain various implementations for ob
 
 ## Major features
 * Implements Hadoop FileSystem interface
-* No need to change or recompile Spark
+* No need to change or recompile Apache Spark
 * Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
 * Object's name may contain "/" and thus simulate directory structure
 * Containers / buckets are automatically created
@@ -39,7 +39,7 @@ Stocator verifies that
 
 	mapreduce.fileoutputcommitter.marksuccessfuljobs=true
 
-The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not exists at all in the Spark's configuration
+The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not exists at all in the Apache Spark's configuration
 
 ### Reference the new driver in the core-site.xml
 Add driver reference in the `conf/core-site.xml` of Spark
@@ -166,16 +166,17 @@ It's possible to provide configuration keys in run time, without keeping them in
 
 	sc.hadoopConfiguration.set("KEY","VALUE")
 
-## Execution without compiling Spark
-It is possible to execute Spark with the new driver, without compiling Spark.
+## Execution without compiling Apache Spark
+It is possible to execute Apache Spark with the new driver, without compiling Apache Spark.
 Directory `stocator/target` contains standalone jar `stocator-1.0.1-jar-with-dependencies.jar`.
  
-Run Spark with 
+Run Apache Spark with 
 
 	./bin/spark-shell --jars stocator-1.0.1-jar-with-dependencies.jar
-## Execution with Spark compilation
 
-### Configure maven build in Spark
+## Execution with Apache Spark compilation
+
+### Configure maven build in Apache Spark
 Both main `pom.xml` and `core/pom.xml` should be modified.
  
  add to the `<properties>` of the main pom.xml
@@ -200,8 +201,8 @@ modify `core/pom.xml` to include `stocator`
 
 	
 	
-### Compile Spark
-Compile Spark with Haddop support 
+### Compile Apache Spark
+Compile Apache Spark with Haddop support 
 
 	mvn -Phadoop-2.6 -Dhadoop.version=2.6.0 -DskipTests package
 
@@ -282,5 +283,5 @@ Use `stocator@googlegroups.com` to post questions.
 Please follow our [wiki](https://github.com/SparkTC/stocator/wiki) for more details.
 More information about Stocator can be find at
 
-* [Fast Lane for Connecting Object Stores to Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
-* [Exabytes, Elephants, Objects and Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
+* [Fast Lane for Connecting Object Stores to Apache Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
+* [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
