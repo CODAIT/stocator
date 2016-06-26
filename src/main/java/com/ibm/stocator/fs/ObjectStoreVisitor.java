@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -31,9 +33,17 @@ import com.ibm.stocator.fs.swift.SwiftAPIClient;
  *
  */
 public class ObjectStoreVisitor {
+
+  /*
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(ObjectStoreVisitor.class);
+
   public static IStoreClient getStoreClient(String nameSpace,
       URI fsuri, Configuration conf) throws IOException {
-    if (nameSpace.equals(Constants.SWIFT2D)) {
+    String providedNameSpace = conf.get("fs.swift.schema", Constants.SWIFT2D);
+    LOG.debug("Stocator name space : {}, provided {}", nameSpace, providedNameSpace);
+    if (nameSpace.equals(providedNameSpace)) {
       IStoreClient storeClient = new SwiftAPIClient(fsuri, conf);
       return storeClient;
     }

@@ -137,6 +137,8 @@ public class SwiftAPIClient implements IStoreClient {
 
   private final long bufferSize = 65536;
 
+  private final String schemaProvided;
+
   /**
    * Constructor method
    *
@@ -148,6 +150,7 @@ public class SwiftAPIClient implements IStoreClient {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     String preferredRegion = null;
+    schemaProvided = conf.get("fs.swift.schema", Constants.SWIFT2D);
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
@@ -213,7 +216,7 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public String getScheme() {
-    return Constants.SWIFT2D;
+    return schemaProvided;
   }
 
   @Override
