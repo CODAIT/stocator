@@ -44,6 +44,7 @@ public class ObjectStoreVisitor {
     String providedNameSpace = conf.get("fs.swift.schema", Constants.SWIFT2D);
     LOG.debug("Stocator name space : {}, provided {}", nameSpace, providedNameSpace);
     if (nameSpace.equals(providedNameSpace)) {
+      LOG.info("Swift API registered as {} for {}", nameSpace, fsuri.toString());
       IStoreClient storeClient = new SwiftAPIClient(fsuri, conf);
       return storeClient;
     }
