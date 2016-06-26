@@ -17,6 +17,7 @@
 
 package  com.ibm.stocator.fs.swift2d;
 
+import java.io.IOException;
 import java.text.MessageFormat;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -81,4 +82,24 @@ public class TestSwiftOperations extends SwiftBaseTest {
     stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
     Assert.assertTrue(0 == stats.length);
   }
+
+  @Test
+  public void testFileExists() throws IOException {
+    Assume.assumeNotNull(getFs());
+    Path testFile = new Path(getBaseURI() + "/testFile");
+    createFile(testFile, data);
+    Assert.assertTrue(getFs().exists(testFile));
+  }
+
+  @Test
+  public void testListStatus() throws IOException {
+    Assume.assumeNotNull(getFs());
+    String[] testFileNames = {"/FileA", "/FileB", "/Dir/FileC"};
+    for (String name : testFileNames) {
+      createFile(new Path(getBaseURI() + name), data);
+    }
+    FileStatus[] results = getFs().listStatus(new Path(getBaseURI()));
+    Assert.assertEquals(testFileNames.length, results.length);
+  }
+
 }
