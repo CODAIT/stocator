@@ -89,6 +89,9 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Path testFile = new Path(getBaseURI() + "/testFile");
     createFile(testFile, data);
     Assert.assertTrue(getFs().exists(testFile));
+    getFs().delete(testFile, false);
+    FileStatus[]  stats = getFs().listStatus(testFile);
+    Assert.assertTrue(0 == stats.length);
   }
 
   @Test
@@ -100,6 +103,11 @@ public class TestSwiftOperations extends SwiftBaseTest {
     }
     FileStatus[] results = getFs().listStatus(new Path(getBaseURI()));
     Assert.assertEquals(testFileNames.length, results.length);
+    for (String name : testFileNames) {
+      getFs().delete(new Path(getBaseURI() + name), false);
+    }
+    results = getFs().listStatus(new Path(getBaseURI()));
+    Assert.assertTrue(0 == results.length);
   }
 
 }
