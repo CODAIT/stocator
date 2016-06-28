@@ -1,0 +1,50 @@
+<configuration>
+
+<property>
+   <name>fs.swift2d.test.uri</name>
+   <value>swift2d://drivertest.bmv3</value>
+</property>
+
+<property>
+   <name>fs.swift2d.impl</name>
+   <value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+</property>
+
+    <property>
+        <name>fs.swift2d.service.bmv3.auth.url</name>
+        <value>https://identity.open.softlayer.com/v3/auth/tokens</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.public</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.username</name>
+        <value>c2ed8781141b4b289faffcb22941f863</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.tenant</name>
+        <value>f6efd226f56f4021b6c724eee8085ba6</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.password</name>
+        <value>l!Uk5/PZ}1NxY/1I</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.userid</name>
+        <value>c2ed8781141b4b289faffcb22941f863</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.auth.method</name>
+        <value>keystoneV3</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.region</name>
+        <value>dallas</value>
+    </property>
+    <property>
+        <name>fs.swift2d.service.bmv3.object.size</name>
+        <value>1</value>
+    </property>
+
+</configuration>

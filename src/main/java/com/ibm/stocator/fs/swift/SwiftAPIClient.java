@@ -42,6 +42,7 @@ import org.javaswift.joss.model.StoredObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -49,6 +50,9 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.PoolingClientConnectionManager;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -94,7 +98,7 @@ public class SwiftAPIClient implements IStoreClient {
   /*
    * root container
    */
-  private final String container;
+  private String container;
   /*
    * should use public or private URL
    */
@@ -130,6 +134,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private Map<String, Boolean> cachedSparkJobsStatus;
 
+  public HttpClient httpClient;
   /*
    * Page size for container listing
    */
@@ -149,8 +154,8 @@ public class SwiftAPIClient implements IStoreClient {
   public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
-    String preferredRegion = null;
     schemaProvided = conf.get("fs.swift.schema", Constants.SWIFT2D);
+
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
@@ -161,57 +166,79 @@ public class SwiftAPIClient implements IStoreClient {
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
 
-    if (authMethod.equals(PUBLIC_ACCESS)) {
-      // we need to extract container name and path from the public URL
-      String publicURL = filesystemURI.toString().replace("swift2d", "https");
-      LOG.debug("publicURL: {}", publicURL);
-      String accessURL = Utils.extractAccessURL(publicURL);
-      LOG.debug("auth url {}", accessURL);
-      config.setAuthUrl(accessURL);
-      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
-      container = Utils.extractDataRoot(publicURL, accessURL);
-      DummyAccessProvider p = new DummyAccessProvider(accessURL);
-      config.setAccessProvider(p);
-      mAccount = new DummyAccountFactory(config).createAccount();
-    } else {
-      container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
-      String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
-      usePublicURL = "true".equals(isPubProp);
-      config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
-      config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
+    AccountFactory accountFactory;
 
-      if (authMethod.equals("keystone")) {
-        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
-        if (preferredRegion != null) {
-          config.setPreferredRegion(preferredRegion);
-        }
-        config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
-        config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-        config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
-      } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
-        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
-        config.setPreferredRegion(preferredRegion);
-        config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
-        String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
-        String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
-        PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
-        config.setAccessProvider(psap);
-      } else {
-        config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
-        config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-        config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
-      }
-      mAccount = new AccountFactory(config).createAccount();
+    if (authMethod.equals(PUBLIC_ACCESS)) {
+      accountFactory = setupPublicAccount(filesystemURI, config);
+    } else {
+      accountFactory = setupPrivateAccount(props, config, authMethod);
     }
+
+    httpClient = initHttpClient();
+    accountFactory.setHttpClient(httpClient);
+
+    mAccount = accountFactory.createAccount();
     mAccess = mAccount.authenticate();
-    if (preferredRegion != null) {
-      mAccess.setPreferredRegion(preferredRegion);
+    if (config.getPreferredRegion() != null) {
+      mAccess.setPreferredRegion(config.getPreferredRegion());
     }
     Container containerObj = mAccount.getContainer(container);
     if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();
     }
+  }
+
+  private AccountFactory setupPrivateAccount(Properties props, AccountConfig config,
+                                             String authMethod) throws IOException {
+    String preferredRegion = null;
+    container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
+    String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
+    usePublicURL = "true".equals(isPubProp);
+    config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
+    config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
+
+    if (authMethod.equals("keystone")) {
+      preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
+      if (preferredRegion != null) {
+        config.setPreferredRegion(preferredRegion);
+      }
+      config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
+      config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+      config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
+    } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
+      preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
+      config.setPreferredRegion(preferredRegion);
+      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+      String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
+      String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
+      PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
+          config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
+      config.setAccessProvider(psap);
+    } else {
+      config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
+      config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+      config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
+    }
+    return new AccountFactory(config);
+  }
+
+  private AccountFactory setupPublicAccount(URI filesystemURI, AccountConfig config)
+          throws IOException {
+    // we need to extract container name and path from the public URL
+    String publicURL = filesystemURI.toString().replace("swift2d", "https");
+    LOG.debug("publicURL: {}", publicURL);
+    String accessURL = Utils.extractAccessURL(publicURL);
+    LOG.debug("auth url {}", accessURL);
+    config.setAuthUrl(accessURL);
+    config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+    container = Utils.extractDataRoot(publicURL, accessURL);
+    DummyAccessProvider p = new DummyAccessProvider(accessURL);
+    config.setAccessProvider(p);
+    return new DummyAccountFactory(config);
+  }
+
+  private HttpClient initHttpClient() {
+    return new DefaultHttpClient(new PoolingClientConnectionManager());
   }
 
   @Override
@@ -330,9 +357,11 @@ public class SwiftAPIClient implements IStoreClient {
     }
     URL url = new URL(getAccessURL() + "/" + container + "/" + objName);
     try {
+      LOG.info("Getting SwiftInputStream with path: {}", path.toString());
       SwiftInputStream sis = new SwiftInputStream(this, new Path(url.toString()), bufferSize);
       return new FSDataInputStream(sis);
     } catch (IOException e) {
+      e.printStackTrace();
       LOG.error(e.getMessage());
     }
     return null;

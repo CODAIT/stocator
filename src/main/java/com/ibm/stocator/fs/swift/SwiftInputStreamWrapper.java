@@ -22,7 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.commons.httpclient.HttpMethod;
+import org.apache.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +38,9 @@ public class SwiftInputStreamWrapper extends InputStream {
    */
   private static final Logger LOG = LoggerFactory.getLogger(SwiftInputStreamWrapper.class);
   /*
-   * HTTP method
+   * HTTP httpResponse
    */
-  private HttpMethod method;
+  private HttpResponse httpResponse;
   /*
    * Identify closed stream
    */
@@ -57,13 +57,13 @@ public class SwiftInputStreamWrapper extends InputStream {
   /**
    * Constructor
    *
-   * @param methodT HTTP method
+   * @param response HTTP httpResponse
    * @throws IOException if something went wrong
    */
-  public SwiftInputStreamWrapper(HttpMethod methodT) throws IOException {
-    method = methodT;
+  public SwiftInputStreamWrapper(HttpResponse response) throws IOException {
+    httpResponse = response;
     try {
-      inStream = method.getResponseBodyAsStream();
+      inStream = httpResponse.getEntity().getContent();
     } catch (IOException e) {
       inStream = new ByteArrayInputStream(new byte[] {});
       LOG.error(e.getMessage());
@@ -77,7 +77,7 @@ public class SwiftInputStreamWrapper extends InputStream {
   }
 
   /**
-   * Inner close method
+   * Inner close httpResponse
    *
    * @return true if closed successfully
    * @throws IOException if close failed
@@ -85,12 +85,12 @@ public class SwiftInputStreamWrapper extends InputStream {
   private synchronized boolean innerClose() throws IOException {
     if (!closed) {
       try {
-        if (method != null) {
+/*        if (httpResponse != null) {
           if (!finishReading) {
-            method.abort();
+            httpResponse.abort();
           }
-          method.releaseConnection();
-        }
+          httpResponse.releaseConnection();
+        }*/
         if (inStream != null) {
           inStream.close();
         }

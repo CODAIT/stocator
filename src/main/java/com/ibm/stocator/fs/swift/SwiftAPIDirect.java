@@ -19,15 +19,16 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpConnectionParams;
-import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.commons.httpclient.URI;
 import org.apache.hadoop.fs.Path;
 
 import com.ibm.stocator.fs.common.Constants;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.message.BasicHeader;
 
 /**
  * Direct client to object store implementing Swift API
@@ -42,9 +43,9 @@ public class SwiftAPIDirect {
    * @return SwiftGETResponse input stream and content length
    * @throws IOException if network issues
    */
-  public static SwiftGETResponse getObject(Path path, String authToken)
+  public static SwiftGETResponse getObject(Path path, HttpClient httpClient, String authToken)
       throws IOException {
-    return getObject(path, authToken, 0, 0);
+    return getObject(path, httpClient, authToken, 0, 0);
   }
 
   /**
@@ -57,25 +58,42 @@ public class SwiftAPIDirect {
    * @return SwiftGETResponse that includes input stream and length
    * @throws IOException if network errors
    */
-  public static SwiftGETResponse getObject(Path path, String authToken,
-      long bytesFrom, long bytesTo) throws IOException {
-    GetMethod method = new GetMethod(path.toString());
-    method.addRequestHeader(new Header("X-Auth-Token", authToken));
+  public static SwiftGETResponse getObject(final Path path, HttpClient httpClient, String authToken,
+                                           long bytesFrom, long bytesTo) throws IOException {
+    //GetMethod method = new GetMethod(path.toString());
+
+    System.out.println(path);
+
+    HttpRequest request = new HttpGet() {
+      @Override
+      public String getMethod() {
+        System.out.println("Get method needed");
+        System.out.println("Get method " + path);
+        return null;
+      }
+    };
+
+    request.addHeader(new BasicHeader("X-Auth-Token", authToken));
+    //method.addRequestHeader(new Header("X-Auth-Token", authToken));
     if (bytesTo > 0) {
       final String rangeValue = String.format("bytes=%d-%d", bytesFrom, bytesTo);
-      method.addRequestHeader(new Header(Constants.RANGES_HTTP_HEADER, rangeValue));
+      //method.addRequestHeader(new Header(Constants.RANGES_HTTP_HEADER, rangeValue));
+      request.addHeader(new BasicHeader(Constants.RANGES_HTTP_HEADER, rangeValue));
     }
-    HttpMethodParams methodParams = method.getParams();
-    methodParams.setParameter(HttpMethodParams.RETRY_HANDLER,
-        new DefaultHttpMethodRetryHandler(3, false));
-    methodParams.setIntParameter(HttpConnectionParams.CONNECTION_TIMEOUT, 15000);
-    methodParams.setSoTimeout(60000);
-    method.addRequestHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
-    final HttpClient client = new HttpClient();
-    int statusCode = client.executeMethod(method);
-    SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(method);
+//    HttpMethodParams methodParams = method.getParams();
+//    methodParams.setParameter(HttpMethodParams.RETRY_HANDLER,
+//        new DefaultHttpMethodRetryHandler(3, false));
+//    methodParams.setIntParameter(HttpConnectionParams.CONNECTION_TIMEOUT, 15000);
+//    methodParams.setSoTimeout(60000);
+    //method.addRequestHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
+    request.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
+
+    HttpHost host = new HttpHost(new URI(path.toString()).getHost());
+
+    HttpResponse response = httpClient.execute(host, request);
+    SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(response);
     SwiftGETResponse getResponse = new SwiftGETResponse(httpStream,
-        method.getResponseContentLength());
+        response.getEntity().getContentLength());
     return getResponse;
   }
 }

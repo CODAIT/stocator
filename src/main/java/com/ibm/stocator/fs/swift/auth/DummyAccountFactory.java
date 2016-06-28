@@ -18,6 +18,7 @@
 package com.ibm.stocator.fs.swift.auth;
 
 import org.javaswift.joss.client.factory.AccountConfig;
+import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.client.factory.TempUrlHashPrefixSource;
 import org.javaswift.joss.client.mock.ClientMock;
@@ -26,7 +27,7 @@ import org.javaswift.joss.model.Client;
 
 import org.apache.http.client.HttpClient;
 
-public class DummyAccountFactory {
+public class DummyAccountFactory extends AccountFactory{
 
   private final AccountConfig mConfig;
 
