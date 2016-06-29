@@ -19,11 +19,9 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.URI;
-import org.apache.hadoop.fs.Path;
-
 import com.ibm.stocator.fs.common.Constants;
-import org.apache.http.HttpRequest;
+
+import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -60,18 +58,8 @@ public class SwiftAPIDirect {
    */
   public static SwiftGETResponse getObject(final Path path, HttpClient httpClient, String authToken,
                                            long bytesFrom, long bytesTo) throws IOException {
-    //GetMethod method = new GetMethod(path.toString());
 
-    System.out.println(path);
-
-    HttpRequest request = new HttpGet() {
-      @Override
-      public String getMethod() {
-        System.out.println("Get method needed");
-        System.out.println("Get method " + path);
-        return null;
-      }
-    };
+    HttpGet request = new HttpGet(path.toUri());
 
     request.addHeader(new BasicHeader("X-Auth-Token", authToken));
     //method.addRequestHeader(new Header("X-Auth-Token", authToken));
@@ -88,7 +76,7 @@ public class SwiftAPIDirect {
     //method.addRequestHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
     request.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
 
-    HttpHost host = new HttpHost(new URI(path.toString()).getHost());
+    HttpHost host = new HttpHost(path.toUri().getHost());
 
     HttpResponse response = httpClient.execute(host, request);
     SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(response);
