@@ -53,6 +53,8 @@ import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -238,7 +240,18 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   private HttpClient initHttpClient() {
-    return new DefaultHttpClient(new PoolingClientConnectionManager());
+    PoolingClientConnectionManager manager = new PoolingClientConnectionManager();
+    manager.setDefaultMaxPerRoute(25);
+    manager.setMaxTotal(30);
+    LOG.warn("Max per route: {} | Max Total: {}", manager.getDefaultMaxPerRoute(),
+            manager.getMaxTotal());
+    HttpClient client = new DefaultHttpClient(manager);
+    HttpParams params = client.getParams();
+//    HttpConnectionParams.setSoTimeout(params, 10000);
+//    HttpConnectionParams.setConnectionTimeout(params, 20000);
+    HttpConnectionParams.setSoKeepalive(params, false);
+
+    return client;
   }
 
   @Override

@@ -18,6 +18,7 @@
 
 package com.ibm.stocator.fs.swift;
 
+import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 
@@ -25,6 +26,7 @@ import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.fs.Path;
 
+import org.apache.http.HttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +50,9 @@ class SwiftInputStream extends FSInputStream {
    */
   private final SwiftAPIClient apiClient;
   /*
-   * Swift input stream wrapper
+   * Swift input stream
    */
-  private SwiftInputStreamWrapper httpStream;
+  private BufferedInputStream reader;
   /*
    * Data patch
    */
@@ -81,9 +83,9 @@ class SwiftInputStream extends FSInputStream {
     apiClient = apiClientT;
     path = pathT;
     bufferSize = bufferSizeT;
-    SwiftGETResponse response = SwiftAPIDirect.getObject(path, apiClient.httpClient,
+    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.httpClient,
         apiClient.getAccount().authenticate().getToken());
-    httpStream = response.getStreamWrapper();
+    reader = new BufferedInputStream(response.getEntity().getContent());
   }
 
   /**
@@ -116,13 +118,13 @@ class SwiftInputStream extends FSInputStream {
     isConnectionOpen();
     int result = -1;
     try {
-      result = httpStream.read();
+      result = reader.read();
     } catch (IOException e) {
       LOG.debug("IOException in reading {}" + path);
       LOG.debug(e.getMessage());
       if (reopenBuffer()) {
         LOG.debug("Reopen successfull");
-        result = httpStream.read();
+        result = reader.read();
       }
     }
     if (result != -1) {
@@ -137,7 +139,7 @@ class SwiftInputStream extends FSInputStream {
     int result = -1;
     try {
       isConnectionOpen();
-      result = httpStream.read(b, off, len);
+      result = reader.read(b, off, len);
     } catch (ConnectionClosedException e) {
       LOG.warn("Connection was closed during reading {}, try to reopen", path);
       LOG.warn(e.getMessage());
@@ -146,11 +148,14 @@ class SwiftInputStream extends FSInputStream {
       LOG.warn("IOException during reading {}, try to reopen", path);
       LOG.warn(e.getMessage());
       if (reopenBuffer()) {
-        result = httpStream.read(b, off, len);
+        result = reader.read(b, off, len);
       }
     }
     if (result > 0) {
       movePosition(result);
+    } else {
+      LOG.warn("Closing stream");
+      close();
     }
     return result;
   }
@@ -176,11 +181,11 @@ class SwiftInputStream extends FSInputStream {
   @Override
   public synchronized void close() throws IOException {
     try {
-      if (httpStream != null) {
-        httpStream.close();
+      if (reader != null) {
+        reader.close();
       }
     } finally {
-      httpStream = null;
+      reader = null;
     }
   }
 
@@ -190,7 +195,7 @@ class SwiftInputStream extends FSInputStream {
    * @throws ConnectionClosedException if closed
    */
   private void isConnectionOpen() throws ConnectionClosedException {
-    if (httpStream == null) {
+    if (reader == null) {
       throw new ConnectionClosedException("http stream is null");
     }
   }
@@ -204,10 +209,10 @@ class SwiftInputStream extends FSInputStream {
    */
   private int chompBytes(long bytes) throws IOException {
     int count = 0;
-    if (httpStream != null) {
+    if (reader != null) {
       int result;
       for (long i = 0; i < bytes; i++) {
-        result = httpStream.read();
+        result = reader.read();
         if (result < 0) {
           throw new IOException("Error while chomping");
         }
@@ -255,10 +260,10 @@ class SwiftInputStream extends FSInputStream {
   private void loadIntoBuffer(long targetPos) throws IOException {
     long length = targetPos + bufferSize;
     LOG.debug("Reading {} bytes starting at {}", length, targetPos);
-    SwiftGETResponse response = SwiftAPIDirect.getObject(path, apiClient.httpClient,
+    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.httpClient,
         apiClient.getAccount().authenticate().getToken(), targetPos, targetPos + length - 1);
-    httpStream = response.getStreamWrapper();
-    updateStartOfBufferPosition(targetPos, response.getResponseSize());
+    reader = new BufferedInputStream(response.getEntity().getContent());
+    updateStartOfBufferPosition(targetPos, response.getEntity().getContentLength());
   }
 
   @Override

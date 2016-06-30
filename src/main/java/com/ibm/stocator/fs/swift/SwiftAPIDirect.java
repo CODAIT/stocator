@@ -38,10 +38,10 @@ public class SwiftAPIDirect {
    *
    * @param path path to object
    * @param authToken authentication token
-   * @return SwiftGETResponse input stream and content length
+   * @return HttpResponse input stream and content length
    * @throws IOException if network issues
    */
-  public static SwiftGETResponse getObject(Path path, HttpClient httpClient, String authToken)
+  public static HttpResponse getObject(Path path, HttpClient httpClient, String authToken)
       throws IOException {
     return getObject(path, httpClient, authToken, 0, 0);
   }
@@ -53,35 +53,25 @@ public class SwiftAPIDirect {
    * @param authToken authentication token
    * @param bytesFrom from from
    * @param bytesTo bytes to
-   * @return SwiftGETResponse that includes input stream and length
+   * @return HttpResponse that includes input stream and length
    * @throws IOException if network errors
    */
-  public static SwiftGETResponse getObject(final Path path, HttpClient httpClient, String authToken,
+  public static HttpResponse getObject(final Path path, HttpClient httpClient, String authToken,
                                            long bytesFrom, long bytesTo) throws IOException {
 
     HttpGet request = new HttpGet(path.toUri());
-
     request.addHeader(new BasicHeader("X-Auth-Token", authToken));
-    //method.addRequestHeader(new Header("X-Auth-Token", authToken));
+
     if (bytesTo > 0) {
       final String rangeValue = String.format("bytes=%d-%d", bytesFrom, bytesTo);
       //method.addRequestHeader(new Header(Constants.RANGES_HTTP_HEADER, rangeValue));
       request.addHeader(new BasicHeader(Constants.RANGES_HTTP_HEADER, rangeValue));
     }
-//    HttpMethodParams methodParams = method.getParams();
-//    methodParams.setParameter(HttpMethodParams.RETRY_HANDLER,
-//        new DefaultHttpMethodRetryHandler(3, false));
-//    methodParams.setIntParameter(HttpConnectionParams.CONNECTION_TIMEOUT, 15000);
-//    methodParams.setSoTimeout(60000);
-    //method.addRequestHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
+
     request.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
-
     HttpHost host = new HttpHost(path.toUri().getHost());
-
     HttpResponse response = httpClient.execute(host, request);
-    SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(response);
-    SwiftGETResponse getResponse = new SwiftGETResponse(httpStream,
-        response.getEntity().getContentLength());
-    return getResponse;
+
+    return response;
   }
 }
