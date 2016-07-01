@@ -315,8 +315,16 @@ public class SwiftAPIClient implements IStoreClient {
 
   public boolean exists(String hostName, Path path) throws IOException, FileNotFoundException {
     LOG.trace("Object exists: {}", path);
+    String objName = path.toString();
+    if (path.toString().startsWith(hostName)) {
+      objName = path.toString().substring(hostName.length());
+    }
+    if (objName.contains(HADOOP_ATTEMPT)) {
+      LOG.debug("Exists on temp object {}. Return false", objName);
+      return false;
+    }
     StoredObject so = mJossAccount.getAccount().getContainer(container)
-        .getObject(path.toString().substring(hostName.length()));
+        .getObject(objName);
     return so.exists();
   }
 

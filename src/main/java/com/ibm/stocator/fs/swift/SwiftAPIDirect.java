@@ -46,6 +46,7 @@ public class SwiftAPIDirect {
   private static final Logger LOG = LoggerFactory.getLogger(SwiftAPIDirect.class);
 
   /**
+   * Get object
    *
    * @param path path to object
    * @param account Joss account wrapper object
