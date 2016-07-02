@@ -72,6 +72,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 
 /**
@@ -313,13 +314,25 @@ public class SwiftAPIClient implements IStoreClient {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * Will return false for any object with _temporary.
+   * No need to HEAD Swift, since _temporary objects are not exists in Swift.
+   *
+   * @param hostName host name
+   * @param path path to the data
+   * @return true if object exists
+   * @throws IOException if error
+   * @throws FileNotFoundException if error
+   */
   public boolean exists(String hostName, Path path) throws IOException, FileNotFoundException {
     LOG.trace("Object exists: {}", path);
     String objName = path.toString();
     if (path.toString().startsWith(hostName)) {
       objName = path.toString().substring(hostName.length());
     }
-    if (objName.contains(HADOOP_ATTEMPT)) {
+    if (objName.contains(HADOOP_TEMPORARY)) {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
     }
