@@ -234,7 +234,7 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public FileStatus getObjectMetadata(String hostName,
       Path path) throws IOException, FileNotFoundException {
-    LOG.debug("Get object metadata: {}, hostname: {}", path, hostName);
+    LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
     /*
       The requested path is equal to hostName.
@@ -670,13 +670,13 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Maps StoredObject of JOSS into Hadoop FileStatus
    *
-   * @param tmp
-   * @param cObj
-   * @param hostName
-   * @param path
+   * @param tmp Stored Object
+   * @param cObj Container Object
+   * @param hostName host name
+   * @param path path to the object
    * @return FileStatus representing current object
-   * @throws IllegalArgumentException
-   * @throws IOException
+   * @throws IllegalArgumentException if error
+   * @throws IOException if error
    */
   private FileStatus getFileStatus(StoredObject tmp, Container cObj,
       String hostName, Path path) throws IllegalArgumentException, IOException {

@@ -151,11 +151,11 @@ public class SwiftOutputStream extends OutputStream {
       // Expecting here 201 Create or 202 Accepted
       int responseCode = mHttpCon.getResponseCode();
       if (responseCode >= 400) {
-        LOG.warn("{}, {}", responseCode, mHttpCon.getResponseMessage());
+        LOG.warn("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
         is = mHttpCon.getErrorStream();
       } else {
         is = mHttpCon.getInputStream();
-        LOG.warn("{}, {}", responseCode, mHttpCon.getResponseMessage());
+        LOG.debug("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
       }
       if (responseCode == 401 || responseCode == 403 || responseCode == 407) {
         // special handling. HTTPconnection already closed stream.
