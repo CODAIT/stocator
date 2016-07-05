@@ -69,6 +69,10 @@ class SwiftInputStream extends FSInputStream {
    * range diff
    */
   private long rangeOffset = 0;
+  /*
+   * Token passed for each Swift API call
+   */
+  private String token;
 
   /**
    * Constructor
@@ -83,8 +87,8 @@ class SwiftInputStream extends FSInputStream {
     apiClient = apiClientT;
     path = pathT;
     bufferSize = bufferSizeT;
-    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.httpClient,
-        apiClient.getAccount().authenticate().getToken());
+    token = apiClient.getAccount().authenticate().getToken();
+    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.getHttpClient(), token);
     reader = new BufferedInputStream(response.getEntity().getContent());
   }
 
@@ -260,8 +264,8 @@ class SwiftInputStream extends FSInputStream {
   private void loadIntoBuffer(long targetPos) throws IOException {
     long length = targetPos + bufferSize;
     LOG.debug("Reading {} bytes starting at {}", length, targetPos);
-    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.httpClient,
-        apiClient.getAccount().authenticate().getToken(), targetPos, targetPos + length - 1);
+    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.getHttpClient(),
+        token, targetPos, targetPos + length - 1);
     reader = new BufferedInputStream(response.getEntity().getContent());
     updateStartOfBufferPosition(targetPos, response.getEntity().getContentLength());
   }

@@ -64,14 +64,19 @@ public class SwiftAPIDirect {
 
     if (bytesTo > 0) {
       final String rangeValue = String.format("bytes=%d-%d", bytesFrom, bytesTo);
-      //method.addRequestHeader(new Header(Constants.RANGES_HTTP_HEADER, rangeValue));
       request.addHeader(new BasicHeader(Constants.RANGES_HTTP_HEADER, rangeValue));
     }
 
     request.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
     HttpHost host = new HttpHost(path.toUri().getHost());
-    HttpResponse response = httpClient.execute(host, request);
+    HttpResponse response = null;
 
+    try {
+      response = httpClient.execute(host, request);
+      return response;
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     return response;
   }
 }

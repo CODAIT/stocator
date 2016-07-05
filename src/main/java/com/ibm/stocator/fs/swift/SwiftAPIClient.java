@@ -114,6 +114,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private Access mAccess;
   /*
+   * Client used to execute HTTP requests
+   */
+  private HttpClient httpClient;
+  /*
    * block size
    */
   private long blockSize;
@@ -136,7 +140,6 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private Map<String, Boolean> cachedSparkJobsStatus;
 
-  public HttpClient httpClient;
   /*
    * Page size for container listing
    */
@@ -241,16 +244,11 @@ public class SwiftAPIClient implements IStoreClient {
 
   private HttpClient initHttpClient() {
     PoolingClientConnectionManager manager = new PoolingClientConnectionManager();
-    manager.setDefaultMaxPerRoute(25);
-    manager.setMaxTotal(30);
-    LOG.warn("Max per route: {} | Max Total: {}", manager.getDefaultMaxPerRoute(),
-            manager.getMaxTotal());
+    manager.setDefaultMaxPerRoute(15);
+    manager.setMaxTotal(15);
     HttpClient client = new DefaultHttpClient(manager);
     HttpParams params = client.getParams();
-//    HttpConnectionParams.setSoTimeout(params, 10000);
-//    HttpConnectionParams.setConnectionTimeout(params, 20000);
-    HttpConnectionParams.setSoKeepalive(params, false);
-
+    HttpConnectionParams.setSoKeepalive(params, true);
     return client;
   }
 
@@ -270,6 +268,10 @@ public class SwiftAPIClient implements IStoreClient {
 
   public Account getAccount() {
     return mAccount;
+  }
+
+  public HttpClient getHttpClient() {
+    return httpClient;
   }
 
   @Override
