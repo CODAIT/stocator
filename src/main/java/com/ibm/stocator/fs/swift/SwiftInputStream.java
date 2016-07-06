@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.exception.ConnectionClosedException;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 /**
  * Swift input stream
@@ -48,7 +49,7 @@ class SwiftInputStream extends FSInputStream {
   /*
    * Swift API client
    */
-  private final SwiftAPIClient apiClient;
+  private JossAccount mJossAccount;
   /*
    * Swift input stream
    */
@@ -77,18 +78,17 @@ class SwiftInputStream extends FSInputStream {
   /**
    * Constructor
    *
-   * @param apiClientT Swift API client
+   * @param jossAccountT Joss Account wrapper
    * @param pathT data patch
    * @param bufferSizeT buffer size
    * @throws IOException if something went wrong
    */
-  public SwiftInputStream(SwiftAPIClient apiClientT, Path pathT,
+  public SwiftInputStream(JossAccount jossAccountT, Path pathT,
       long bufferSizeT) throws IOException {
-    apiClient = apiClientT;
+    mJossAccount = jossAccountT;
     path = pathT;
     bufferSize = bufferSizeT;
-    token = apiClient.getAccount().authenticate().getToken();
-    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.getHttpClient(), token);
+    HttpResponse response = SwiftAPIDirect.getObject(path, mJossAccount);
     reader = new BufferedInputStream(response.getEntity().getContent());
   }
 
@@ -264,10 +264,12 @@ class SwiftInputStream extends FSInputStream {
   private void loadIntoBuffer(long targetPos) throws IOException {
     long length = targetPos + bufferSize;
     LOG.debug("Reading {} bytes starting at {}", length, targetPos);
-    HttpResponse response = SwiftAPIDirect.getObject(path, apiClient.getHttpClient(),
-        token, targetPos, targetPos + length - 1);
+
+    HttpResponse response = SwiftAPIDirect.getObject(path, mJossAccount,
+        targetPos, targetPos + length - 1);
     reader = new BufferedInputStream(response.getEntity().getContent());
     updateStartOfBufferPosition(targetPos, response.getEntity().getContentLength());
+
   }
 
   @Override

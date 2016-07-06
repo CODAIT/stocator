@@ -19,12 +19,15 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHeader;
 
@@ -34,33 +37,40 @@ import org.apache.http.message.BasicHeader;
  */
 public class SwiftAPIDirect {
 
+  /*
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(SwiftAPIDirect.class);
+
   /**
+   * Get object
    *
    * @param path path to object
-   * @param authToken authentication token
+   * @param account Joss Account wrapper object
    * @return HttpResponse input stream and content length
    * @throws IOException if network issues
    */
-  public static HttpResponse getObject(Path path, HttpClient httpClient, String authToken)
+  public static HttpResponse getObject(Path path, JossAccount account)
       throws IOException {
-    return getObject(path, httpClient, authToken, 0, 0);
+    return getObject(path, account, 0, 0);
   }
 
   /**
    * GET object
    *
    * @param path path to object
-   * @param authToken authentication token
+   * @param account Joss Account wrapper obejct
    * @param bytesFrom from from
    * @param bytesTo bytes to
    * @return HttpResponse that includes input stream and length
    * @throws IOException if network errors
    */
-  public static HttpResponse getObject(final Path path, HttpClient httpClient, String authToken,
-                                           long bytesFrom, long bytesTo) throws IOException {
+
+  public static HttpResponse getObject(final Path path, JossAccount account,
+                                       long bytesFrom, long bytesTo) throws IOException {
 
     HttpGet request = new HttpGet(path.toUri());
-    request.addHeader(new BasicHeader("X-Auth-Token", authToken));
+    request.addHeader(new BasicHeader("X-Auth-Token", account.getAuthToken()));
 
     if (bytesTo > 0) {
       final String rangeValue = String.format("bytes=%d-%d", bytesFrom, bytesTo);
@@ -72,7 +82,7 @@ public class SwiftAPIDirect {
     HttpResponse response = null;
 
     try {
-      response = httpClient.execute(host, request);
+      response = account.getHttpClient().execute(host, request);
       return response;
     } catch (IOException e) {
       e.printStackTrace();

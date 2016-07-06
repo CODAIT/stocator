@@ -34,6 +34,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileStatus;
 import com.ibm.stocator.fs.swift.SwiftAPIClient;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 
@@ -44,6 +45,7 @@ public class SwiftAPIClientTest {
   private SwiftAPIClient mSwiftAPIClient;
   private StoredObjectMock mStoredObject;
   private AccountMock mAccount;
+  private JossAccount mJossAccount;
   private ContainerMock mContainer;
   private HashMap mHashMap;
   private String mContainerName;
@@ -52,6 +54,7 @@ public class SwiftAPIClientTest {
   public final void before() {
     mSwiftAPIClient = PowerMockito.mock(SwiftAPIClient.class);
     mAccount = new AccountMock();
+    mJossAccount = PowerMockito.mock(JossAccount.class);
     mContainerName = "aa-bb-cc";
     mContainer = (ContainerMock)new ContainerMock(mAccount, mContainerName).create();
     mHashMap = PowerMockito.spy(new HashMap<String, Boolean>());
@@ -59,7 +62,9 @@ public class SwiftAPIClientTest {
     Whitebox.setInternalState(mSwiftAPIClient, "cachedSparkJobsStatus", mHashMap);
     Whitebox.setInternalState(mSwiftAPIClient, "cachedSparkOriginated", mHashMap);
     Whitebox.setInternalState(mSwiftAPIClient, "container", mContainerName);
-    Whitebox.setInternalState(mSwiftAPIClient, "mAccount", mAccount);
+    Whitebox.setInternalState(mJossAccount, "mAccount", mAccount);
+    PowerMockito.when(mJossAccount.getAccount()).thenReturn(mAccount);
+    Whitebox.setInternalState(mSwiftAPIClient, "mJossAccount", mJossAccount);
   }
 
   @Test

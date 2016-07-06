@@ -19,7 +19,6 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.text.ParseException;
@@ -31,9 +30,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.javaswift.joss.client.factory.AccountConfig;
-import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
-import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
@@ -50,17 +47,12 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
-import com.ibm.stocator.fs.swift.auth.DummyAccountFactory;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -81,6 +73,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 
 /**
@@ -108,15 +101,7 @@ public class SwiftAPIClient implements IStoreClient {
   /*
    * JOSS account object
    */
-  private Account mAccount;
-  /*
-   * JOSS authentication object
-   */
-  private Access mAccess;
-  /*
-   * Client used to execute HTTP requests
-   */
-  private HttpClient httpClient;
+  private JossAccount mJossAccount;
   /*
    * block size
    */
@@ -145,9 +130,20 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final int pageListSize = 100;
 
+  /*
+   * Buffer size
+   */
   private final long bufferSize = 65536;
 
+  /*
+   * support for different schema models
+   */
   private final String schemaProvided;
+
+  /*
+   * Keystone preferred region
+   */
+  private String preferredRegion;
 
   /**
    * Constructor method
@@ -171,31 +167,22 @@ public class SwiftAPIClient implements IStoreClient {
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
 
-    AccountFactory accountFactory;
-
     if (authMethod.equals(PUBLIC_ACCESS)) {
-      accountFactory = setupPublicAccount(filesystemURI, config);
+      setupPublicAccount(filesystemURI, config);
     } else {
-      accountFactory = setupPrivateAccount(props, config, authMethod);
+      setupPrivateAccount(props, config, authMethod);
     }
 
-    httpClient = initHttpClient();
-    accountFactory.setHttpClient(httpClient);
+    mJossAccount.authenticate();
+    Container containerObj = mJossAccount.getAccount().getContainer(container);
 
-    mAccount = accountFactory.createAccount();
-    mAccess = mAccount.authenticate();
-    if (config.getPreferredRegion() != null) {
-      mAccess.setPreferredRegion(config.getPreferredRegion());
-    }
-    Container containerObj = mAccount.getContainer(container);
     if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();
     }
   }
 
-  private AccountFactory setupPrivateAccount(Properties props, AccountConfig config,
+  private void setupPrivateAccount(Properties props, AccountConfig config,
                                              String authMethod) throws IOException {
-    String preferredRegion = null;
     container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
     String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
     usePublicURL = "true".equals(isPubProp);
@@ -217,18 +204,20 @@ public class SwiftAPIClient implements IStoreClient {
       String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
       String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
       PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-          config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
+              config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
       config.setAccessProvider(psap);
     } else {
       config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
       config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
       config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
     }
-    return new AccountFactory(config);
+    mJossAccount = new JossAccount(config,preferredRegion, usePublicURL);
+    mJossAccount.createAccount();
   }
 
-  private AccountFactory setupPublicAccount(URI filesystemURI, AccountConfig config)
+  private void setupPublicAccount(URI filesystemURI, AccountConfig config)
           throws IOException {
+
     // we need to extract container name and path from the public URL
     String publicURL = filesystemURI.toString().replace("swift2d", "https");
     LOG.debug("publicURL: {}", publicURL);
@@ -239,17 +228,8 @@ public class SwiftAPIClient implements IStoreClient {
     container = Utils.extractDataRoot(publicURL, accessURL);
     DummyAccessProvider p = new DummyAccessProvider(accessURL);
     config.setAccessProvider(p);
-    return new DummyAccountFactory(config);
-  }
-
-  private HttpClient initHttpClient() {
-    PoolingClientConnectionManager manager = new PoolingClientConnectionManager();
-    manager.setDefaultMaxPerRoute(15);
-    manager.setMaxTotal(15);
-    HttpClient client = new DefaultHttpClient(manager);
-    HttpParams params = client.getParams();
-    HttpConnectionParams.setSoKeepalive(params, true);
-    return client;
+    mJossAccount = new JossAccount(config, null, true);
+    mJossAccount.createDummyAccount();
   }
 
   @Override
@@ -266,19 +246,11 @@ public class SwiftAPIClient implements IStoreClient {
     return blockSize;
   }
 
-  public Account getAccount() {
-    return mAccount;
-  }
-
-  public HttpClient getHttpClient() {
-    return httpClient;
-  }
-
   @Override
   public FileStatus getObjectMetadata(String hostName,
       Path path) throws IOException, FileNotFoundException {
-    LOG.debug("Get object metadata: {}, hostname: {}", path, hostName);
-    Container cont = mAccount.getContainer(container);
+    LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
+    Container cont = mJossAccount.getAccount().getContainer(container);
     /*
       The requested path is equal to hostName.
       HostName is equal to hostNameScheme, thus the container.
@@ -357,10 +329,30 @@ public class SwiftAPIClient implements IStoreClient {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * Will return false for any object with _temporary.
+   * No need to HEAD Swift, since _temporary objects are not exists in Swift.
+   *
+   * @param hostName host name
+   * @param path path to the data
+   * @return true if object exists
+   * @throws IOException if error
+   * @throws FileNotFoundException if error
+   */
   public boolean exists(String hostName, Path path) throws IOException, FileNotFoundException {
     LOG.trace("Object exists: {}", path);
-    StoredObject so = mAccount.getContainer(container)
-        .getObject(path.toString().substring(hostName.length()));
+    String objName = path.toString();
+    if (path.toString().startsWith(hostName)) {
+      objName = path.toString().substring(hostName.length());
+    }
+    if (objName.contains(HADOOP_TEMPORARY)) {
+      LOG.debug("Exists on temp object {}. Return false", objName);
+      return false;
+    }
+    StoredObject so = mJossAccount.getAccount().getContainer(container)
+        .getObject(objName);
     return so.exists();
   }
 
@@ -370,10 +362,10 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = path.toString().substring(hostName.length());
     }
-    URL url = new URL(getAccessURL() + "/" + container + "/" + objName);
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
     try {
-      LOG.info("Getting SwiftInputStream with path: {}", path.toString());
-      SwiftInputStream sis = new SwiftInputStream(this, new Path(url.toString()), bufferSize);
+      SwiftInputStream sis = new SwiftInputStream(mJossAccount, new Path(url.toString()),
+          bufferSize);
       return new FSDataInputStream(sis);
     } catch (IOException e) {
       e.printStackTrace();
@@ -406,7 +398,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException {
     LOG.debug("List container: raw path parent", path.toString());
-    Container cObj = mAccount.getContainer(container);
+    Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
     if (path.toString().startsWith(container)) {
       obj = path.toString().substring(container.length() + 1);
@@ -512,20 +504,10 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata, Statistics statistics) throws IOException {
-    URL url = new URL(getAccessURL() + "/" + objName);
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + objName);
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
     try {
-      HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
-      httpCon.setDoOutput(true);
-      httpCon.setRequestMethod("PUT");
-      httpCon.addRequestProperty("X-Auth-Token", getAuthToken());
-      httpCon.addRequestProperty("Content-Type", contentType);
-      if (metadata != null && !metadata.isEmpty()) {
-        for (Map.Entry<String, String> entry : metadata.entrySet()) {
-          httpCon.addRequestProperty("X-Object-Meta-" + entry.getKey(), entry.getValue());
-        }
-      }
-      return new FSDataOutputStream(new SwiftOutputStream(httpCon),
+      return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType, metadata),
           statistics);
     } catch (IOException e) {
       LOG.error(e.getMessage());
@@ -540,7 +522,7 @@ public class SwiftAPIClient implements IStoreClient {
       obj = path.toString().substring(hostName.length());
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
-    StoredObject so = mAccount.getContainer(container)
+    StoredObject so = mJossAccount.getAccount().getContainer(container)
         .getObject(obj);
     if (so.exists()) {
       so.delete();
@@ -548,23 +530,9 @@ public class SwiftAPIClient implements IStoreClient {
     return true;
   }
 
-  private String getAuthToken() {
-    return mAccess.getToken();
-  }
-
   @Override
   public URI getAccessURI() throws IOException {
-    return URI.create(getAccessURL());
-  }
-
-  /**
-   * Get authenticated URL
-   */
-  private String getAccessURL() {
-    if (usePublicURL) {
-      return mAccess.getPublicURL();
-    }
-    return mAccess.getInternalURL();
+    return URI.create(mJossAccount.getAccessURL());
   }
 
   /**
@@ -596,7 +564,7 @@ public class SwiftAPIClient implements IStoreClient {
       obj = objectName.substring(container.length() + 1);
     }
     Boolean sparkOriginated = Boolean.FALSE;
-    StoredObject so = mAccount.getContainer(container).getObject(obj);
+    StoredObject so = mJossAccount.getAccount().getContainer(container).getObject(obj);
     if (so.exists()) {
       Object sparkOrigin = so.getMetadata("Data-Origin");
       if (sparkOrigin != null) {
@@ -626,7 +594,9 @@ public class SwiftAPIClient implements IStoreClient {
     if (objectName.toString().startsWith(container)) {
       obj = objectName.substring(container.length() + 1);
     }
-    StoredObject so = mAccount.getContainer(container).getObject(obj + "/" + HADOOP_SUCCESS);
+    Account account = mJossAccount.getAccount();
+    StoredObject so = account.getContainer(container).getObject(obj
+        + "/" + HADOOP_SUCCESS);
     Boolean isJobOK = Boolean.FALSE;
     if (so.exists()) {
       isJobOK = Boolean.TRUE;
@@ -716,13 +686,13 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Maps StoredObject of JOSS into Hadoop FileStatus
    *
-   * @param tmp
-   * @param cObj
-   * @param hostName
-   * @param path
+   * @param tmp Stored Object
+   * @param cObj Container Object
+   * @param hostName host name
+   * @param path path to the object
    * @return FileStatus representing current object
-   * @throws IllegalArgumentException
-   * @throws IOException
+   * @throws IllegalArgumentException if error
+   * @throws IOException if error
    */
   private FileStatus getFileStatus(StoredObject tmp, Container cObj,
       String hostName, Path path) throws IllegalArgumentException, IOException {
