@@ -15,13 +15,12 @@
  * limitations under the License.
  *
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.4</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -43,7 +42,8 @@
        <connection>scm:git:git@github.com:SparkTC/stocator.git</connection>
        <developerConnection>scm:git:git@github.com:SparkTC/stocator.git</developerConnection>
        <url>git@github.com:SparkTC/stocator.git</url>
-    </scm>
+      <tag>v1.0.4</tag>
+  </scm>
 
     <distributionManagement>
         <repository>
