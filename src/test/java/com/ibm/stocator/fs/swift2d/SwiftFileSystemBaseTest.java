@@ -18,6 +18,9 @@
 
 package com.ibm.stocator.fs.swift2d;
 
+import java.io.IOException;
+import java.net.URI;
+
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -25,15 +28,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
-
-import java.io.IOException;
-import java.net.URI;
-
 
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.noteAction;
 
@@ -46,7 +45,6 @@ public class SwiftFileSystemBaseTest extends Assert implements
   protected static final Log LOG =
           LogFactory.getLog(SwiftFileSystemBaseTest.class);
   protected ObjectStoreFileSystem fs;
-  protected static ObjectStoreFileSystem lastFs;
   protected byte[] data = SwiftTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
   private Configuration conf;
   protected String baseURI;
@@ -57,9 +55,7 @@ public class SwiftFileSystemBaseTest extends Assert implements
     noteAction("setup");
     conf = new Configuration();
     baseURI = conf.get(BASE_URI_PROPERTY);
-    if (baseURI == null || baseURI.equals("")) {
-      return;
-    }
+    Assume.assumeNotNull(baseURI);
     final URI uri = new URI(baseURI);
     conf = createConfiguration();
 
@@ -72,8 +68,7 @@ public class SwiftFileSystemBaseTest extends Assert implements
       fs = null;
       throw e;
     }
-    //remember the last FS
-    lastFs = fs;
+
     noteAction("setup complete");
   }
 

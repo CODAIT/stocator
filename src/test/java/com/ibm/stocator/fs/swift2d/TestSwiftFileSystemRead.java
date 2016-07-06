@@ -18,13 +18,13 @@
 
 package com.ibm.stocator.fs.swift2d;
 
-import org.apache.hadoop.fs.BlockLocation;
+import java.io.EOFException;
+import java.io.IOException;
+
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
-import java.io.EOFException;
-import java.io.IOException;
 
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.readBytesToString;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.writeTextFile;
@@ -59,10 +59,10 @@ public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
    */
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testRWJson() throws IOException {
-    final String message = "{" +
-                           " 'json': { 'i':43, 'b':true}," +
-                           " 's':'string'" +
-                           "}";
+    final String message = "{"
+                           + " 'json': { 'i':43, 'b':true},"
+                           + " 's':'string'"
+                           + "}";
     final Path filePath = new Path(getBaseURI() + "/test/file.json");
 
     writeTextFile(fs, filePath, message, false);
@@ -79,10 +79,10 @@ public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
    */
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testRWXML() throws IOException {
-    final String message = "<x>" +
-                           " <json i='43' 'b'=true/>" +
-                           " string" +
-                           "</x>";
+    final String message = "<x>"
+                           + " <json i='43' 'b'=true/>"
+                           + " string"
+                           + "</x>";
     final Path filePath = new Path(getBaseURI() + "/test/file.xml");
 
     writeTextFile(fs, filePath, message, false);

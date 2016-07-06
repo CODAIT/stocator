@@ -18,13 +18,14 @@
 
 package com.ibm.stocator.fs.swift2d;
 
+import java.io.IOException;
+
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
 
 /**
  * Test block location logic.
@@ -62,7 +63,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
   }
 
   private FileStatus createFileAndGetStatus() throws IOException {
-    Path path = path(getBaseURI()+ "/test/locatedFile");
+    Path path = path(getBaseURI() + "/test/locatedFile");
     createFile(path);
     return fs.getFileStatus(path);
   }
@@ -106,8 +107,8 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testLocateOutOfRangeLen() throws Throwable {
-    describe("overshooting the length is legal, as long as the" +
-             " origin location is valid");
+    describe("overshooting the length is legal, as long as the"
+             + " origin location is valid");
 
     BlockLocation[] locations =
       getFs().getFileBlockLocations(createFileAndGetStatus(),
@@ -130,7 +131,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
 
   private void assertEmptyBlockLocations(BlockLocation[] locations) {
     assertNotNull(locations);
-    if (locations.length!=0) {
+    if (locations.length != 0) {
       fail("non empty locations[] with first entry of " + locations[0]);
     }
   }

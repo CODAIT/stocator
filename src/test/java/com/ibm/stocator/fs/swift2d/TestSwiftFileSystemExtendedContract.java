@@ -18,6 +18,10 @@
 
 package com.ibm.stocator.fs.swift2d;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+
 import com.ibm.stocator.fs.ObjectStoreVisitor;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -29,13 +33,10 @@ import org.apache.hadoop.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-
 public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest {
 
   private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
+
   @Ignore("Unexpected")
   public void testOpenNonExistingFile() throws IOException {
     final Path p = new Path("/test/testOpenNonExistingFile");
@@ -56,7 +57,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testCreateFile() throws Exception {
-    final Path f = new Path(getBaseURI()+ "/test/testCreateFile");
+    final Path f = new Path(getBaseURI() + "/test/testCreateFile");
     final FSDataOutputStream fsDataOutputStream = fs.create(f);
     fsDataOutputStream.close();
     assertExists("created file", f);
@@ -65,7 +66,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testWriteReadFile() throws Exception {
-    final Path f = new Path(getBaseURI()+ "/test/test");
+    final Path f = new Path(getBaseURI() + "/test/test");
     final FSDataOutputStream fsDataOutputStream = fs.create(f);
     final String message = "Test string";
     fsDataOutputStream.write(message.getBytes());
@@ -115,8 +116,8 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testFilesystemIsCaseSensitive() throws Exception {
     String mixedCaseFilename = "/test/UPPER.TXT";
-    Path upper = path(getBaseURI()+ mixedCaseFilename);
-    Path lower = path(getBaseURI()+ mixedCaseFilename.toLowerCase());
+    Path upper = path(getBaseURI() + mixedCaseFilename);
+    Path lower = path(getBaseURI() + mixedCaseFilename.toLowerCase());
     assertFalse("File exists" + upper, fs.exists(upper));
     assertFalse("File exists" + lower, fs.exists(lower));
     FSDataOutputStream out = fs.create(upper);
