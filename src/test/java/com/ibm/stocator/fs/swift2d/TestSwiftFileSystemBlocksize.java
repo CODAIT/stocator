@@ -24,7 +24,7 @@ import org.junit.Test;
 
 /**
  * Tests that blocksize is never zero for a file, either in the FS default
- * or the FileStatus value of a queried file 
+ * or the FileStatus value of a queried file
  */
 public class TestSwiftFileSystemBlocksize extends SwiftFileSystemBaseTest {
 

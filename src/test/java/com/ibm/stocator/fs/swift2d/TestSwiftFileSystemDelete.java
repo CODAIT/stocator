@@ -18,11 +18,12 @@
 
 package com.ibm.stocator.fs.swift2d;
 
+import java.io.IOException;
+
 import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
 /**
  * Test deletion operations
  */
@@ -54,7 +55,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     createFile(file);
     assertDeleted(file, true);
   }
-  
+
   @Ignore("Unexpected")
   public void testDeleteNonEmptyFileTwice() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteNonEmptyFileTwice");

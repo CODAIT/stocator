@@ -18,19 +18,17 @@
 
 package com.ibm.stocator.fs.swift2d;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
-import org.junit.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
-
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.assertFileHasLength;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.readBytesToString;
@@ -64,20 +62,20 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
 
   @Ignore("Unexpected")
   public void testDeleteNonexistentFile() throws Throwable {
-    Path path = new Path(getBaseURI() +"/test/DeleteNonexistentFile");
+    Path path = new Path(getBaseURI() + "/test/DeleteNonexistentFile");
     assertFalse("delete returned true", fs.delete(path, false));
   }
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testPutFile() throws Throwable {
-    Path path = new Path(getBaseURI() +"/test/PutFile");
+    Path path = new Path(getBaseURI() + "/test/PutFile");
     writeTextFile(fs, path, "Testing a put to a file", false);
     assertDeleted(path, false);
   }
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testPutGetFile() throws Throwable {
-    Path path = new Path(getBaseURI() +"/test/PutGetFile");
+    Path path = new Path(getBaseURI() + "/test/PutGetFile");
     try {
       String text = "Testing a put and get to a file "
               + System.currentTimeMillis();
@@ -93,24 +91,24 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   @Ignore("Not supported")
   public void testPutDeleteFileInSubdir() throws Throwable {
     Path path =
-            new Path(getBaseURI() +"/test/PutDeleteFileInSubdir/testPutDeleteFileInSubdir");
+            new Path(getBaseURI() + "/test/PutDeleteFileInSubdir/testPutDeleteFileInSubdir");
     String text = "Testing a put and get to a file in a subdir "
             + System.currentTimeMillis();
     writeTextFile(fs, path, text, false);
     assertDeleted(path, false);
     //now delete the parent that should have no children
-    assertDeleted(new Path(getBaseURI() +"/test/PutDeleteFileInSubdir"), false);
+    assertDeleted(new Path(getBaseURI() + "/test/PutDeleteFileInSubdir"), false);
   }
 
   @Ignore("Not supported")
   public void testRecursiveDelete() throws Throwable {
     Path childpath =
-            new Path(getBaseURI() +"/test/testRecursiveDelete");
+            new Path(getBaseURI() + "/test/testRecursiveDelete");
     String text = "Testing a put and get to a file in a subdir "
             + System.currentTimeMillis();
     writeTextFile(fs, childpath, text, false);
     //now delete the parent that should have no children
-    assertDeleted(new Path(getBaseURI() +"/test"), true);
+    assertDeleted(new Path(getBaseURI() + "/test"), true);
     assertFalse("child entry still present " + childpath, fs.exists(childpath));
   }
 
@@ -137,7 +135,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testOverwrite() throws Throwable {
-    Path path = new Path(getBaseURI() +"/test/Overwrite");
+    Path path = new Path(getBaseURI() + "/test/Overwrite");
     try {
       String text = "Testing a put to a file "
               + System.currentTimeMillis();
@@ -156,7 +154,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testOverwriteDirectory() throws Throwable {
-    Path path = new Path(getBaseURI() +"/test/testOverwriteDirectory");
+    Path path = new Path(getBaseURI() + "/test/testOverwriteDirectory");
     try {
       fs.mkdirs(path.getParent());
       String text = "Testing a put to a file "
@@ -212,7 +210,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
 
   @Ignore("Not supported")
   public void testCreateMultilevelDir() throws Throwable {
-    Path base = new Path(getBaseURI() +"/test/CreateMultilevelDir");
+    Path base = new Path(getBaseURI() + "/test/CreateMultilevelDir");
     Path path = new Path(base, "1/2/3");
     fs.mkdirs(path);
     assertExists("deep multilevel dir not created", path);
@@ -224,7 +222,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
 
   @Ignore("Not supported")
   public void testCreateDirWithFileParent() throws Throwable {
-    Path path = new Path(getBaseURI() +"/test/CreateDirWithFileParent");
+    Path path = new Path(getBaseURI() + "/test/CreateDirWithFileParent");
     Path child = new Path(path, "subdir/child");
     fs.mkdirs(path.getParent());
     try {
@@ -249,7 +247,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     }
     String pathString = buffer.toString();
     pathString = "/A/B/C";
-    Path path = new Path(getBaseURI() +pathString);
+    Path path = new Path(getBaseURI() + pathString);
     try {
       writeTextFile(fs, path, pathString, true);
       //if we get here, problems.
@@ -265,7 +263,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   @Ignore("Unexpected")
   public void testLsNonExistentFile() throws Exception {
     try {
-      Path path = new Path(getBaseURI() +"/test/hadoop/file");
+      Path path = new Path(getBaseURI() + "/test/hadoop/file");
       FileStatus[] statuses = fs.listStatus(path);
       fail("Should throw FileNotFoundException on " + path
               + " but got list of length " + statuses.length);

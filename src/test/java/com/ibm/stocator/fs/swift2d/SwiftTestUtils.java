@@ -103,7 +103,7 @@ public class SwiftTestUtils extends org.junit.Assert {
                                             Path path) throws IOException {
     try {
       FileStatus status = fileSystem.getFileStatus(path);
-      if(status != null) {
+      if (status != null) {
         fail(message + ": unexpectedly found " + path + " as  " + status);
       }
     } catch (FileNotFoundException expected) {
@@ -122,7 +122,7 @@ public class SwiftTestUtils extends org.junit.Assert {
 
   public static void noteAction(String action) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("==============  "+ action +" =============");
+      LOG.debug("==============  " + action + " =============");
     }
   }
 
@@ -176,7 +176,7 @@ public class SwiftTestUtils extends org.junit.Assert {
    * Read in "length" bytes, convert to an ascii string
    * @param fs filesystem
    * @param path path to read
-   * @param length #of bytes to read.
+   * @param length #of bytes to read
    * @return the bytes read and converted to a string
    * @throws IOException
    */
@@ -289,7 +289,7 @@ public class SwiftTestUtils extends org.junit.Assert {
                 true);
       }
     } catch (Exception e) {
-      LOG.error("Error deleting in "+ action + " - "  + cleanupPath + ": " + e, e);
+      LOG.error("Error deleting in " + action + " - "  + cleanupPath + ": " + e, e);
     }
   }
 

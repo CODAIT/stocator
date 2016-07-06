@@ -18,13 +18,14 @@
 
 package com.ibm.stocator.fs.swift2d;
 
+import java.io.IOException;
+
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
 
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.assertListStatusFinds;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.cleanup;
@@ -63,7 +64,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
               path(getBaseURI() + "/test/hadoop/a"),
               path(getBaseURI() + "/test/hadoop/b"),
               path(getBaseURI() + "/test/hadoop/c/1"),
-      };
+        };
 
     assertPathDoesNotExist("test directory setup", testDirs[0]);
     for (Path path : testDirs) {
@@ -105,8 +106,8 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testListStatusFile() throws Exception {
-    describe("Create a single file under /test;" +
-             " assert that listStatus(/test) finds it");
+    describe("Create a single file under /test;"
+             + " assert that listStatus(/test) finds it");
     Path file = path(getBaseURI() + "/test/filename");
     createFile(file);
     FileStatus[] pathStats = fs.listStatus(file);
@@ -116,7 +117,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
     //and assert that the len of that ls'd path is the same as the original
     FileStatus lsStat = pathStats[0];
     assertEquals("Wrong file len in listing of " + lsStat,
-      data.length, lsStat.getLen());
+        data.length, lsStat.getLen());
   }
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
