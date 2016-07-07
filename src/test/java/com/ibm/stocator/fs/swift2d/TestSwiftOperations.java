@@ -115,47 +115,51 @@ public class TestSwiftOperations extends SwiftBaseTest {
   @Test
   public void testAsteriskWildcard() throws Exception {
 
-    if (getFs() != null) {
-      String[] objectNames = {"Dir/SubDir/File1", "Dir/SubDir/File2", "Dir/File1"};
-      for (String name : objectNames) {
-        Path path = new Path(getBaseURI() + "/" + name);
-        createFile(path, data);
-      }
-
-      try {
-        Path wildcard = new Path(getBaseURI() + "/*"); // All files
-        ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
-                new ObjectStoreGlobFilter(""));
-        FileStatus[] results = globber.glob();
-        Assert.assertEquals(3, results.length);
-
-        wildcard = new Path(getBaseURI() + "/Dir/*"); // Files in "Dir" directory
-        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
-        results = globber.glob();
-        Assert.assertEquals(3, results.length);
-
-        wildcard = new Path(getBaseURI() + "/Dir/SubDir/*"); // Files in "SubDir" directory
-        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
-        results = globber.glob();
-        Assert.assertEquals(2, results.length);
-
-        wildcard = new Path(getBaseURI() + "/*1"); // Files ending in "1"
-        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
-        results = globber.glob();
-        Assert.assertEquals(2, results.length);
-
-        wildcard = new Path(getBaseURI() + "/Dir/SubDir/*2"); // Files in "SubDir" ending with "2"
-        globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
-        results = globber.glob();
-        Assert.assertEquals(0, results.length);
-      } finally {
-        //Clean up files
-        for (String name : objectNames) {
-          Path path = new Path(getBaseURI() + "/" + name);
-          getFs().delete(path, false);
-        }
-      }
+    Assume.assumeNotNull(getFs());
+    String[] objectNames = {"Dir/SubDir/File1", "Dir/SubDir/File2", "Dir/File1"};
+    for (String name : objectNames) {
+      Path path = new Path(getBaseURI() + "/" + name);
+      createFile(path, data);
     }
 
+    try {
+      Path wildcard = new Path(getBaseURI() + "/*"); // All files
+      ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
+              new ObjectStoreGlobFilter(""));
+      FileStatus[] results = globber.glob();
+      Assert.assertEquals(3, results.length);
+
+      wildcard = new Path(getBaseURI() + "/Dir/*"); // Files in "Dir" directory
+      globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+      results = globber.glob();
+      Assert.assertEquals(3, results.length);
+
+      wildcard = new Path(getBaseURI() + "/Dir/SubDir/*"); // Files in "SubDir" directory
+      globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+      results = globber.glob();
+      Assert.assertEquals(2, results.length);
+
+      wildcard = new Path(getBaseURI() + "/*1"); // Files ending in "1"
+      globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+      results = globber.glob();
+      Assert.assertEquals(2, results.length);
+
+      wildcard = new Path(getBaseURI() + "/Dir/SubDir/*2"); // Files in "SubDir" ending with "2"
+      globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+      results = globber.glob();
+      Assert.assertEquals(1, results.length);
+
+      wildcard = new Path(getBaseURI() + "/Dir/*/File1"); // Files called File1 in a SubDir
+      globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+      results = globber.glob();
+      Assert.assertEquals(1, results.length);
+
+    } finally {
+      //Clean up files
+      for (String name : objectNames) {
+        Path path = new Path(getBaseURI() + "/" + name);
+        getFs().delete(path, false);
+      }
+    }
   }
 }
