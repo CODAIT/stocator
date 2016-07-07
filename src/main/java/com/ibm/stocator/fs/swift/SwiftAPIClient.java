@@ -428,11 +428,11 @@ public class SwiftAPIClient implements IStoreClient {
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
-              LOG.trace("Collisiion found between {} and {}", previousElement.getName(),
+              LOG.trace("Colisiion found between {} and {}", previousElement.getName(),
                   tmp.getName());
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.trace("New canditate is {}. Removed {}", tmp.getName(),
+                LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
                     previousElement.getName());
                 previousElement = tmp.getAsObject();
               }
