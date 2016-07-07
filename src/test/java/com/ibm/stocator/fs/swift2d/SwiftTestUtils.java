@@ -293,7 +293,6 @@ public class SwiftTestUtils extends org.junit.Assert {
     }
   }
 
-
   /**
    * Assert that a FileSystem.listStatus on a dir finds the subdir/child entry
    * @param fs filesystem

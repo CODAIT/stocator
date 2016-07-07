@@ -26,7 +26,6 @@ import org.apache.hadoop.fs.PathFilter;
 import org.junit.Ignore;
 import org.junit.Test;
 
-
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.assertListStatusFinds;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.cleanup;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.dumpStats;
@@ -178,6 +177,4 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
       return true;
     }
   }
-
-
 }

@@ -34,7 +34,6 @@ import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.assertFileHasLength;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.readBytesToString;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.writeTextFile;
 
-
 /**
  * Test basic filesystem operations.
  * -this is a JUnit4 test suite used to initially test the Swift
@@ -45,13 +44,11 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   private static final Log LOG =
           LogFactory.getLog(TestSwiftFileSystemBasicOps.class);
 
-
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testLsRoot() throws Throwable {
     Path path = new Path(getBaseURI() + "/");
     FileStatus[] statuses = fs.listStatus(path);
   }
-
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testMkDir() throws Throwable {
@@ -131,7 +128,6 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
       LOG.warn("deleting " + path, e);
     }
   }
-
 
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testOverwrite() throws Throwable {
