@@ -170,7 +170,6 @@ public class SwiftFileSystemBaseTest extends Assert implements
     out.close();
   }
 
-
   /**
    * assert that a path exists
    * @param message message to use in an assertion

@@ -25,14 +25,12 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
-
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.readBytesToString;
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.writeTextFile;
 /**
  * Test filesystem read operations
  */
 public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
-
 
   /**
    * Read past the end of a file: expect the operation to fail

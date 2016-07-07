@@ -26,13 +26,11 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
 
-
 /**
  * Test block location logic.
  * The endpoint may or may not be location-aware
  */
 public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
-
 
   @Ignore("Not supported")
   public void testLocateSingleFileBlocks() throws Throwable {
@@ -104,7 +102,6 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
     }
   }
 
-
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testLocateOutOfRangeLen() throws Throwable {
     describe("overshooting the length is legal, as long as the"
@@ -150,7 +147,6 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
     assertEmptyBlockLocations(locations);
   }
 
-
   @Ignore("Not supported")
   public void testLocateRootDirectory() throws Throwable {
     describe("verify that locating the root directory is an error");
@@ -162,6 +158,4 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
                                               1);
     assertEmptyBlockLocations(locations);
   }
-
-
 }

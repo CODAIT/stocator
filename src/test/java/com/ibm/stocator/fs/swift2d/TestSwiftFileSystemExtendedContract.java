@@ -63,7 +63,6 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     assertExists("created file", f);
   }
 
-
   @Test(timeout = SWIFT_TEST_TIMEOUT)
   public void testWriteReadFile() throws Exception {
     final Path f = new Path(getBaseURI() + "/test/test");
