@@ -50,12 +50,12 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     }
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testFilesystemHasURI() throws Throwable {
     assertNotNull(fs.getUri());
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testCreateFile() throws Exception {
     final Path f = new Path(getBaseURI() + "/test/testCreateFile");
     final FSDataOutputStream fsDataOutputStream = fs.create(f);
@@ -63,7 +63,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     assertExists("created file", f);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testWriteReadFile() throws Exception {
     final Path f = new Path(getBaseURI() + "/test/test");
     final FSDataOutputStream fsDataOutputStream = fs.create(f);
@@ -85,13 +85,13 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     }
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testConfDefinesFilesystem() throws Throwable {
     Configuration conf = new Configuration();
     baseURI = conf.get(BASE_URI_PROPERTY);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testConfIsValid() throws Throwable {
     Configuration conf = new Configuration();
     baseURI = conf.get(BASE_URI_PROPERTY);
@@ -99,7 +99,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     ObjectStoreVisitor.getStoreClient(nameSpace, new URI(baseURI), conf);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testGetSchemeImplemented() throws Throwable {
     String scheme = fs.getScheme();
     assertEquals(Constants.SWIFT2D,scheme);
@@ -112,7 +112,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
    *
    * @throws Exception failures
    */
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testFilesystemIsCaseSensitive() throws Exception {
     String mixedCaseFilename = "/test/UPPER.TXT";
     Path upper = path(getBaseURI() + mixedCaseFilename);

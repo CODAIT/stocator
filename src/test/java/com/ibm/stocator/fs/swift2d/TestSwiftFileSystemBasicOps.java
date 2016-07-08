@@ -44,13 +44,13 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   private static final Log LOG =
           LogFactory.getLog(TestSwiftFileSystemBasicOps.class);
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLsRoot() throws Throwable {
     Path path = new Path(getBaseURI() + "/");
-    FileStatus[] statuses = fs.listStatus(path);
+    fs.listStatus(path);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testMkDir() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/MkDir");
     fs.mkdirs(path);
@@ -63,14 +63,14 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     assertFalse("delete returned true", fs.delete(path, false));
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testPutFile() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/PutFile");
     writeTextFile(fs, path, "Testing a put to a file", false);
     assertDeleted(path, false);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testPutGetFile() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/PutGetFile");
     try {
@@ -129,7 +129,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     }
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testOverwrite() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/Overwrite");
     try {
@@ -148,7 +148,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     }
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testOverwriteDirectory() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/testOverwriteDirectory");
     try {

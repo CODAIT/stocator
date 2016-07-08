@@ -28,24 +28,24 @@ import org.junit.Test;
  */
 public class TestSwiftFileSystemBlocksize extends SwiftFileSystemBaseTest {
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDefaultBlocksizeNonZero() throws Throwable {
     assertTrue("Zero default blocksize", 0L != getFs().getDefaultBlockSize());
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDefaultBlocksizeRootPathNonZero() throws Throwable {
     assertTrue("Zero default blocksize",
                0L != getFs().getDefaultBlockSize(new Path(getBaseURI() + "/")));
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDefaultBlocksizeOtherPathNonZero() throws Throwable {
     assertTrue("Zero default blocksize",
                0L != getFs().getDefaultBlockSize(new Path(getBaseURI() + "/test")));
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testBlocksizeNonZeroForFile() throws Throwable {
     Path smallfile = new Path(getBaseURI() + "/test/smallfile");
     SwiftTestUtils.writeTextFile(fs, smallfile, "blocksize", true);

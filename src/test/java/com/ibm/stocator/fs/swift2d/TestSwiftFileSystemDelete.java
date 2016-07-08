@@ -29,7 +29,7 @@ import org.junit.Test;
  */
 public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteEmptyFile() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteEmptyFile");
     createEmptyFile(file);
@@ -49,7 +49,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     assertFalse("Delete returned true", fs.delete(file, false));
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteNonEmptyFile() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteNonEmptyFile");
     createFile(file);
@@ -67,7 +67,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     assertFalse("Delete returned true", fs.delete(file, false));
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteTestDir() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/");
     fs.delete(file, true);
