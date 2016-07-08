@@ -19,90 +19,26 @@
 package com.ibm.stocator.fs.swift2d;
 
 import java.io.IOException;
-import java.net.URI;
 
-import com.ibm.stocator.fs.ObjectStoreFileSystem;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
 
 import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.noteAction;
 
 /**
  * This is the base class for most of the Swift tests
  */
-public class SwiftFileSystemBaseTest extends Assert implements
-                                                    SwiftTestConstants {
+public class SwiftFileSystemBaseTest extends SwiftBaseTest {
 
-  protected static final Log LOG =
-          LogFactory.getLog(SwiftFileSystemBaseTest.class);
-  protected ObjectStoreFileSystem fs;
   protected byte[] data = SwiftTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
-  private Configuration conf;
-  protected String baseURI;
-  private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
 
-  @Before
+  @Override
   public void setUp() throws Exception {
     noteAction("setup");
-    conf = new Configuration();
-    baseURI = conf.get(BASE_URI_PROPERTY);
-    Assume.assumeNotNull(baseURI);
-    final URI uri = new URI(baseURI);
-    conf = createConfiguration();
-
-    fs = new ObjectStoreFileSystem();
-    try {
-      fs.initialize(uri, conf);
-    } catch (IOException e) {
-      //FS init failed, set it to null so that teardown doesn't
-      //attempt to use it
-      fs = null;
-      throw e;
-    }
-
+    super.setUp();
+    Assume.assumeNotNull(getFs());
     noteAction("setup complete");
-  }
-
-  /**
-   * Configuration generator. May be overridden to inject
-   * some custom options
-   * @return a configuration with which to create FS instances
-   */
-  protected Configuration createConfiguration() {
-    return new Configuration();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (getBaseURI() != null) {
-      // Clean up generated files
-      Path rootDir = new Path(getBaseURI());
-      FileStatus[] files = getFs().listStatus(rootDir);
-      for (FileStatus file : files) {
-        getFs().delete(file.getPath(), false);
-      }
-    }
-  }
-
-  @AfterClass
-  public static void classTearDown() throws Exception {
-  }
-
-  /**
-   * Get the configuration used to set up the FS
-   * @return the configuration
-   */
-  public Configuration getConf() {
-    return conf;
   }
 
   /**
@@ -113,10 +49,6 @@ public class SwiftFileSystemBaseTest extends Assert implements
    */
   protected void describe(String description) {
     noteAction(description);
-  }
-
-  protected int getBlockSize() {
-    return 1024;
   }
 
   /**
@@ -130,14 +62,6 @@ public class SwiftFileSystemBaseTest extends Assert implements
   }
 
   /**
-   * Get the filesystem
-   * @return the current FS
-   */
-  public ObjectStoreFileSystem getFs() {
-    return fs;
-  }
-
-  /**
    * Create a file using the standard {@link #data} bytes.
    *
    * @param path path to write
@@ -145,29 +69,6 @@ public class SwiftFileSystemBaseTest extends Assert implements
    */
   protected void createFile(Path path) throws IOException {
     createFile(path, data);
-  }
-
-  /**
-   * Create a file with the given data.
-   *
-   * @param path       path to write
-   * @param sourceData source dataset
-   * @throws IOException on any problem
-   */
-  protected void createFile(Path path, byte[] sourceData) throws IOException {
-    FSDataOutputStream out = fs.create(path);
-    out.write(sourceData, 0, sourceData.length);
-    out.close();
-  }
-
-  /**
-   * Create and then close a file
-   * @param path path to create
-   * @throws IOException on a failure
-   */
-  protected void createEmptyFile(Path path) throws IOException {
-    FSDataOutputStream out = fs.create(path);
-    out.close();
   }
 
   /**
@@ -220,9 +121,5 @@ public class SwiftFileSystemBaseTest extends Assert implements
   protected void assertNotEqual(String message, int expected, int actual) {
     assertTrue(message,
                actual != expected);
-  }
-
-  public String getBaseURI() {
-    return baseURI;
   }
 }

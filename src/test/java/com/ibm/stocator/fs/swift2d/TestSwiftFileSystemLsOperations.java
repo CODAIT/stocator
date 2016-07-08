@@ -103,7 +103,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
                  paths.length);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testListStatusFile() throws Exception {
     describe("Create a single file under /test;"
              + " assert that listStatus(/test) finds it");
@@ -119,7 +119,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
         data.length, lsStat.getLen());
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testListEmptyRoot() throws Throwable {
     describe("Empty the root dir and verify that an LS / returns {}");
     cleanup("testListEmptyRoot", fs, "/test");

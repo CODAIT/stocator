@@ -21,14 +21,14 @@ package com.ibm.stocator.fs.swift2d;
 /**
  * Hard coded constants for the test timeouts
  */
-public interface SwiftTestConstants {
+public class SwiftTestConstants {
   /**
    * Timeout for swift tests: {@value}
    */
-  int SWIFT_TEST_TIMEOUT = 5 * 60 * 1000;
+  public static final int SWIFT_TEST_TIMEOUT = 5 * 60 * 1000;
 
   /**
    * Timeout for tests performing bulk operations: {@value}
    */
-  int SWIFT_BULK_IO_TEST_TIMEOUT = 12 * 60 * 1000;
+  public static final int SWIFT_BULK_IO_TEST_TIMEOUT = 12 * 60 * 1000;
 }

@@ -47,7 +47,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
 
   private void assertLocationValid(BlockLocation location) throws
                                                            IOException {
-    LOG.info(location);
+    LOG.info(location.toString());
     String[] hosts = location.getHosts();
     String[] names = location.getNames();
     assertNotEqual("No hosts supplied for " + location, 0, hosts.length);
@@ -66,7 +66,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
     return fs.getFileStatus(path);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLocateNullStatus() throws Throwable {
     describe("verify that a null filestatus maps to a null location array");
     BlockLocation[] locations =
@@ -74,7 +74,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
     assertNull(locations);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLocateNegativeSeek() throws Throwable {
     describe("verify that a negative offset is illegal");
     try {
@@ -88,7 +88,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
     }
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLocateNegativeLen() throws Throwable {
     describe("verify that a negative length is illegal");
     try {
@@ -102,7 +102,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
     }
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLocateOutOfRangeLen() throws Throwable {
     describe("overshooting the length is legal, as long as the"
              + " origin location is valid");
@@ -115,7 +115,7 @@ public class TestSwiftFileSystemBlockLocation extends SwiftFileSystemBaseTest {
     assertTrue(locations.length > 0);
   }
 
-  @Test(timeout = SWIFT_TEST_TIMEOUT)
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLocateOutOfRangeSrc() throws Throwable {
     describe("Seeking out of the file length returns an empty array");
 
