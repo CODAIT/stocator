@@ -82,9 +82,8 @@ public class ObjectStoreFileSystem extends FileSystem {
     }
     uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
-    String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
     if (storageClient == null) {
-      storageClient = ObjectStoreVisitor.getStoreClient(nameSpace, fsuri, conf);
+      storageClient = ObjectStoreVisitor.getStoreClient(fsuri, conf);
       if (Utils.validSchema(fsuri.toString())) {
         hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
       } else {
