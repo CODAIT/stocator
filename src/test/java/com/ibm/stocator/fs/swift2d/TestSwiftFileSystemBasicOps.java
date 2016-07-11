@@ -47,14 +47,15 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLsRoot() throws Throwable {
     Path path = new Path(getBaseURI() + "/");
-    fs.listStatus(path);
+    FileStatus[] statuses = fs.listStatus(path);
+    assertNotNull(statuses);
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testMkDir() throws Throwable {
-    Path path = new Path(getBaseURI() + "/test/MkDir");
-    fs.mkdirs(path);
-    fs.delete(path, true);
+    Path path = new Path(getBaseURI() + "/test/MkDir/_temporary/0");
+    assertTrue(fs.mkdirs(path));
+    fs.delete(new Path(getBaseURI() + "/test/MkDir"), true);
   }
 
   @Ignore("Unexpected")
@@ -256,6 +257,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     }
   }
 
+  //@Test(expected = FileNotFoundException.class)
   @Ignore("Unexpected")
   public void testLsNonExistentFile() throws Exception {
     try {

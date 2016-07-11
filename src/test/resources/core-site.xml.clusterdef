@@ -1,0 +1,151 @@
+<configuration>
+<property>
+   <name>fs.swift.impl</name>
+   <value>org.apache.hadoop.fs.swift.snative.SwiftNativeFileSystem</value>
+</property>
+
+<!-- Local Swift cluster. Configured with Temp auth -->
+
+<property>
+    <name>fs.swift.service.lvmt.auth.url</name>
+    <value>http://swiftobj.svl.ibm.com:8080/auth/v1.0</value>
+</property>
+<property>
+    <name>fs.swift.service.lvmt.http.port</name>
+    <value>8080</value>
+</property>
+<property>
+    <name>fs.swift.service.lvmt.public</name>
+    <value>true</value>
+I</property>
+<property>
+   <name>fs.swift.service.lvmt.location-aware</name>
+   <value>false</value>
+</property>
+<property>
+    <name>fs.swift.service.lvmt.endpoint.prefix</name>
+    <value>endpoints</value>
+</property>
+<property>
+    <name>fs.swift.service.lvmt.apikey</name>
+    <value>testing</value>
+</property>
+<property>
+    <name>fs.swift.service.lvmt.username</name>
+    <value>test:tester</value>
+</property>
+<property>
+    <name>fs.swift.service.lvmt.use.get.auth</name>
+    <value>true</value>
+</property>
+
+
+<!-- swift2d  -->
+
+<property>
+    <name>fs.swift2d.impl</name>
+    <value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+</property>
+<!--tempauth
+
+<property>
+    <name>fs.swift2d.service.lvmt.auth.url</name>
+    <value>http://swiftobj.svl.ibm.com:8080/auth/v1.0</value>
+</property>
+-->
+<property>
+    <name>fs.swift2d.service.lvmt.auth.url</name>
+    <value>http://swiftobj.svl.ibm.com:8080/auth/v1.0</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.auth.method</name>
+    <value>tempauth</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.username</name>
+    <value>tester</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.tenant</name>
+    <value>test</value>
+</property>
+
+
+
+<!--keystone
+<property>
+    <name>fs.swift2d.service.lvmt.auth.url</name>
+    <value>http://swiftobj.svl.ibm.com:5000/v2.0/tokens</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.auth.method</name>
+    <value>keystone</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.username</name>
+    <value>tester</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.tenant</name>
+    <value>test</value>
+</property>
+-->
+
+
+<!--keystoneV3
+<property>
+    <name>fs.swift2d.service.lvmt.auth.url</name>
+    <value>http://swiftobj.svl.ibm.com:8080/v3.0/auth/tokens123</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.auth.method</name>
+    <value>keystoneV3</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.username</name>
+    <value>tester</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.tenant</name>
+    <value>test</value>
+</property>
+-->
+
+
+<!--Others-->
+<property>
+    <name>fs.swift2d.service.lvmt.userID</name>
+    <value>tester</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.http.port</name>
+    <value>8080</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.public</name>
+    <value>true</value>
+</property>
+<property>
+   <name>fs.swift2d.service.lvmt.location-aware</name>
+   <value>false</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.endpoint.prefix</name>
+    <value>endpoints</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.apikey</name>
+    <value>testing</value>
+</property>
+
+<property>
+    <name>fs.swift2d.service.lvmt.password</name>
+    <value>testing</value>
+</property>
+<property>
+    <name>fs.swift2d.service.lvmt.use.get.auth</name>
+    <value>true</value>
+</property>
+</configuration>
+
+
