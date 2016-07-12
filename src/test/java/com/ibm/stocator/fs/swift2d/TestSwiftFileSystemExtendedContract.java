@@ -95,8 +95,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
   public void testConfIsValid() throws Throwable {
     Configuration conf = new Configuration();
     baseURI = conf.get(BASE_URI_PROPERTY);
-    String nameSpace = baseURI.substring(0, baseURI.indexOf("://"));
-    ObjectStoreVisitor.getStoreClient(nameSpace, new URI(baseURI), conf);
+    ObjectStoreVisitor.getStoreClient(new URI(baseURI), conf);
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
