@@ -168,11 +168,11 @@ It's possible to provide configuration keys in run time, without keeping them in
 
 ## Execution without compiling Apache Spark
 It is possible to execute Apache Spark with the new driver, without compiling Apache Spark.
-Directory `stocator/target` contains standalone jar `stocator-1.0.3-jar-with-dependencies.jar`.
+Directory `stocator/target` contains standalone jar `stocator-1.0.4-jar-with-dependencies.jar`.
  
 Run Apache Spark with 
 
-	./bin/spark-shell --jars stocator-1.0.3-jar-with-dependencies.jar
+	./bin/spark-shell --jars stocator-1.0.4-jar-with-dependencies.jar
 
 ## Execution with Apache Spark compilation
 
@@ -181,7 +181,7 @@ Both main `pom.xml` and `core/pom.xml` should be modified.
  
  add to the `<properties>` of the main pom.xml
 	
-	 	<stocator.version>1.0.3</stocator.version>
+		<stocator.version>1.0.4</stocator.version>
 
  add `stocator` dependency to the main pom.xml
 
