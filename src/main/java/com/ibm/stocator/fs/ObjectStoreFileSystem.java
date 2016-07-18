@@ -82,9 +82,8 @@ public class ObjectStoreFileSystem extends FileSystem {
     }
     uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
-    String nameSpace = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
     if (storageClient == null) {
-      storageClient = ObjectStoreVisitor.getStoreClient(nameSpace, fsuri, conf);
+      storageClient = ObjectStoreVisitor.getStoreClient(fsuri, conf);
       if (Utils.validSchema(fsuri.toString())) {
         hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
       } else {
@@ -150,12 +149,12 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public FSDataInputStream open(Path f) throws IOException {
-    LOG.debug("open method: {} without buffer size" , f.toString());
+    LOG.debug("open: {} without buffer size" , f.toString());
     return storageClient.getObject(hostNameScheme, f);
   }
 
   public FSDataInputStream open(Path f, int bufferSize) throws IOException {
-    LOG.debug("open method: {} with buffer size {}", f.toString(), bufferSize);
+    LOG.debug("open: {} with buffer size {}", f.toString(), bufferSize);
     return storageClient.getObject(hostNameScheme, f);
   }
 
@@ -174,7 +173,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   public FSDataOutputStream create(Path f, FsPermission permission,
       boolean overwrite, int bufferSize,
       short replication, long blockSize, Progressable progress) throws IOException {
-    LOG.debug("Create method: {}", f.toString());
+    LOG.debug("Create: {}", f.toString());
     String objNameModified = "";
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
@@ -204,7 +203,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
-    LOG.debug("delete method: {}. recursive {}", f.toString(), recursive);
+    LOG.debug("delete: {}. recursive {}", f.toString(), recursive);
     String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
     LOG.debug("Modified object name {}", objNameModified);
     if (objNameModified.contains(HADOOP_TEMPORARY)) {

@@ -9,28 +9,30 @@ Stocator is implicitly designed for the object stores, it has very a different a
 Stocator is a generic connector, that may contain various implementations for object stores. It initially provided with complete Swift driver, based on the JOSS package. Stocator can be very easily extended with more object store implementations, like support for Amazon S3.
 
 ## Major features
-* Implements Hadoop FileSystem interface
+* Hadoop eco system compliant. Implements Hadoop FileSystem interface
 * No need to change or recompile Apache Spark
 * Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
-* Object's name may contain "/" and thus simulate directory structure
+* Object's name may contain "/" and thus simulate directory structures
 * Containers / buckets are automatically created
-* (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to OpenStack Swift, removes the need to store object locally prior uploading it.
-* (Swift Driver) Tested to read large objects (over 16GB)
-* Supports Swiftauth, Keystone V2, Keystone V2 Password Scope Authentication
+* (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to Swift driver and removes the need to store object locally prior uploading it.
+* (Swift Driver) Tested to read / write large objects (over 50GB)
+* Supports Swiftauth, Keystone V2, Keystone V3 Password Scope Authentication
 * Tested to work with vanilla Swift cluster, SoftLayer object store,  IBM Bluemix Object service
 * Supports speculate mode
-* (Swift Driver) Allows to access public containers, without authentication. For example
+* (Swift Driver) Supports public containers.  For example
 
 		sc.textFile("swift2d://dal05.objectstorage.softlayer.net/v1/AUTH_ID/CONT/data.csv")
 
 ## Build procedure
 
-Checkout the Stocator source `https://github.com/SparkTC/stocator.git`
+Checkout the master branch `https://github.com/SparkTC/stocator.git`
 
 ### How to build Stocator
 * Change directory to `stocator`
 * Execute `mvn install`
-* If you want to build a jar with all thedependecies, please execute `mvn clean package -Pall-in-one`
+* If you want to build a jar with all the dependecies, please execute 
+
+		mvn clean package -Pall-in-one
 
 ## Usage with Apache Spark
 Stocator allows to access Swift via unique schema `swift2d://`.
@@ -42,7 +44,7 @@ Stocator verifies that
 The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not exists at all in the Apache Spark's configuration
 
 ### Reference the new driver in the core-site.xml
-Add driver reference in the `conf/core-site.xml` of Spark
+Add the dependence to Stocator in `conf/core-site.xml`
 
 	<property>
    		<name>fs.swift2d.impl</name>
@@ -168,11 +170,11 @@ It's possible to provide configuration keys in run time, without keeping them in
 
 ## Execution without compiling Apache Spark
 It is possible to execute Apache Spark with the new driver, without compiling Apache Spark.
-Directory `stocator/target` contains standalone jar `stocator-1.0.1-jar-with-dependencies.jar`.
+Directory `stocator/target` contains standalone jar `stocator-1.0.4-jar-with-dependencies.jar`.
  
 Run Apache Spark with 
 
-	./bin/spark-shell --jars stocator-1.0.1-jar-with-dependencies.jar
+	./bin/spark-shell --jars stocator-1.0.4-jar-with-dependencies.jar
 
 ## Execution with Apache Spark compilation
 
@@ -181,7 +183,7 @@ Both main `pom.xml` and `core/pom.xml` should be modified.
  
  add to the `<properties>` of the main pom.xml
 	
-	 	<stocator.version>1.0.1</stocator.version>
+		<stocator.version>1.0.4</stocator.version>
 
  add `stocator` dependency to the main pom.xml
 

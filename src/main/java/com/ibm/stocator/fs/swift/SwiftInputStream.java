@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.exception.ConnectionClosedException;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 /**
  * Swift input stream
@@ -46,7 +47,7 @@ class SwiftInputStream extends FSInputStream {
   /*
    * Swift API client
    */
-  private final SwiftAPIClient apiClient;
+  private JossAccount mJossAccount;
   /*
    * Swift input stream wrapper
    */
@@ -76,13 +77,12 @@ class SwiftInputStream extends FSInputStream {
    * @param bufferSizeT buffer size
    * @throws IOException if something went wrong
    */
-  public SwiftInputStream(SwiftAPIClient apiClientT, Path pathT,
+  public SwiftInputStream(JossAccount jossAccountT, Path pathT,
       long bufferSizeT) throws IOException {
-    apiClient = apiClientT;
+    mJossAccount = jossAccountT;
     path = pathT;
     bufferSize = bufferSizeT;
-    SwiftGETResponse response = SwiftAPIDirect.getObject(path,
-        apiClient.getAccount().authenticate().getToken());
+    SwiftGETResponse response = SwiftAPIDirect.getObject(path, mJossAccount);
     httpStream = response.getStreamWrapper();
   }
 
@@ -256,7 +256,7 @@ class SwiftInputStream extends FSInputStream {
     long length = targetPos + bufferSize;
     LOG.debug("Reading {} bytes starting at {}", length, targetPos);
     SwiftGETResponse response = SwiftAPIDirect.getObject(path,
-        apiClient.getAccount().authenticate().getToken(), targetPos, targetPos + length - 1);
+        mJossAccount, targetPos, targetPos + length - 1);
     httpStream = response.getStreamWrapper();
     updateStartOfBufferPosition(targetPos, response.getResponseSize());
   }
