@@ -17,8 +17,11 @@
 
 package  com.ibm.stocator.fs.swift2d;
 
+import java.io.IOException;
 import java.text.MessageFormat;
 
+import com.ibm.stocator.fs.common.ObjectStoreGlobFilter;
+import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
@@ -38,11 +41,11 @@ public class TestSwiftOperations extends SwiftBaseTest {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    Assume.assumeNotNull(getFs());
   }
 
   @Test
   public void testDataObject() throws Exception {
-    Assume.assumeNotNull(getFs());
     String objectName = "data7.txt";
     Object[] params;
     // create 11 objects
@@ -131,7 +134,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
       getFs().delete(sourceDir, false);
       getFs().delete(destinationDir, false);
     }
-
   }
 
   @Test
@@ -152,7 +154,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
       getFs().delete(source, false);
       getFs().delete(destination, false);
     }
-
   }
 
   @Test
@@ -171,5 +172,71 @@ public class TestSwiftOperations extends SwiftBaseTest {
       getFs().delete(source, true);
       getFs().delete(destination, true);
     }
+  }
+
+  @Test
+  public void testFileExists() throws IOException {
+    Path testFile = new Path(getBaseURI() + "/testFile");
+    createFile(testFile, data);
+    Assert.assertTrue(getFs().exists(testFile));
+    getFs().delete(testFile, false);
+    FileStatus[]  stats = getFs().listStatus(testFile);
+    Assert.assertTrue(0 == stats.length);
+  }
+
+  @Test
+  public void testListStatus() throws IOException {
+    String[] testFileNames = {"/FileA", "/FileB", "/Dir/FileC"};
+    for (String name : testFileNames) {
+      createFile(new Path(getBaseURI() + name), data);
+    }
+    FileStatus[] results = getFs().listStatus(new Path(getBaseURI()));
+    Assert.assertEquals(testFileNames.length, results.length);
+    for (String name : testFileNames) {
+      getFs().delete(new Path(getBaseURI() + name), false);
+    }
+    results = getFs().listStatus(new Path(getBaseURI()));
+    Assert.assertTrue(0 == results.length);
+  }
+
+  @Test
+  public void testAsteriskWildcard() throws Exception {
+    String[] objectNames = {"Dir/SubDir/File1", "Dir/SubDir/File2", "Dir/File1"};
+    for (String name : objectNames) {
+      Path path = new Path(getBaseURI() + "/" + name);
+      createFile(path, data);
+    }
+
+    Path wildcard = new Path(getBaseURI() + "/*"); // All files
+    ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
+            new ObjectStoreGlobFilter(""));
+    FileStatus[] results = globber.glob();
+    Assert.assertEquals(3, results.length);
+
+    wildcard = new Path(getBaseURI() + "/Dir/*"); // Files in "Dir" directory
+    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    results = globber.glob();
+    Assert.assertEquals(3, results.length);
+
+    wildcard = new Path(getBaseURI() + "/Dir/SubDir/*"); // Files in "SubDir" directory
+    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    results = globber.glob();
+    Assert.assertEquals(2, results.length);
+
+    wildcard = new Path(getBaseURI() + "/*1"); // Files ending in "1"
+    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    results = globber.glob();
+    Assert.assertEquals(2, results.length);
+
+    wildcard = new Path(getBaseURI() + "/Dir/SubDir/*2"); // Files in "SubDir" ending with "2"
+    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    results = globber.glob();
+    Assert.assertEquals(1, results.length);
+
+    wildcard = new Path(getBaseURI() + "/Dir/*/File1"); // Files called File1 in a SubDir
+    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    results = globber.glob();
+    Assert.assertEquals(1, results.length);
+
   }
 }

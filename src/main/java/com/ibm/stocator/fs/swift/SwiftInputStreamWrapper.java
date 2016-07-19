@@ -159,7 +159,7 @@ public class SwiftInputStreamWrapper extends InputStream {
     }
     if (read < 0) {
       finishReading = true;
-      LOG.debug("No more left to read");
+      LOG.trace("No more left to read");
       innerClose();
     }
     return read;
@@ -180,7 +180,7 @@ public class SwiftInputStreamWrapper extends InputStream {
     }
     if (read < 0) {
       finishReading = true;
-      LOG.debug("No more data to read");
+      LOG.trace("No more data to read");
       innerClose();
     }
     return read;

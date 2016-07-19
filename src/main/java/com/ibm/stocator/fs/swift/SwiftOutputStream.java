@@ -21,9 +21,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 /**
  *
@@ -53,26 +58,73 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpURLConnection mHttpCon;
 
+  /*
+   * Access url
+   */
+  private URL mUrl;
+
   /**
    * Default constructor
    *
-   * @param httpCon URL connection
-   * @throws IOException if failed to connect
+   * @param account Joss account object
+   * @param url URL connection
+   * @param contentType content type
+   * @param metadata input metadata
+   * @throws IOException if error
    */
-  public SwiftOutputStream(HttpURLConnection httpCon) throws IOException {
+  public SwiftOutputStream(JossAccount account, URL url, String contentType,
+      Map<String, String> metadata) throws IOException {
+    mUrl = url;
+    HttpURLConnection httpCon = createConnection(account, url, contentType, metadata);
     try {
-      httpCon.setDoInput(true);
-      httpCon.setRequestProperty("Connection", "close");
-      httpCon.setReadTimeout(READ_TIMEOUT);
-      httpCon.setRequestProperty("Transfer-Encoding","chunked");
-      httpCon.setDoOutput(true);
-      httpCon.setChunkedStreamingMode(STREAMING_CHUNK);
+      mOutputStream  = httpCon.getOutputStream();
+      mHttpCon = httpCon;
+    } catch (ProtocolException e) {
+      LOG.warn("Failed to connect to {}", url.toString());
+      LOG.warn(e.getMessage());
+      LOG.warn("Retry attempt. Re-authenticate");
+      account.authenticate();
+      httpCon = createConnection(account, url, contentType, metadata);
       mOutputStream  = httpCon.getOutputStream();
       mHttpCon = httpCon;
     } catch (IOException e) {
       LOG.error(e.getMessage());
       throw e;
     }
+  }
+
+  /**
+   * Creates HTTP Connection
+   *
+   * @param account Joss Account
+   * @param url URL to the object
+   * @param contentType content type
+   * @param metadata metadata
+   * @return HttpURLConnection if success
+   * @throws IOException if error
+   */
+  private HttpURLConnection createConnection(JossAccount account, URL url, String contentType,
+      Map<String, String> metadata) throws IOException {
+    HttpURLConnection newHttpCon = (HttpURLConnection) url.openConnection();
+    newHttpCon.setDoOutput(true);
+    newHttpCon.setRequestMethod("PUT");
+
+    newHttpCon.addRequestProperty("X-Auth-Token",account.getAuthToken());
+    newHttpCon.addRequestProperty("Content-Type", contentType);
+    if (metadata != null && !metadata.isEmpty()) {
+      for (Map.Entry<String, String> entry : metadata.entrySet()) {
+        newHttpCon.addRequestProperty("X-Object-Meta-" + entry.getKey(), entry.getValue());
+      }
+    }
+    newHttpCon.setDoInput(true);
+    newHttpCon.setRequestProperty("Connection", "close");
+    newHttpCon.setReadTimeout(READ_TIMEOUT);
+    newHttpCon.setRequestProperty("Transfer-Encoding","chunked");
+    newHttpCon.setDoOutput(true);
+    newHttpCon.setRequestProperty("Expect", "100-continue");
+    newHttpCon.setChunkedStreamingMode(STREAMING_CHUNK);
+
+    return newHttpCon;
   }
 
   @Override
@@ -97,12 +149,21 @@ public class SwiftOutputStream extends OutputStream {
     try {
       // Status 400 and up should be read from error stream
       // Expecting here 201 Create or 202 Accepted
-      if (mHttpCon.getResponseCode() >= 400) {
+      int responseCode = mHttpCon.getResponseCode();
+      if (responseCode >= 400) {
+        LOG.warn("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
         is = mHttpCon.getErrorStream();
       } else {
         is = mHttpCon.getInputStream();
+        LOG.debug("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
       }
-      is.close();
+      if (responseCode == 401 || responseCode == 403 || responseCode == 407) {
+        // special handling. HTTPconnection already closed stream.
+        LOG.warn("{} : stream closed to {}", responseCode, mUrl.toString());
+      }
+      if (is != null) {
+        is.close();
+      }
     } catch (Exception e) {
       if (is != null) {
         is.close();

@@ -25,12 +25,19 @@ import java.util.Properties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class Utils {
 
   public static final String BAD_HOST = " hostname '%s' must be in the form container.service";
+
+  /*
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
 
   /**
    * IOException if the host name is not comply with container.service
@@ -168,6 +175,7 @@ public class Utils {
    *
    * @param conf source configuration
    * @param prefix configuration key prefix
+   * @param alternativePrefix alternative prefix
    * @param key key in the configuration file
    * @param props destination property set
    * @param propsKey key in the property set
@@ -175,10 +183,14 @@ public class Utils {
    * @throws IOException if there was no match for the key
    */
 
-  public static void updateProperty(Configuration conf, String prefix, String key,
-      Properties props, String propsKey, boolean required)
-      throws IOException {
+  public static void updateProperty(Configuration conf, String prefix, String alternativePrefix,
+      String key, Properties props, String propsKey, boolean required) throws IOException {
     String val = conf.get(prefix + key);
+    if (val == null) {
+      // try alternative key
+      val = conf.get(alternativePrefix + key);
+      LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
+    }
     if (required && val == null) {
       throw new IOException("Missing mandatory configuration: " + key);
     }
