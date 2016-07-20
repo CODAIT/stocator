@@ -108,8 +108,8 @@ public class ObjectStoreVisitor {
         LOG.info("Stocator registered as {} for {}", fsSchema, fsuri.toString());
         try {
           Class<?> aClass = classLoader.loadClass(implementation);
-          IStoreClient storeClient = (IStoreClient) aClass.getConstructor(fsuri.getClass(),
-              conf.getClass()).newInstance(fsuri, conf);
+          IStoreClient storeClient = (IStoreClient) aClass.getConstructor(URI.class,
+              Configuration.class).newInstance(fsuri, conf);
           return storeClient;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
             | InvocationTargetException | NoSuchMethodException | SecurityException
