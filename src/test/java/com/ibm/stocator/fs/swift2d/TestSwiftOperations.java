@@ -92,17 +92,12 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Path source = new Path(getBaseURI() + "/" + object);
     createFile(source, data);
     Path destination = new Path(getBaseURI() + "/" + "copied");
+    //Check copy operation returns true
+    Assert.assertTrue(getFs().copy(source, destination));
 
-    try {
-      //Check copy operation returns true
-      Assert.assertTrue(getFs().copy(source, destination));
+    // Check copied file exists
+    Assert.assertTrue(getFs().exists(destination));
 
-      // Check copied file exists
-      Assert.assertTrue(getFs().exists(destination));
-    } finally {
-      getFs().delete(source, false);
-      getFs().delete(destination, false);
-    }
   }
 
   @Test
@@ -117,23 +112,16 @@ public class TestSwiftOperations extends SwiftBaseTest {
       createFile(source, data);
     }
     Path destinationDir = new Path(getBaseURI() + "/" + "copied");
-    try {
-      //Check copy operation returns true
-      Assert.assertTrue(getFs().copy(sourceDir, destinationDir));
 
-      for (String object : objects) {
-        Path dst = new Path(destinationDir.toString() + "/" + object);
-        // Check copied files exists
-        Assert.assertTrue(getFs().exists(dst));
-      }
-    } finally {
-      for (String object : objects) {
-        getFs().delete(new Path(sourceDir.toString() + "/" + object), false);
-        getFs().delete(new Path(destinationDir.toString() + "/" + object), false);
-      }
-      getFs().delete(sourceDir, false);
-      getFs().delete(destinationDir, false);
+    //Check copy operation returns true
+    Assert.assertTrue(getFs().copy(sourceDir, destinationDir));
+
+    for (String object : objects) {
+      Path dst = new Path(destinationDir.toString() + "/" + object);
+      // Check copied files exists
+      Assert.assertTrue(getFs().exists(dst));
     }
+
   }
 
   @Test
@@ -144,16 +132,11 @@ public class TestSwiftOperations extends SwiftBaseTest {
     createFile(source, data);
     Path destination = new Path(getBaseURI() + "/" + "renamed");
 
-    try {
-      // Check copy operation returns true
-      Assert.assertTrue(getFs().copy(source, destination));
-      // Check _temporary file still exists and is not copied
-      Assert.assertTrue(getFs().exists(source));
-      Assert.assertFalse(getFs().exists(destination));
-    } finally {
-      getFs().delete(source, false);
-      getFs().delete(destination, false);
-    }
+    // Check copy operation returns true
+    Assert.assertTrue(getFs().copy(source, destination));
+    // Check file is not copied
+    Assert.assertFalse(getFs().exists(destination));
+
   }
 
   @Test
@@ -166,12 +149,8 @@ public class TestSwiftOperations extends SwiftBaseTest {
 
     // Check copy operation returns true
     Assert.assertTrue(getFs().copy(source, destination));
-    try {
-      Assert.assertTrue(getFs().exists(source));
-    } finally {
-      getFs().delete(source, true);
-      getFs().delete(destination, true);
-    }
+    Assert.assertTrue(getFs().exists(source));
+
   }
 
   @Test

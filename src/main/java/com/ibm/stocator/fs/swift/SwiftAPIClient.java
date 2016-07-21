@@ -505,8 +505,7 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public boolean copy(String hostName, Path src, Path dst) throws IOException {
 
-    if (Utils.getObjectName(src).startsWith("_temporary")
-        || Utils.getObjectName(src).contains("/_temporary")) {
+    if (Utils.getObjectName(src).contains("/_temporary")) {
       return true;
     }
 
