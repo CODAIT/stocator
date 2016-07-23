@@ -39,6 +39,9 @@ import org.javaswift.joss.model.StoredObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -497,6 +500,41 @@ public class SwiftAPIClient implements IStoreClient {
       LOG.error(e.getMessage());
       throw e;
     }
+  }
+
+  @Override
+  public boolean copy(String hostName, Path src, Path dst) throws IOException {
+
+    if (Utils.getObjectName(src).contains("/_temporary")) {
+      return true;
+    }
+
+    FileStatus[] objects = this.list(hostName, src, true);
+
+    if (objects.length == 0) {
+      throw new IOException("The following object does not exist: " + src.toString());
+    }
+
+    for (FileStatus stat : objects) {
+
+      Path newDst = new Path(stat.getPath().toString().replaceAll(src.toString(), dst.toString()));
+      String source = Utils.getContainerName(Utils.getHostName(stat.getPath())) + "/"
+              + Utils.getObjectName(stat.getPath());
+      String destination =  Utils.getContainerName(Utils.getHostName(newDst)) + "/"
+              + Utils.getObjectName(newDst);
+      String srcHost = getScheme() + "://" + Utils.getHostName(stat.getPath()) + "/";
+      String dstHost = getScheme() + "://" + Utils.getHostName(dst) + "/";
+
+      PutMethod put = new PutMethod(mJossAccount.getAccessURL() + "/" + destination);
+      put.addRequestHeader(new Header("X-Auth-Token", mJossAccount.getAuthToken()));
+      put.addRequestHeader(new Header("X-Copy-From", source));
+      HttpClient client = new HttpClient();
+      int statusCode = client.executeMethod(put);
+      if (this.exists(dstHost, dst) && statusCode == 201) {
+        LOG.info("Successfully copied {} to {}", source, destination);
+      }
+    }
+    return true;
   }
 
   @Override

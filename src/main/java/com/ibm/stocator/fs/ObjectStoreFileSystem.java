@@ -197,8 +197,13 @@ public class ObjectStoreFileSystem extends FileSystem {
    */
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
-    LOG.debug("rename from {} to {}", src.toString(), dst.toString());
+    LOG.debug("Rename not supported.");
     return true;
+  }
+
+  public boolean copy(Path src, Path dst) throws IOException {
+    LOG.debug("Copying from {} to {}.", src.toString(), dst.toString());
+    return storageClient.copy(hostNameScheme, src, dst);
   }
 
   @Override

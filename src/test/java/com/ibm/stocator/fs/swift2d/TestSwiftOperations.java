@@ -86,6 +86,74 @@ public class TestSwiftOperations extends SwiftBaseTest {
   }
 
   @Test
+  public void testCopy() throws Exception {
+    Assume.assumeNotNull(getFs());
+    String object = "file1";
+    Path source = new Path(getBaseURI() + "/" + object);
+    createFile(source, data);
+    Path destination = new Path(getBaseURI() + "/" + "copied");
+    //Check copy operation returns true
+    Assert.assertTrue(getFs().copy(source, destination));
+
+    // Check copied file exists
+    Assert.assertTrue(getFs().exists(destination));
+
+  }
+
+  @Test
+  public void testCopyDirectory() throws Exception {
+    Assume.assumeNotNull(getFs());
+    String dirName = "Dir1";
+    String[] objects = {"file1", "file2", "subDirB/file3"};
+    Path sourceDir = new Path(getBaseURI() + "/" + dirName);
+    createEmptyFile(sourceDir);
+    for (String object : objects) {
+      Path source = new Path(sourceDir.toString() + "/" + object);
+      createFile(source, data);
+    }
+    Path destinationDir = new Path(getBaseURI() + "/" + "copied");
+
+    //Check copy operation returns true
+    Assert.assertTrue(getFs().copy(sourceDir, destinationDir));
+
+    for (String object : objects) {
+      Path dst = new Path(destinationDir.toString() + "/" + object);
+      // Check copied files exists
+      Assert.assertTrue(getFs().exists(dst));
+    }
+
+  }
+
+  @Test
+  public void testCopyTemp() throws Exception {
+    Assume.assumeNotNull(getFs());
+    String object = "file1/_temporary";
+    Path source = new Path(getBaseURI() + "/" + object);
+    createFile(source, data);
+    Path destination = new Path(getBaseURI() + "/" + "renamed");
+
+    // Check copy operation returns true
+    Assert.assertTrue(getFs().copy(source, destination));
+    // Check file is not copied
+    Assert.assertFalse(getFs().exists(destination));
+
+  }
+
+  @Test
+  public void testCopyDifferentContainers() throws Exception {
+    Assume.assumeNotNull(getFs());
+    String object = "file1";
+    Path source = new Path(getBaseURI() + "/" + object);
+    createFile(source, data);
+    Path destination = new Path("swift2d://testContainer.bmv3/renamed");
+
+    // Check copy operation returns true
+    Assert.assertTrue(getFs().copy(source, destination));
+    Assert.assertTrue(getFs().exists(source));
+
+  }
+
+  @Test
   public void testFileExists() throws IOException {
     Path testFile = new Path(getBaseURI() + "/testFile");
     createFile(testFile, data);

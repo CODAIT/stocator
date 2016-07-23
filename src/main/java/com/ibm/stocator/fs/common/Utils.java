@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,6 +127,31 @@ public class Utils {
     int eInd = host.indexOf("/");
     host = host.substring(0,eInd);
     return host;
+  }
+
+  /**
+   * Extract host name from a Path
+   * @param path
+   * @return host name
+   */
+  public static String getHostName(Path path) {
+    String host = path.toString();
+    int sInd = host.indexOf("//") + 2;
+    host = host.substring(sInd);
+    int eInd = host.indexOf("/");
+    return host.substring(0,eInd);
+  }
+
+  /**
+   * Extract object name from a Path
+   *
+   * @param path
+   * @return object name
+   */
+  public static String getObjectName(Path path) {
+    String temp = path.toString();
+    temp = temp.substring(temp.indexOf("//") + 2);
+    return temp.substring(temp.indexOf("/") + 1);
   }
 
   /**
