@@ -150,4 +150,91 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Assert.assertEquals(1, results.length);
 
   }
+
+  @Test
+  public void testRename() throws Exception {
+    if (getFs() != null) {
+      String object = "file1";
+      Path source = new Path(getBaseURI() + "/" + object);
+      createFile(source, data);
+      Path destination = new Path(getBaseURI() + "/" + "renamed");
+
+      try {
+        //Check rename operation returns true
+        Assert.assertTrue(getFs().rename(source, destination));
+
+        // Check renamed file exists and old file is deleted
+        Assert.assertFalse(getFs().exists(source));
+        Assert.assertTrue(getFs().exists(destination));
+      } finally {
+        getFs().delete(destination, false);
+      }
+    }
+  }
+
+  @Test
+  public void testRenameDirectory() throws Exception {
+    if (getFs() != null) {
+      String[] objects = {"DirA", "DirA/file1", "DirA/file2"};
+      Path sourceDir = new Path(getBaseURI() + "/" + objects[0]);
+      for (String object : objects) {
+        Path source = new Path(getBaseURI() + "/" + object);
+        createFile(source, data);
+      }
+
+      try {
+        Path destination = new Path(getBaseURI() + "/" + "renamed");
+        //Check rename operation returns true
+        Assert.assertTrue(getFs().rename(sourceDir, destination));
+
+        for (String object : objects) {
+          Path source = new Path(getBaseURI() + "/" + object);
+
+          // Check renamed file exists and old file is deleted
+          //Assert.assertFalse(getFs().exists(source));
+          Assert.assertTrue(getFs().exists(destination));
+        }
+      } finally {
+        // TODO Cleanup files generated
+      }
+    }
+  }
+
+  @Test
+  public void testRenameTemp() throws Exception {
+    if (getFs() != null) {
+      String object = "file1/_temporary";
+      Path source = new Path(getBaseURI() + "/" + object);
+      createFile(source, data);
+      Path destination = new Path(getBaseURI() + "/" + "renamed");
+
+      try {
+        // Check rename operation returns true
+        Assert.assertTrue(getFs().rename(source, destination));
+
+        // Check _temporary file still exists and is not renamed
+        Assert.assertTrue(getFs().exists(source));
+        Assert.assertFalse(getFs().exists(destination));
+      } finally {
+        getFs().delete(destination, false);
+      }
+    }
+  }
+
+  @Test
+  public void testRenameDifferentContainers() throws Exception {
+    if (getFs() != null) {
+      String object = "file1";
+      Path source = new Path(getBaseURI() + "/" + object);
+      createFile(source, data);
+      Path destination = new Path("swift2d://dummyContainer.bmv3" + "/" + "renamed");
+      System.out.println(destination.toString());
+
+      // Check rename operation returns true
+      Assert.assertTrue(getFs().rename(source, destination));
+
+      // Clean up files generated
+    }
+  }
+
 }
