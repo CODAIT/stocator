@@ -62,7 +62,7 @@ public class SwiftAPIDirect {
    * GET object
    *
    * @param path path to object
-   * @param account Joss Account wrapper obejct
+   * @param account Joss Account wrapper object
    * @param bytesFrom from from
    * @param bytesTo bytes to
    * @return SwiftGETResponse that includes input stream and length
