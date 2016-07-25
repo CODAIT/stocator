@@ -192,13 +192,23 @@ public class ObjectStoreFileSystem extends FileSystem {
   }
 
   /**
-   * We don't need rename, since objects are already were created with real
+   * {@inheritDoc}
+   * We don't need rename on temporary objects, since objects are already were created with real
    * names.
    */
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
     LOG.debug("rename from {} to {}", src.toString(), dst.toString());
-    return true;
+    String objNameModified = getObjectNameRoot(src, HADOOP_TEMPORARY, true);
+    LOG.debug("Modified object name {}", objNameModified);
+    if (objNameModified.contains(HADOOP_TEMPORARY)) {
+      return true;
+    }
+    LOG.debug("Checking if source exists {}", src);
+    if (exists(src)) {
+      LOG.debug("Source {} exists", src);
+    }
+    return storageClient.rename(hostNameScheme, src.toString(), dst.toString());
   }
 
   @Override

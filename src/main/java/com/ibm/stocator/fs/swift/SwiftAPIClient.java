@@ -685,4 +685,28 @@ public class SwiftAPIClient implements IStoreClient {
         getLastModified(tmp.getLastModified()), 0, null,
         null, null, new Path(newMergedPath));
   }
+
+  @Override
+  public boolean rename(String hostName, String srcPath, String dstPath) throws IOException {
+    LOG.debug("Rename from {} to {}. hostname is {}", srcPath, dstPath, hostName);
+    String objNameSrc = srcPath.toString();
+    if (srcPath.toString().startsWith(hostName)) {
+      objNameSrc = srcPath.toString().substring(hostName.length());
+    }
+    String objNameDst = dstPath.toString();
+    if (objNameDst.toString().startsWith(hostName)) {
+      objNameDst = dstPath.toString().substring(hostName.length());
+    }
+
+    if (objNameSrc.contains(HADOOP_TEMPORARY)) {
+      LOG.debug("Exists on temp object {}. Return false", objNameSrc);
+      return true;
+    }
+    LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
+    Container cont = mJossAccount.getAccount().getContainer(container);
+    StoredObject so = cont.getObject(objNameSrc);
+    StoredObject soDst = cont.getObject(objNameDst);
+    so.copyObject(cont, soDst);
+    return true;
+  }
 }
