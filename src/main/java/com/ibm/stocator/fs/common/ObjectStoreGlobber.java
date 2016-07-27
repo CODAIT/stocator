@@ -68,6 +68,7 @@ public class ObjectStoreGlobber {
   private FileStatus[] listStatus(Path path) throws IOException {
     try {
       if (fs != null) {
+        //return fs.listStatus(new Path(path.toString() + "*"));
         return fs.listStatus(path);
       } else {
         return fc.util().listStatus(path);
@@ -157,10 +158,19 @@ public class ObjectStoreGlobber {
         }
       }
     } else {
-      // Get a single FileStatus based on path given
-      FileStatus candidateStatus = getFileStatus(new Path(pathPattern.toString()));
-      if (candidateStatus != null && filter.accept(candidateStatus.getPath())) {
-        results.add(candidateStatus);
+      LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
+          pathPattern.toString());
+      FileStatus[] candidates = listStatus(new Path(pathPattern.toString()));
+      if (candidates == null) {
+        return null;
+      }
+      for (FileStatus candidate : candidates) {
+        LOG.trace("No globber pattern. Candidate {}", candidate.getPath().toString());
+        if (filter.accept(candidate.getPath())
+            && candidate.getPath().toString().startsWith(pathPattern.toString() + "/")) {
+          LOG.trace("No globber pattern. Candidate accepted: {}", candidate.getPath().toString());
+          results.add(candidate);
+        }
       }
     }
     if (results.isEmpty()) {
