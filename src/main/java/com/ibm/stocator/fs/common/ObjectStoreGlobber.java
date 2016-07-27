@@ -167,7 +167,8 @@ public class ObjectStoreGlobber {
       for (FileStatus candidate : candidates) {
         LOG.trace("No globber pattern. Candidate {}", candidate.getPath().toString());
         if (filter.accept(candidate.getPath())
-            && candidate.getPath().toString().startsWith(pathPattern.toString() + "/")) {
+            && (candidate.getPath().toString().startsWith(pathPattern.toString() + "/")
+                || (candidate.getPath().toString().equals(pathPattern.toString())))) {
           LOG.trace("No globber pattern. Candidate accepted: {}", candidate.getPath().toString());
           results.add(candidate);
         }
