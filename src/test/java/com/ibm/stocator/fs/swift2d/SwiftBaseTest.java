@@ -22,7 +22,6 @@ import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -40,37 +39,38 @@ public class SwiftBaseTest extends Assert {
 
   protected static final Logger LOG = LoggerFactory.getLogger(SwiftBaseTest.class);
   protected ObjectStoreFileSystem fs;
-  protected String baseURI;
+  protected static ObjectStoreFileSystem sFileSystem;
+  protected static String sBaseURI;
   private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
   private Configuration conf;
 
   @Before
   public void setUp() throws Exception {
-    conf = new Configuration();
-    baseURI = conf.get(BASE_URI_PROPERTY);
-    if (baseURI == null || baseURI.equals("")) {
-      return;
-    }
-    final URI uri = new URI(baseURI);
-    fs = new ObjectStoreFileSystem();
-    try {
-      fs.initialize(uri, conf);
-    } catch (Exception e) {
-      fs = null;
-      throw e;
-    }
+    createSwiftFileSystem();
   }
 
   public void manualSetUp(String containerName) throws Exception {
+    createSwiftFileSystem(containerName);
+  }
+
+  public void createSwiftFileSystem() throws Exception {
+    createSwiftFileSystem("");
+  }
+
+  public void createSwiftFileSystem(String containerName) throws Exception {
     conf = new Configuration();
-    baseURI = conf.get(BASE_URI_PROPERTY);
-    if (baseURI == null || baseURI.equals("")) {
+    sBaseURI = conf.get(BASE_URI_PROPERTY);
+    if (sBaseURI == null || sBaseURI.equals("")) {
       return;
     }
-    baseURI = baseURI.replace(baseURI.substring(baseURI.indexOf("//") + 2,
-        baseURI.indexOf(".")), containerName);
-    System.out.println("New uri is " + baseURI);
-    final URI uri = new URI(baseURI);
+
+    if (!containerName.isEmpty()) {
+      sBaseURI = sBaseURI.replace(sBaseURI.substring(sBaseURI.indexOf("//") + 2,
+              sBaseURI.indexOf(".")), containerName);
+      System.out.println("New uri is " + sBaseURI);
+    }
+    final URI uri = new URI(sBaseURI);
+
     fs = new ObjectStoreFileSystem();
     try {
       fs.initialize(uri, conf);
@@ -78,22 +78,17 @@ public class SwiftBaseTest extends Assert {
       fs = null;
       throw e;
     }
+    sFileSystem = fs;
   }
 
   @After
   public void tearDown() throws Exception {
-    if (getBaseURI() != null) {
-      // Clean up generated files
-      Path rootDir = new Path(getBaseURI());
-      FileStatus[] files = getFs().listStatus(rootDir);
-      for (FileStatus file : files) {
-        getFs().delete(file.getPath(), false);
-      }
-    }
+
   }
 
   @AfterClass
   public static void classTearDown() throws Exception {
+    SwiftTestUtils.cleanupAllFiles(sFileSystem, sBaseURI);
   }
 
   /**
@@ -119,7 +114,7 @@ public class SwiftBaseTest extends Assert {
   }
 
   public String getBaseURI() {
-    return baseURI;
+    return sBaseURI;
   }
 
   /**

@@ -88,14 +88,14 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testConfDefinesFilesystem() throws Throwable {
     Configuration conf = new Configuration();
-    baseURI = conf.get(BASE_URI_PROPERTY);
+    sBaseURI = conf.get(BASE_URI_PROPERTY);
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testConfIsValid() throws Throwable {
     Configuration conf = new Configuration();
-    baseURI = conf.get(BASE_URI_PROPERTY);
-    ObjectStoreVisitor.getStoreClient(new URI(baseURI), conf);
+    sBaseURI = conf.get(BASE_URI_PROPERTY);
+    ObjectStoreVisitor.getStoreClient(new URI(sBaseURI), conf);
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
