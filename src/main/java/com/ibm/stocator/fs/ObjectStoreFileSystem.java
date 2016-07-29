@@ -213,7 +213,7 @@ public class ObjectStoreFileSystem extends FileSystem {
 
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
-    LOG.debug("delete: {}. recursive {}", f.toString(), recursive);
+    LOG.debug("delete: {} recursive {}", f.toString(), recursive);
     String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
     LOG.debug("Modified object name {} hostname {}", objNameModified, hostNameScheme);
     if (objNameModified.contains(HADOOP_TEMPORARY)) {
@@ -233,8 +233,11 @@ public class ObjectStoreFileSystem extends FileSystem {
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
-          LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
-          storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+          if (fs.getPath().toString().equals(f.toString())
+              || fs.getPath().toString().startsWith(f.toString() + "/")) {
+            LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
+            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+          }
         }
       }
     }

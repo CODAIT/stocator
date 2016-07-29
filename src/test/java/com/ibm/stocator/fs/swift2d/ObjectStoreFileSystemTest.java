@@ -162,7 +162,7 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
     getFs().delete(testFile, false);
     Assert.assertFalse(getFs().exists(testFile));
 
-    getFs().delete(input, false);
+    getFs().delete(modifiedInput, false);
     Assert.assertFalse(getFs().exists(modifiedInput));
   }
 
