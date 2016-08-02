@@ -173,7 +173,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   public FSDataOutputStream create(Path f, FsPermission permission,
       boolean overwrite, int bufferSize,
       short replication, long blockSize, Progressable progress) throws IOException {
-    LOG.debug("Create: {}", f.toString());
+    LOG.debug("Create: {}, overwrite is: {}", f.toString(), overwrite);
     String objNameModified = "";
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
