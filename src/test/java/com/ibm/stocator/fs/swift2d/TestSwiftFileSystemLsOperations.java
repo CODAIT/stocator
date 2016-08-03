@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -51,6 +52,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
+    Assume.assumeNotNull(sFileSystem);
     createTestSubdirs();
   }
 
@@ -61,6 +63,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
    * @throws IOException on an IO problem
    */
   private static void createTestSubdirs() throws IOException {
+
     sTestDirs = new Path[]{ new Path(sBaseURI + "/test/hadoop/a"),
                             new Path(sBaseURI + "/test/hadoop/b"),
                             new Path(sBaseURI + "/test/hadoop/c/1"),
