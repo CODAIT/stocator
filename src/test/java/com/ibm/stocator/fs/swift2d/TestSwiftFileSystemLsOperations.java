@@ -109,9 +109,6 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
              + " assert that listStatus(/test) finds it");
     Path file = path(getBaseURI() + "/test/filename");
     createFile(file);
-    if (fs != null) {
-      System.out.println("Not null");
-    }
     FileStatus[] pathStats = fs.listStatus(file);
     assertEquals(dumpStats("/test/", pathStats),
                  1,
