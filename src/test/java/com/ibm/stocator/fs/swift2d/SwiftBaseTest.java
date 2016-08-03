@@ -124,8 +124,10 @@ public class SwiftBaseTest extends Assert {
    * @param sourceData source dataset
    * @throws IOException on any problem
    */
-  protected void createFile(Path path, byte[] sourceData) throws IOException {
-    FSDataOutputStream out = fs.create(path);
+
+  protected static void createFile(Path path, byte[] sourceData) throws IOException {
+    System.out.print(".");
+    FSDataOutputStream out = sFileSystem.create(path);
     out.write(sourceData, 0, sourceData.length);
     out.close();
   }
@@ -136,8 +138,8 @@ public class SwiftBaseTest extends Assert {
    * @param path path to create
    * @throws IOException on a failure
    */
-  protected void createEmptyFile(Path path) throws IOException {
-    FSDataOutputStream out = fs.create(path);
+  protected static void createEmptyFile(Path path) throws IOException {
+    FSDataOutputStream out = sFileSystem.create(path);
     out.close();
   }
 

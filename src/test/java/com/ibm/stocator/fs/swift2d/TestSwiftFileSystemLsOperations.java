@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -36,7 +37,7 @@ import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.touch;
  */
 public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
-  private Path[] testDirs;
+  private static Path[] sTestDirs;
 
     /**
    * Setup creates dirs under test/hadoop
@@ -46,10 +47,11 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    //delete the test directory
-    Path test = path(getBaseURI() + "/test");
-    fs.delete(test, true);
-    mkdirs(test);
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    createTestSubdirs();
   }
 
   /**
@@ -58,22 +60,19 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
    * so should only be done for those tests that need them.
    * @throws IOException on an IO problem
    */
-  private void createTestSubdirs() throws IOException {
-    testDirs = new Path[]{
-              path(getBaseURI() + "/test/hadoop/a"),
-              path(getBaseURI() + "/test/hadoop/b"),
-              path(getBaseURI() + "/test/hadoop/c/1"),
+  private static void createTestSubdirs() throws IOException {
+    sTestDirs = new Path[]{ new Path(sBaseURI + "/test/hadoop/a"),
+                            new Path(sBaseURI + "/test/hadoop/b"),
+                            new Path(sBaseURI + "/test/hadoop/c/1"),
         };
 
-    assertPathDoesNotExist("test directory setup", testDirs[0]);
-    for (Path path : testDirs) {
-      mkdirs(path);
+    for (Path path : sTestDirs) {
+      createEmptyFile(path);
     }
   }
 
   @Ignore("Not supported")
   public void testListLevelTest() throws Exception {
-    createTestSubdirs();
     FileStatus[] paths = fs.listStatus(path(getBaseURI() + "/test"));
     assertEquals(dumpStats(getBaseURI() + "/test", paths), 1, paths.length);
     assertEquals(path(getBaseURI() + "/test/hadoop"), paths[0].getPath());
@@ -81,7 +80,6 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
   @Ignore("Not supported")
   public void testListLevelTestHadoop() throws Exception {
-    createTestSubdirs();
     FileStatus[] paths;
     paths = fs.listStatus(path(getBaseURI() + "/test/hadoop"));
     String stats = dumpStats("/test/hadoop", paths);
@@ -96,7 +94,6 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
   @Ignore("Not supported")
   public void testListStatusEmptyDirectory() throws Exception {
-    createTestSubdirs();
     FileStatus[] paths;
     paths = fs.listStatus(path(getBaseURI() + "/test/hadoop/a"));
     assertEquals(dumpStats("/test/hadoop/a", paths), 0,
@@ -109,6 +106,9 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
              + " assert that listStatus(/test) finds it");
     Path file = path(getBaseURI() + "/test/filename");
     createFile(file);
+    if (fs != null) {
+      System.out.println("Not null");
+    }
     FileStatus[] pathStats = fs.listStatus(file);
     assertEquals(dumpStats("/test/", pathStats),
                  1,

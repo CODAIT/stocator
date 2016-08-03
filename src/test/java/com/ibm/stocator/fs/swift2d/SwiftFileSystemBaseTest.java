@@ -58,7 +58,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @return a qualified path instance
    */
   protected Path path(String pathString) {
-    return new Path(pathString).makeQualified(fs.getUri(), fs.getWorkingDirectory());
+    return new Path(pathString);
   }
 
   /**
@@ -99,7 +99,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @throws IOException IO problems during file operations
    */
   protected void mkdirs(Path path) throws IOException {
-    assertTrue("Failed to mkdir" + path, fs.mkdirs(path));
+    createEmptyFile(path);
   }
 
   /**
