@@ -151,4 +151,9 @@ public interface IStoreClient {
    */
   public boolean rename(String hostName, String srcPath, String dstPath) throws IOException;
 
+  /**
+   * @throws IOException if error
+   */
+  public void initiate() throws IOException;
+
 }

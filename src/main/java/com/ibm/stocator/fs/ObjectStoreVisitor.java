@@ -106,16 +106,23 @@ public class ObjectStoreVisitor {
       LOG.debug("Stocator schema space : {}, provided {}", fsSchema, supportedScheme);
       if (fsSchema.equals(supportedScheme)) {
         LOG.info("Stocator registered as {} for {}", fsSchema, fsuri.toString());
+        IStoreClient storeClient;
         try {
           Class<?> aClass = classLoader.loadClass(implementation);
-          IStoreClient storeClient = (IStoreClient) aClass.getConstructor(URI.class,
+          storeClient = (IStoreClient) aClass.getConstructor(URI.class,
               Configuration.class).newInstance(fsuri, conf);
-          return storeClient;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
             | InvocationTargetException | NoSuchMethodException | SecurityException
             | ClassNotFoundException e) {
           LOG.error(e.getMessage());
           throw new IOException("No object store for: " + fsSchema);
+        }
+        try {
+          storeClient.initiate();
+          return storeClient;
+        } catch (IOException e) {
+          LOG.error(e.getMessage());
+          throw e;
         }
       }
     }

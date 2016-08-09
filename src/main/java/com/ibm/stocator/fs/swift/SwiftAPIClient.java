@@ -92,7 +92,7 @@ public class SwiftAPIClient implements IStoreClient {
   /*
    * root container
    */
-  private final String container;
+  private String container;
   /*
    * should use public or private URL
    */
@@ -137,12 +137,22 @@ public class SwiftAPIClient implements IStoreClient {
   /*
    * support for different schema models
    */
-  private final String schemaProvided;
+  private String schemaProvided;
 
   /*
    * Keystone preferred region
    */
   private String preferredRegion;
+
+  /*
+   * file system URI
+   */
+  private final URI filesystemURI;
+
+  /*
+   * Hadoop configuration
+   */
+  private final Configuration conf;
 
   /**
    * Constructor method
@@ -151,7 +161,13 @@ public class SwiftAPIClient implements IStoreClient {
    * @param conf Configuration
    * @throws IOException when initialization is failed
    */
-  public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
+  public SwiftAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
+    conf = pConf;
+    filesystemURI = pFilesystemURI;
+  }
+
+  @Override
+  public void initiate() throws IOException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = conf.get("fs.swift.schema", Constants.SWIFT2D);
