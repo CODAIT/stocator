@@ -47,13 +47,11 @@ public class TestSwiftOperations extends SwiftBaseTest {
       params = new Object[]{objectName, id, String.valueOf(i), id};
       Path path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
       createFile(path, data);
-      System.out.println("File created: " + path.toString());
     }
     // create _SUCCESS object
     createEmptyFile(new Path(getBaseURI(),
         MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})));
-    FileStatus[] stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-    System.out.println("File Status of : " + getBaseURI() + "/" + objectName);
+    FileStatus[] stats = sFileSystem.listStatus(new Path(getBaseURI() + "/" + objectName));
     Assert.assertEquals(11, stats.length);
     // read 11 objects
     for (int i = 0;i < 11; i++) {
