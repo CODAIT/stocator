@@ -25,6 +25,7 @@ import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestSwiftOperations extends SwiftBaseTest {
@@ -36,6 +37,11 @@ public class TestSwiftOperations extends SwiftBaseTest {
   // {1} = two digits number, starting wih 00
   private String swiftDataFormat = "/{0}/part-000{3}-attempt_201612062056_0000_m_0000{1}_{2}";
   private String sparkSuccessFormat = "/{0}/_SUCCESS";
+
+  @Before
+  public void setUp() throws Exception {
+    createSwiftFileSystem();
+  }
 
   @Test
   public void testDataObject() throws Exception {

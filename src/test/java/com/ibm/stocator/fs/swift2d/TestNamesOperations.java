@@ -35,11 +35,6 @@ public class TestNamesOperations extends SwiftBaseTest {
   private String swiftDataFormat = "/{0}/part-000{3}-attempt_201612062056_0000_m_0000{1}_{2}";
   private String sparkSuccessFormat = "/{0}/_SUCCESS";
 
-  @Override
-  public void setUp() throws Exception {
-    super.manualSetUp("aa-bb-cc");
-  }
-
   @Test
   public void testDataObject() throws Exception {
     Assume.assumeNotNull(getFs());
