@@ -78,7 +78,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @throws IOException IO problems
    */
   public void assertExists(String message, Path path) throws IOException {
-    SwiftTestUtils.assertPathExists(fs, message, path);
+    SwiftTestUtils.assertPathExists(sFileSystem, message, path);
   }
 
   /**
@@ -89,7 +89,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    */
   public void assertPathDoesNotExist(String message, Path path) throws
           IOException {
-    SwiftTestUtils.assertPathDoesNotExist(fs, message, path);
+    SwiftTestUtils.assertPathDoesNotExist(sFileSystem, message, path);
   }
 
   /**
@@ -109,7 +109,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @throws IOException IO problems
    */
   protected void assertDeleted(Path path, boolean recursive) throws IOException {
-    SwiftTestUtils.assertDeleted(fs, path, recursive);
+    SwiftTestUtils.assertDeleted(sFileSystem, path, recursive);
   }
 
   /**

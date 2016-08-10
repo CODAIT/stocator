@@ -42,7 +42,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     final Path p = new Path("/test/testOpenNonExistingFile");
     //open it as a file, should get FileNotFoundException
     try {
-      final FSDataInputStream in = fs.open(p);
+      final FSDataInputStream in = sFileSystem.open(p);
       in.close();
       fail("didn't expect to get here");
     } catch (FileNotFoundException fnfe) {
@@ -52,13 +52,13 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testFilesystemHasURI() throws Throwable {
-    assertNotNull(fs.getUri());
+    assertNotNull(sFileSystem.getUri());
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testCreateFile() throws Exception {
     final Path f = new Path(getBaseURI() + "/test/testCreateFile");
-    final FSDataOutputStream fsDataOutputStream = fs.create(f);
+    final FSDataOutputStream fsDataOutputStream = sFileSystem.create(f);
     fsDataOutputStream.close();
     assertExists("created file", f);
   }
@@ -66,21 +66,21 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testWriteReadFile() throws Exception {
     final Path f = new Path(getBaseURI() + "/test/test");
-    final FSDataOutputStream fsDataOutputStream = fs.create(f);
+    final FSDataOutputStream fsDataOutputStream = sFileSystem.create(f);
     final String message = "Test string";
     fsDataOutputStream.write(message.getBytes());
     fsDataOutputStream.close();
     assertExists("created file", f);
     FSDataInputStream open = null;
     try {
-      open = fs.open(f);
+      open = sFileSystem.open(f);
       final byte[] bytes = new byte[512];
       final int read = open.read(bytes);
       final byte[] buffer = new byte[read];
       System.arraycopy(bytes, 0, buffer, 0, read);
       assertEquals(message, new String(buffer));
     } finally {
-      fs.delete(f, false);
+      sFileSystem.delete(f, false);
       IOUtils.closeStream(open);
     }
   }
@@ -100,7 +100,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testGetSchemeImplemented() throws Throwable {
-    String scheme = fs.getScheme();
+    String scheme = sFileSystem.getScheme();
     assertEquals(Constants.SWIFT2D,scheme);
   }
 
@@ -116,24 +116,24 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     String mixedCaseFilename = "/test/UPPER.TXT";
     Path upper = path(getBaseURI() + mixedCaseFilename);
     Path lower = path(getBaseURI() + mixedCaseFilename.toLowerCase());
-    assertFalse("File exists" + upper, fs.exists(upper));
-    assertFalse("File exists" + lower, fs.exists(lower));
-    FSDataOutputStream out = fs.create(upper);
+    assertFalse("File exists" + upper, sFileSystem.exists(upper));
+    assertFalse("File exists" + lower, sFileSystem.exists(lower));
+    FSDataOutputStream out = sFileSystem.create(upper);
     out.writeUTF("UPPER");
     out.close();
-    FileStatus upperStatus = fs.getFileStatus(upper);
+    FileStatus upperStatus = sFileSystem.getFileStatus(upper);
     assertExists("Original upper case file" + upper, upper);
     //verify the lower-case version of the filename doesn't exist
     assertPathDoesNotExist("lower case file", lower);
     //now overwrite the lower case version of the filename with a
     //new version.
-    out = fs.create(lower);
+    out = sFileSystem.create(lower);
     out.writeUTF("l");
     out.close();
     assertExists("lower case file", lower);
     //verify the length of the upper file hasn't changed
     assertExists("Original upper case file " + upper, upper);
-    FileStatus newStatus = fs.getFileStatus(upper);
+    FileStatus newStatus = sFileSystem.getFileStatus(upper);
     assertEquals("Expected status:" + upperStatus
             + " actual status " + newStatus,
             upperStatus.getLen(),

@@ -26,7 +26,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,28 +40,32 @@ import com.ibm.stocator.fs.ObjectStoreFileSystem;
 public class SwiftBaseTest extends Assert {
 
   protected static final Logger LOG = LoggerFactory.getLogger(SwiftBaseTest.class);
-  protected ObjectStoreFileSystem fs;
   protected static ObjectStoreFileSystem sFileSystem;
   protected static String sBaseURI;
   private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
-  private Configuration conf;
+  private static Configuration sConf;
 
   @Before
   public void setUp() throws Exception {
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
     createSwiftFileSystem();
+    Assume.assumeNotNull(sFileSystem);
   }
 
   public void manualSetUp(String containerName) throws Exception {
     createSwiftFileSystem(containerName);
   }
 
-  public void createSwiftFileSystem() throws Exception {
+  public static void createSwiftFileSystem() throws Exception {
     createSwiftFileSystem("");
   }
 
-  public void createSwiftFileSystem(String containerName) throws Exception {
-    conf = new Configuration();
-    sBaseURI = conf.get(BASE_URI_PROPERTY);
+  public static void createSwiftFileSystem(String containerName) throws Exception {
+    sConf = new Configuration();
+    sBaseURI = sConf.get(BASE_URI_PROPERTY);
     if (sBaseURI == null || sBaseURI.equals("")) {
       return;
     }
@@ -69,16 +75,15 @@ public class SwiftBaseTest extends Assert {
               sBaseURI.indexOf(".")), containerName);
       System.out.println("New uri is " + sBaseURI);
     }
+    
     final URI uri = new URI(sBaseURI);
-
-    fs = new ObjectStoreFileSystem();
+    sFileSystem = new ObjectStoreFileSystem();
     try {
-      fs.initialize(uri, conf);
+      sFileSystem.initialize(uri, sConf);
     } catch (Exception e) {
-      fs = null;
+      sFileSystem = null;
       throw e;
     }
-    sFileSystem = fs;
   }
 
   @After
@@ -97,7 +102,7 @@ public class SwiftBaseTest extends Assert {
    * @return the configuration
    */
   public Configuration getConf() {
-    return conf;
+    return sConf;
   }
 
   protected int getBlockSize() {
@@ -110,7 +115,7 @@ public class SwiftBaseTest extends Assert {
    * @return the current FS
    */
   public ObjectStoreFileSystem getFs() {
-    return fs;
+    return sFileSystem;
   }
 
   public String getBaseURI() {

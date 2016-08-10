@@ -41,10 +41,10 @@ public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
     final String message = "message";
     final Path filePath = new Path(getBaseURI() + "/test/file.txt");
 
-    writeTextFile(fs, filePath, message, false);
+    writeTextFile(sFileSystem, filePath, message, false);
 
     try {
-      readBytesToString(fs, filePath, 20);
+      readBytesToString(sFileSystem, filePath, 20);
       fail("expected an exception");
     } catch (EOFException e) {
       //expected
@@ -63,12 +63,12 @@ public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
                            + "}";
     final Path filePath = new Path(getBaseURI() + "/test/file.json");
 
-    writeTextFile(fs, filePath, message, false);
-    String readJson = readBytesToString(fs, filePath, message.length());
+    writeTextFile(sFileSystem, filePath, message, false);
+    String readJson = readBytesToString(sFileSystem, filePath, message.length());
     assertEquals(message,readJson);
     //now find out where it is
-    FileStatus status = fs.getFileStatus(filePath);
-    fs.getFileBlockLocations(status, 0, 10);
+    FileStatus status = sFileSystem.getFileStatus(filePath);
+    sFileSystem.getFileBlockLocations(status, 0, 10);
   }
 
   /**
@@ -83,8 +83,8 @@ public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
                            + "</x>";
     final Path filePath = new Path(getBaseURI() + "/test/file.xml");
 
-    writeTextFile(fs, filePath, message, false);
-    String read = readBytesToString(fs, filePath, message.length());
+    writeTextFile(sFileSystem, filePath, message, false);
+    String read = readBytesToString(sFileSystem, filePath, message.length());
     assertEquals(message,read);
   }
 

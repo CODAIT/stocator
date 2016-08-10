@@ -48,7 +48,7 @@ public class TestSwiftFileSystemBlocksize extends SwiftFileSystemBaseTest {
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testBlocksizeNonZeroForFile() throws Throwable {
     Path smallfile = new Path(getBaseURI() + "/test/smallfile");
-    SwiftTestUtils.writeTextFile(fs, smallfile, "blocksize", true);
+    SwiftTestUtils.writeTextFile(sFileSystem, smallfile, "blocksize", true);
     createFile(smallfile);
     FileStatus status = getFs().getFileStatus(smallfile);
     assertTrue("Zero blocksize in " + status,

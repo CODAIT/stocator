@@ -40,18 +40,9 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
   private static Path[] sTestDirs;
 
-    /**
-   * Setup creates dirs under test/hadoop
-   *
-   * @throws Exception
-   */
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
   @BeforeClass
   public static void setUpClass() throws Exception {
+    createSwiftFileSystem();
     Assume.assumeNotNull(sFileSystem);
     createTestSubdirs();
   }
@@ -64,9 +55,9 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
    */
   private static void createTestSubdirs() throws IOException {
 
-    sTestDirs = new Path[]{ new Path(sBaseURI + "/test/hadoop/a"),
-                            new Path(sBaseURI + "/test/hadoop/b"),
-                            new Path(sBaseURI + "/test/hadoop/c/1"),
+    sTestDirs = new Path[]{ new Path(sBaseURI + "/test/swift/a"),
+                            new Path(sBaseURI + "/test/swift/b"),
+                            new Path(sBaseURI + "/test/swift/c/1"),
         };
 
     for (Path path : sTestDirs) {
@@ -74,32 +65,32 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
     }
   }
 
-  @Ignore("Not supported")
+  // @Ignore("Not supported")
   public void testListLevelTest() throws Exception {
-    FileStatus[] paths = fs.listStatus(path(getBaseURI() + "/test"));
+    FileStatus[] paths = sFileSystem.listStatus(path(getBaseURI() + "/test"));
     assertEquals(dumpStats(getBaseURI() + "/test", paths), 1, paths.length);
-    assertEquals(path(getBaseURI() + "/test/hadoop"), paths[0].getPath());
+    assertEquals(path(getBaseURI() + "/test/swift"), paths[0].getPath());
   }
 
-  @Ignore("Not supported")
+  // @Ignore("Not supported")
   public void testListLevelTestHadoop() throws Exception {
     FileStatus[] paths;
-    paths = fs.listStatus(path(getBaseURI() + "/test/hadoop"));
-    String stats = dumpStats("/test/hadoop", paths);
+    paths = sFileSystem.listStatus(path(getBaseURI() + "/test/swift"));
+    String stats = dumpStats("/test/swift", paths);
     assertEquals("Paths.length wrong in " + stats, 3, paths.length);
-    assertEquals("Path element[0] wrong: " + stats, path(getBaseURI() + "/test/hadoop/a"),
+    assertEquals("Path element[0] wrong: " + stats, path(getBaseURI() + "/test/swift/a"),
                  paths[0].getPath());
-    assertEquals("Path element[1] wrong: " + stats, path(getBaseURI() + "/test/hadoop/b"),
+    assertEquals("Path element[1] wrong: " + stats, path(getBaseURI() + "/test/swift/b"),
                  paths[1].getPath());
-    assertEquals("Path element[2] wrong: " + stats, path(getBaseURI() + "/test/hadoop/c"),
+    assertEquals("Path element[2] wrong: " + stats, path(getBaseURI() + "/test/swift/c"),
                  paths[2].getPath());
   }
 
   @Ignore("Not supported")
   public void testListStatusEmptyDirectory() throws Exception {
     FileStatus[] paths;
-    paths = fs.listStatus(path(getBaseURI() + "/test/hadoop/a"));
-    assertEquals(dumpStats("/test/hadoop/a", paths), 0,
+    paths = sFileSystem.listStatus(path(getBaseURI() + "/test/swift/a"));
+    assertEquals(dumpStats("/test/swift/a", paths), 0,
                  paths.length);
   }
 
@@ -109,7 +100,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
              + " assert that listStatus(/test) finds it");
     Path file = path(getBaseURI() + "/test/filename");
     createFile(file);
-    FileStatus[] pathStats = fs.listStatus(file);
+    FileStatus[] pathStats = sFileSystem.listStatus(file);
     assertEquals(dumpStats("/test/", pathStats),
                  1,
                  pathStats.length);
@@ -122,9 +113,9 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testListEmptyRoot() throws Throwable {
     describe("Empty the root dir and verify that an LS / returns {}");
-    cleanup("testListEmptyRoot", fs, "/test");
-    cleanup("testListEmptyRoot", fs, "/user");
-    FileStatus[] fileStatuses = fs.listStatus(path(getBaseURI() + "/"));
+    cleanup("testListEmptyRoot", sFileSystem, "/test");
+    cleanup("testListEmptyRoot", sFileSystem, "/user");
+    FileStatus[] fileStatuses = sFileSystem.listStatus(path(getBaseURI() + "/"));
     assertEquals("Non-empty root" + dumpStats("/", fileStatuses),
                  0,
                  fileStatuses.length);
@@ -133,8 +124,8 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
   @Ignore("Unexpected")
   public void testListNonEmptyRoot() throws Throwable {
     Path test = path(getBaseURI() + "/test");
-    touch(fs, test);
-    FileStatus[] fileStatuses = fs.listStatus(path(getBaseURI() + "/"));
+    touch(sFileSystem, test);
+    FileStatus[] fileStatuses = sFileSystem.listStatus(path(getBaseURI() + "/"));
     String stats = dumpStats("/", fileStatuses);
     assertEquals("Wrong #of root children" + stats, 1, fileStatuses.length);
     FileStatus status = fileStatuses[0];
@@ -145,16 +136,16 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
   public void testListStatusRootDir() throws Throwable {
     Path dir = path(getBaseURI() + "/");
     Path child = path(getBaseURI() + "/test");
-    touch(fs, child);
-    assertListStatusFinds(fs, dir, child);
+    touch(sFileSystem, child);
+    assertListStatusFinds(sFileSystem, dir, child);
   }
 
   @Ignore("Not supported")
   public void testListStatusFiltered() throws Throwable {
     Path dir = path(getBaseURI() + "/");
     Path child = path(getBaseURI() + "/test");
-    touch(fs, child);
-    FileStatus[] stats = fs.listStatus(dir, new AcceptAllFilter());
+    touch(sFileSystem, child);
+    FileStatus[] stats = sFileSystem.listStatus(dir, new AcceptAllFilter());
     boolean found = false;
     StringBuilder builder = new StringBuilder();
     for (FileStatus stat : stats) {

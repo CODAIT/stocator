@@ -47,27 +47,27 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testLsRoot() throws Throwable {
     Path path = new Path(getBaseURI() + "/");
-    FileStatus[] statuses = fs.listStatus(path);
+    FileStatus[] statuses = sFileSystem.listStatus(path);
     assertNotNull(statuses);
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testMkDir() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/MkDir/_temporary/0");
-    assertTrue(fs.mkdirs(path));
-    fs.delete(new Path(getBaseURI() + "/test/MkDir"), true);
+    assertTrue(sFileSystem.mkdirs(path));
+    sFileSystem.delete(new Path(getBaseURI() + "/test/MkDir"), true);
   }
 
   @Ignore("Unexpected")
   public void testDeleteNonexistentFile() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/DeleteNonexistentFile");
-    assertFalse("delete returned true", fs.delete(path, false));
+    assertFalse("delete returned true", sFileSystem.delete(path, false));
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testPutFile() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/PutFile");
-    writeTextFile(fs, path, "Testing a put to a file", false);
+    writeTextFile(sFileSystem, path, "Testing a put to a file", false);
     assertDeleted(path, false);
   }
 
@@ -77,12 +77,12 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     try {
       String text = "Testing a put and get to a file "
               + System.currentTimeMillis();
-      writeTextFile(fs, path, text, false);
+      writeTextFile(sFileSystem, path, text, false);
 
-      String result = readBytesToString(fs, path, text.length());
+      String result = readBytesToString(sFileSystem, path, text.length());
       assertEquals(text, result);
     } finally {
-      delete(fs, path);
+      delete(sFileSystem, path);
     }
   }
 
@@ -92,7 +92,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
             new Path(getBaseURI() + "/test/PutDeleteFileInSubdir/testPutDeleteFileInSubdir");
     String text = "Testing a put and get to a file in a subdir "
             + System.currentTimeMillis();
-    writeTextFile(fs, path, text, false);
+    writeTextFile(sFileSystem, path, text, false);
     assertDeleted(path, false);
     //now delete the parent that should have no children
     assertDeleted(new Path(getBaseURI() + "/test/PutDeleteFileInSubdir"), false);
@@ -104,10 +104,10 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
             new Path(getBaseURI() + "/test/testRecursiveDelete");
     String text = "Testing a put and get to a file in a subdir "
             + System.currentTimeMillis();
-    writeTextFile(fs, childpath, text, false);
+    writeTextFile(sFileSystem, childpath, text, false);
     //now delete the parent that should have no children
     assertDeleted(new Path(getBaseURI() + "/test"), true);
-    assertFalse("child entry still present " + childpath, fs.exists(childpath));
+    assertFalse("child entry still present " + childpath, sFileSystem.exists(childpath));
   }
 
   private void delete(ObjectStoreFileSystem fs, Path path) {
@@ -136,16 +136,16 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     try {
       String text = "Testing a put to a file "
               + System.currentTimeMillis();
-      writeTextFile(fs, path, text, false);
-      assertFileHasLength(fs, path, text.length());
+      writeTextFile(sFileSystem, path, text, false);
+      assertFileHasLength(sFileSystem, path, text.length());
       String text2 = "Overwriting a file "
               + System.currentTimeMillis();
-      writeTextFile(fs, path, text2, true);
-      assertFileHasLength(fs, path, text2.length());
-      String result = readBytesToString(fs, path, text2.length());
+      writeTextFile(sFileSystem, path, text2, true);
+      assertFileHasLength(sFileSystem, path, text2.length());
+      String result = readBytesToString(sFileSystem, path, text2.length());
       assertEquals(text2, result);
     } finally {
-      delete(fs, path);
+      delete(sFileSystem, path);
     }
   }
 
@@ -153,13 +153,13 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   public void testOverwriteDirectory() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/testOverwriteDirectory");
     try {
-      fs.mkdirs(path.getParent());
+      sFileSystem.mkdirs(path.getParent());
       String text = "Testing a put to a file "
               + System.currentTimeMillis();
-      writeTextFile(fs, path, text, false);
-      assertFileHasLength(fs, path, text.length());
+      writeTextFile(sFileSystem, path, text, false);
+      assertFileHasLength(sFileSystem, path, text.length());
     } finally {
-      delete(fs, path);
+      delete(sFileSystem, path);
     }
   }
 
@@ -172,10 +172,10 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   public void testDirStatus() throws Throwable {
     Path path = new Path("/test/DirStatus");
     try {
-      fs.mkdirs(path);
-      SwiftTestUtils.assertIsDirectory(fs, path);
+      sFileSystem.mkdirs(path);
+      SwiftTestUtils.assertIsDirectory(sFileSystem, path);
     } finally {
-      delete(fs, path);
+      delete(sFileSystem, path);
     }
   }
 
@@ -191,17 +191,17 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     Path child = new Path(path, "child");
     try {
       //create the dir
-      fs.mkdirs(path);
+      sFileSystem.mkdirs(path);
       //assert the parent has the directory nature
-      SwiftTestUtils.assertIsDirectory(fs, path);
+      SwiftTestUtils.assertIsDirectory(sFileSystem, path);
       //create the child dir
-      writeTextFile(fs, child, "child file", true);
+      writeTextFile(sFileSystem, child, "child file", true);
       //assert the parent has the directory nature
-      SwiftTestUtils.assertIsDirectory(fs, path);
+      SwiftTestUtils.assertIsDirectory(sFileSystem, path);
       //now rm the child
-      delete(fs, child);
+      delete(sFileSystem, child);
     } finally {
-      deleteR(fs, path);
+      deleteR(sFileSystem, path);
     }
   }
 
@@ -209,9 +209,9 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   public void testCreateMultilevelDir() throws Throwable {
     Path base = new Path(getBaseURI() + "/test/CreateMultilevelDir");
     Path path = new Path(base, "1/2/3");
-    fs.mkdirs(path);
+    sFileSystem.mkdirs(path);
     assertExists("deep multilevel dir not created", path);
-    fs.delete(base, true);
+    sFileSystem.delete(base, true);
     assertPathDoesNotExist("Multilevel delete failed", path);
     assertPathDoesNotExist("Multilevel delete failed", base);
 
@@ -221,17 +221,17 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   public void testCreateDirWithFileParent() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/CreateDirWithFileParent");
     Path child = new Path(path, "subdir/child");
-    fs.mkdirs(path.getParent());
+    sFileSystem.mkdirs(path.getParent());
     try {
       //create the child dir
-      writeTextFile(fs, path, "parent", true);
+      writeTextFile(sFileSystem, path, "parent", true);
       try {
-        fs.mkdirs(child);
+        sFileSystem.mkdirs(child);
       } catch (ParentNotDirectoryException expected) {
         LOG.debug("Expected Exception", expected);
       }
     } finally {
-      fs.delete(path, true);
+      sFileSystem.delete(path, true);
     }
   }
 
@@ -246,9 +246,9 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     pathString = "/A/B/C";
     Path path = new Path(getBaseURI() + pathString);
     try {
-      writeTextFile(fs, path, pathString, true);
+      writeTextFile(sFileSystem, path, pathString, true);
       //if we get here, problems.
-      fs.delete(path, false);
+      sFileSystem.delete(path, false);
       fail("Managed to create an object with a name of length "
               + pathString.length());
     } catch (Exception e) {
@@ -262,7 +262,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
   public void testLsNonExistentFile() throws Exception {
     try {
       Path path = new Path(getBaseURI() + "/test/hadoop/file");
-      FileStatus[] statuses = fs.listStatus(path);
+      FileStatus[] statuses = sFileSystem.listStatus(path);
       fail("Should throw FileNotFoundException on " + path
               + " but got list of length " + statuses.length);
     } catch (FileNotFoundException fnfe) {

@@ -25,7 +25,6 @@ import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 public class TestSwiftOperations extends SwiftBaseTest {
@@ -38,12 +37,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
   private String swiftDataFormat = "/{0}/part-000{3}-attempt_201612062056_0000_m_0000{1}_{2}";
   private String sparkSuccessFormat = "/{0}/_SUCCESS";
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    Assume.assumeNotNull(getFs());
-  }
-
   @Test
   public void testDataObject() throws Exception {
     String objectName = "data7.txt";
@@ -54,12 +47,14 @@ public class TestSwiftOperations extends SwiftBaseTest {
       params = new Object[]{objectName, id, String.valueOf(i), id};
       Path path = new Path(getBaseURI(), MessageFormat.format(sparkPutFormat, params));
       createFile(path, data);
+      System.out.println("File created: " + path.toString());
     }
     // create _SUCCESS object
     createEmptyFile(new Path(getBaseURI(),
         MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})));
-    FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-    Assert.assertTrue(11 == stats.length);
+    FileStatus[] stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
+    System.out.println("File Status of : " + getBaseURI() + "/" + objectName);
+    Assert.assertEquals(11, stats.length);
     // read 11 objects
     for (int i = 0;i < 11; i++) {
       String id = String.format("%0" + 2 + "d", i);
@@ -80,7 +75,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
     getFs().delete(new Path(getBaseURI(),
             MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})), false);
     stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-    Assert.assertTrue(0 == stats.length);
+    Assert.assertEquals(0, stats.length);
   }
 
   @Test
@@ -90,7 +85,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Assert.assertTrue(getFs().exists(testFile));
     getFs().delete(testFile, false);
     FileStatus[]  stats = getFs().listStatus(testFile);
-    Assert.assertTrue(0 == stats.length);
+    Assert.assertEquals(0, stats.length);
   }
 
   @Test
