@@ -152,6 +152,8 @@ public interface IStoreClient {
   public boolean rename(String hostName, String srcPath, String dstPath) throws IOException;
 
   /**
+   * Contains the logic for the driver initialization
+   *
    * @throws IOException if error
    */
   public void initiate() throws IOException;
