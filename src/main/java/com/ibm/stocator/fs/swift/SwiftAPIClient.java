@@ -157,8 +157,8 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Constructor method
    *
-   * @param filesystemURI The URI to the object store
-   * @param conf Configuration
+   * @param pFilesystemURI The URI to the object store
+   * @param pConf Configuration
    * @throws IOException when initialization is failed
    */
   public SwiftAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
