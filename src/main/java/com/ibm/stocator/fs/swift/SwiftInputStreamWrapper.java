@@ -133,6 +133,18 @@ public class SwiftInputStreamWrapper extends InputStream {
     }
   }
 
+  /**
+   * Check if we haven't already finished reading
+   *
+   * @throws IOException if we have already finished
+   */
+  private synchronized void verifyNotFinished() throws IOException {
+    if (finishReading) {
+      LOG.debug("Already finished reading");
+      throw closeAndThrow(new IOException("No more to read"));
+    }
+  }
+
   @Override
   public int available() throws IOException {
     verifyClosed();
@@ -146,6 +158,7 @@ public class SwiftInputStreamWrapper extends InputStream {
 
   @Override
   public int read() throws IOException {
+    verifyNotFinished();
     verifyClosed();
     int read = 0;
     try {
@@ -161,14 +174,21 @@ public class SwiftInputStreamWrapper extends InputStream {
       finishReading = true;
       LOG.trace("No more left to read");
       innerClose();
+      read =  0;
     }
     return read;
   }
 
   @Override
   public int read(byte[] b, int off, int len) throws IOException {
-    verifyClosed();
     int read;
+    try {
+      verifyNotFinished();
+      verifyClosed();
+    } catch (IOException e) {
+      b = new byte[0];
+      throw e;
+    }
     try {
       read = inStream.read(b, off, len);
     } catch (EOFException e) {
@@ -182,6 +202,8 @@ public class SwiftInputStreamWrapper extends InputStream {
       finishReading = true;
       LOG.trace("No more data to read");
       innerClose();
+      b = new byte[0];
+      read = 0;
     }
     return read;
   }
