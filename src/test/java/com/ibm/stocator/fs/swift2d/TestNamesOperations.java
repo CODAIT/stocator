@@ -22,7 +22,6 @@ import java.text.MessageFormat;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 
 public class TestNamesOperations extends SwiftBaseTest {
@@ -37,7 +36,6 @@ public class TestNamesOperations extends SwiftBaseTest {
 
   @Test
   public void testDataObject() throws Exception {
-    Assume.assumeNotNull(getFs());
 
     String objectName = "data7-1-23-a.txt";
     Object[] params;
@@ -67,6 +65,6 @@ public class TestNamesOperations extends SwiftBaseTest {
       getFs().delete(path, false);
     }
     stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
-    Assert.assertTrue(0 == stats.length);
+    Assert.assertEquals(0, stats.length);
   }
 }

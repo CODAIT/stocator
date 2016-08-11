@@ -47,12 +47,12 @@ public class SwiftBaseTest extends Assert {
 
   @Before
   public void setUp() throws Exception {
+    Assume.assumeNotNull(sFileSystem);
   }
 
   @BeforeClass
   public static void setUpClass() throws Exception {
     createSwiftFileSystem();
-    Assume.assumeNotNull(sFileSystem);
   }
 
   public void manualSetUp(String containerName) throws Exception {

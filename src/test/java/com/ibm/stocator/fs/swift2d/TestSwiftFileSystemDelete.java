@@ -37,7 +37,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     assertDeleted(file, true);
   }
 
-  @Ignore("Unexpected")
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteEmptyFileTwice() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteEmptyFileTwice");
     createEmptyFile(file);
@@ -56,7 +56,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     assertDeleted(file, true);
   }
 
-  @Ignore("Unexpected")
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteNonEmptyFileTwice() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteNonEmptyFileTwice");
     createFile(file);

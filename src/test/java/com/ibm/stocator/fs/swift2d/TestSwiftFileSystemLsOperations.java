@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,8 +42,9 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
   @BeforeClass
   public static void setUpClass() throws Exception {
     createSwiftFileSystem();
-    Assume.assumeNotNull(sFileSystem);
-    createTestSubdirs();
+    if (sFileSystem != null) {
+      createTestSubdirs();
+    }
   }
 
   /**
@@ -57,23 +57,21 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
     sTestDirs = new Path[]{ new Path(sBaseURI + "/test/swift/a"),
                             new Path(sBaseURI + "/test/swift/b"),
-                            new Path(sBaseURI + "/test/swift/c/1"),
-        };
-
+                            new Path(sBaseURI + "/test/swift/c/1")};
     for (Path path : sTestDirs) {
       createEmptyFile(path);
     }
   }
 
-  // @Ignore("Not supported")
+  @Ignore("Not supported")
   public void testListLevelTest() throws Exception {
     FileStatus[] paths = sFileSystem.listStatus(path(getBaseURI() + "/test"));
     assertEquals(dumpStats(getBaseURI() + "/test", paths), 1, paths.length);
     assertEquals(path(getBaseURI() + "/test/swift"), paths[0].getPath());
   }
 
-  // @Ignore("Not supported")
-  public void testListLevelTestHadoop() throws Exception {
+  @Ignore("Not supported")
+  public void testListLevelTestSwift() throws Exception {
     FileStatus[] paths;
     paths = sFileSystem.listStatus(path(getBaseURI() + "/test/swift"));
     String stats = dumpStats("/test/swift", paths);
@@ -86,7 +84,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
                  paths[2].getPath());
   }
 
-  @Ignore("Not supported")
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testListStatusEmptyDirectory() throws Exception {
     FileStatus[] paths;
     paths = sFileSystem.listStatus(path(getBaseURI() + "/test/swift/a"));

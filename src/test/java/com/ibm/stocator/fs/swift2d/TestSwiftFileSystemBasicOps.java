@@ -25,7 +25,6 @@ import com.ibm.stocator.fs.ObjectStoreFileSystem;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -58,7 +57,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     sFileSystem.delete(new Path(getBaseURI() + "/test/MkDir"), true);
   }
 
-  @Ignore("Unexpected")
+  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteNonexistentFile() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/DeleteNonexistentFile");
     assertFalse("delete returned true", sFileSystem.delete(path, false));
@@ -84,30 +83,6 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     } finally {
       delete(sFileSystem, path);
     }
-  }
-
-  @Ignore("Not supported")
-  public void testPutDeleteFileInSubdir() throws Throwable {
-    Path path =
-            new Path(getBaseURI() + "/test/PutDeleteFileInSubdir/testPutDeleteFileInSubdir");
-    String text = "Testing a put and get to a file in a subdir "
-            + System.currentTimeMillis();
-    writeTextFile(sFileSystem, path, text, false);
-    assertDeleted(path, false);
-    //now delete the parent that should have no children
-    assertDeleted(new Path(getBaseURI() + "/test/PutDeleteFileInSubdir"), false);
-  }
-
-  @Ignore("Not supported")
-  public void testRecursiveDelete() throws Throwable {
-    Path childpath =
-            new Path(getBaseURI() + "/test/testRecursiveDelete");
-    String text = "Testing a put and get to a file in a subdir "
-            + System.currentTimeMillis();
-    writeTextFile(sFileSystem, childpath, text, false);
-    //now delete the parent that should have no children
-    assertDeleted(new Path(getBaseURI() + "/test"), true);
-    assertFalse("child entry still present " + childpath, sFileSystem.exists(childpath));
   }
 
   private void delete(ObjectStoreFileSystem fs, Path path) {
@@ -160,78 +135,6 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
       assertFileHasLength(sFileSystem, path, text.length());
     } finally {
       delete(sFileSystem, path);
-    }
-  }
-
-  /**
-   * Assert that a newly created directory is a directory
-   *
-   * @throws Throwable if not, or if something else failed
-   */
-  @Ignore("Not supported")
-  public void testDirStatus() throws Throwable {
-    Path path = new Path("/test/DirStatus");
-    try {
-      sFileSystem.mkdirs(path);
-      SwiftTestUtils.assertIsDirectory(sFileSystem, path);
-    } finally {
-      delete(sFileSystem, path);
-    }
-  }
-
-  /**
-   * Assert that if a directory that has children is deleted, it is still
-   * a directory
-   *
-   * @throws Throwable if not, or if something else failed
-   */
-  @Ignore("Not supported")
-  public void testDirStaysADir() throws Throwable {
-    Path path = new Path("/test/dirStaysADir");
-    Path child = new Path(path, "child");
-    try {
-      //create the dir
-      sFileSystem.mkdirs(path);
-      //assert the parent has the directory nature
-      SwiftTestUtils.assertIsDirectory(sFileSystem, path);
-      //create the child dir
-      writeTextFile(sFileSystem, child, "child file", true);
-      //assert the parent has the directory nature
-      SwiftTestUtils.assertIsDirectory(sFileSystem, path);
-      //now rm the child
-      delete(sFileSystem, child);
-    } finally {
-      deleteR(sFileSystem, path);
-    }
-  }
-
-  @Ignore("Not supported")
-  public void testCreateMultilevelDir() throws Throwable {
-    Path base = new Path(getBaseURI() + "/test/CreateMultilevelDir");
-    Path path = new Path(base, "1/2/3");
-    sFileSystem.mkdirs(path);
-    assertExists("deep multilevel dir not created", path);
-    sFileSystem.delete(base, true);
-    assertPathDoesNotExist("Multilevel delete failed", path);
-    assertPathDoesNotExist("Multilevel delete failed", base);
-
-  }
-
-  @Ignore("Not supported")
-  public void testCreateDirWithFileParent() throws Throwable {
-    Path path = new Path(getBaseURI() + "/test/CreateDirWithFileParent");
-    Path child = new Path(path, "subdir/child");
-    sFileSystem.mkdirs(path.getParent());
-    try {
-      //create the child dir
-      writeTextFile(sFileSystem, path, "parent", true);
-      try {
-        sFileSystem.mkdirs(child);
-      } catch (ParentNotDirectoryException expected) {
-        LOG.debug("Expected Exception", expected);
-      }
-    } finally {
-      sFileSystem.delete(path, true);
     }
   }
 

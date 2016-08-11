@@ -25,6 +25,7 @@ import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,6 +42,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
   @Before
   public void setUp() throws Exception {
     createSwiftFileSystem();
+    Assume.assumeNotNull(sFileSystem);
   }
 
   @Test
