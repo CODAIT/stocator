@@ -176,7 +176,7 @@ public class SwiftAPIClient implements IStoreClient {
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
     blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
-        "128")).longValue() * 1024 * 1024L;
+        "128")) * 1024 * 1024L;
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
@@ -397,6 +397,7 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException in case of network failure
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException {
+    System.out.println("List called on " + path);
     LOG.debug("List container: raw path parent", path.toString());
     Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
@@ -411,8 +412,9 @@ public class SwiftAPIClient implements IStoreClient {
     }
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
+    HashMap<String, FileStatus> result = new HashMap<>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
-    FileStatus fs = null;
+    FileStatus fs;
     StoredObject previousElement = null;
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
       Collection<StoredObject> res = cObj.list(paginationMap, page);
@@ -421,14 +423,35 @@ public class SwiftAPIClient implements IStoreClient {
         LOG.debug("List {} in container {} is empty", obj, container);
         return emptyRes;
       }
-      for (StoredObject tmp : res) {
-        if (previousElement == null) {
-          // first entry
-          setCorrectSize(tmp, cObj);
-          previousElement = tmp.getAsObject();
-          continue;
-        }
-        String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+      for (StoredObject so : res) {
+        String unifiedObjectName = extractUnifiedObjectName(so.getName());
+        String simpleName = nameWithoutTaskID(so.getName());
+        //System.out.println("UnObName: " + unifiedObjectName + " Simple: " + simpleName);
+        //if (isSparkOrigin(unifiedObjectName)) {
+          if (so.getContentLength() > 0 || fullListing) {
+            if (result.containsKey(simpleName)) {
+              // Replace result with longer file length
+              FileStatus tmpFs = result.get(simpleName);
+              System.out.println("Collision found :-  tmpFs: " + tmpFs.getLen() + "so: " + so.getContentLength());
+              if (tmpFs.getLen() < so.getContentLength()) {
+                result.remove(simpleName);
+                result.put(simpleName, getFileStatus(so, cObj, hostName, path));
+              }
+            } else {
+              result.put(simpleName, getFileStatus(so, cObj, hostName, path));
+              System.out.println("Putting key: " + simpleName + " with value: " + so.getName());
+            }
+          } else if (!isJobSuccessful(unifiedObjectName) && fModeAutomaticDelete) {
+            // Automatically delete failed uploads if enabled
+            delete(hostName, new Path(so.getName()), true);
+          } else {
+            // Resolve collisions
+            System.out.println("Help");
+          }
+        //}
+      }
+/*      for (StoredObject tmp : res) {
+
         if (isSparkOrigin(unifiedObjectName) && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
           if (!isJobSuccessful(unifiedObjectName)) {
@@ -456,7 +479,6 @@ public class SwiftAPIClient implements IStoreClient {
             }
           }
         }
-        fs = null;
         if (previousElement.getContentLength() > 0 || fullListing) {
           fs = getFileStatus(previousElement, cObj, hostName, path);
           tmpResult.add(fs);
@@ -466,10 +488,15 @@ public class SwiftAPIClient implements IStoreClient {
     }
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       fs = getFileStatus(previousElement, cObj, hostName, path);
-      tmpResult.add(fs);
+      tmpResult.add(fs);*/
     }
-    LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
-    return tmpResult.toArray(new FileStatus[tmpResult.size()]);
+    // LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
+    // return tmpResult.toArray(new FileStatus[tmpResult.size()]);
+    LOG.debug("Listing of {} completed with {} results", path.toString(), result.size());
+    for (FileStatus status : result.values()) {
+      System.out.println("File status: " + status.getPath());
+    }
+    return result.values().toArray(new FileStatus[result.size()]);
   }
 
   /**
@@ -557,10 +584,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private boolean isSparkOrigin(String objectName) {
     if (cachedSparkOriginated.containsKey(objectName)) {
-      return cachedSparkOriginated.get(objectName).booleanValue();
+      return cachedSparkOriginated.get(objectName);
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
+    if (objectName.startsWith(container)) {
       obj = objectName.substring(container.length() + 1);
     }
     Boolean sparkOriginated = Boolean.FALSE;
@@ -575,7 +602,7 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     cachedSparkOriginated.put(objectName, sparkOriginated);
-    return sparkOriginated.booleanValue();
+    return sparkOriginated;
   }
 
   /**
@@ -588,10 +615,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private boolean isJobSuccessful(String objectName) {
     if (cachedSparkJobsStatus.containsKey(objectName)) {
-      return cachedSparkJobsStatus.get(objectName).booleanValue();
+      return cachedSparkJobsStatus.get(objectName);
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
+    if (objectName.startsWith(container)) {
       obj = objectName.substring(container.length() + 1);
     }
     Account account = mJossAccount.getAccount();
@@ -602,7 +629,7 @@ public class SwiftAPIClient implements IStoreClient {
       isJobOK = Boolean.TRUE;
     }
     cachedSparkJobsStatus.put(objectName, isJobOK);
-    return isJobOK.booleanValue();
+    return isJobOK;
   }
 
   /**
@@ -705,24 +732,28 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public boolean rename(String hostName, String srcPath, String dstPath) throws IOException {
     LOG.debug("Rename from {} to {}. hostname is {}", srcPath, dstPath, hostName);
-    String objNameSrc = srcPath.toString();
-    if (srcPath.toString().startsWith(hostName)) {
-      objNameSrc = srcPath.toString().substring(hostName.length());
+    String objNameSrc = srcPath;
+    if (srcPath.startsWith(hostName)) {
+      objNameSrc = srcPath.substring(hostName.length());
     }
-    String objNameDst = dstPath.toString();
-    if (objNameDst.toString().startsWith(hostName)) {
-      objNameDst = dstPath.toString().substring(hostName.length());
+    String objNameDst = dstPath;
+    if (objNameDst.startsWith(hostName)) {
+      objNameDst = dstPath.substring(hostName.length());
     }
 
     if (objNameSrc.contains(HADOOP_TEMPORARY)) {
       LOG.debug("Exists on temp object {}. Return false", objNameSrc);
-      return true;
+      return false;
     }
     LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
     Container cont = mJossAccount.getAccount().getContainer(container);
     StoredObject so = cont.getObject(objNameSrc);
     StoredObject soDst = cont.getObject(objNameDst);
     so.copyObject(cont, soDst);
-    return true;
+    if (soDst.exists()) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }

@@ -83,7 +83,7 @@ public class CollisionTest extends SwiftBaseTest {
     // print created objects
     createEmptyFile(new Path(getBaseURI(), sparkSuccessFormat));
     FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName));
-    Assert.assertTrue(stats.length == parts);
+    Assert.assertEquals(stats.length, parts);
     Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectNameTmp), true));
     Assert.assertTrue(true == getFs().delete(new Path(getBaseURI(), objectName), true));
     FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName));
