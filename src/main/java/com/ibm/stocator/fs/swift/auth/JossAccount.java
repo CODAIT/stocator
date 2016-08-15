@@ -1,15 +1,13 @@
 package com.ibm.stocator.fs.swift.auth;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+
 import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
-
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
 
 /**
  *
@@ -125,13 +123,12 @@ public class JossAccount {
    * Creates a thread safe HttpClient to use for requests
    */
   private HttpClient initHttpClient() {
-    PoolingClientConnectionManager manager = new PoolingClientConnectionManager();
+    PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
     manager.setDefaultMaxPerRoute(15);
     manager.setMaxTotal(15);
-    HttpClient client = new DefaultHttpClient(manager);
-    HttpParams params = client.getParams();
-    HttpConnectionParams.setSoKeepalive(params, true);
-    return client;
+
+    return HttpClients.custom().setConnectionManager(manager).build();
+
   }
 
   /**
