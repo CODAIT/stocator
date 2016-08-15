@@ -397,7 +397,6 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException in case of network failure
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException {
-    System.out.println("List called on " + path);
     LOG.debug("List container: raw path parent", path.toString());
     Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
@@ -426,27 +425,21 @@ public class SwiftAPIClient implements IStoreClient {
       for (StoredObject so : res) {
         String unifiedObjectName = extractUnifiedObjectName(so.getName());
         String simpleName = nameWithoutTaskID(so.getName());
-        //System.out.println("UnObName: " + unifiedObjectName + " Simple: " + simpleName);
         //if (isSparkOrigin(unifiedObjectName)) {
           if (so.getContentLength() > 0 || fullListing) {
             if (result.containsKey(simpleName)) {
               // Replace result with longer file length
               FileStatus tmpFs = result.get(simpleName);
-              System.out.println("Collision found :-  tmpFs: " + tmpFs.getLen() + "so: " + so.getContentLength());
               if (tmpFs.getLen() < so.getContentLength()) {
                 result.remove(simpleName);
                 result.put(simpleName, getFileStatus(so, cObj, hostName, path));
               }
             } else {
               result.put(simpleName, getFileStatus(so, cObj, hostName, path));
-              System.out.println("Putting key: " + simpleName + " with value: " + so.getName());
             }
           } else if (!isJobSuccessful(unifiedObjectName) && fModeAutomaticDelete) {
             // Automatically delete failed uploads if enabled
             delete(hostName, new Path(so.getName()), true);
-          } else {
-            // Resolve collisions
-            System.out.println("Help");
           }
         //}
       }
@@ -493,9 +486,6 @@ public class SwiftAPIClient implements IStoreClient {
     // LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
     // return tmpResult.toArray(new FileStatus[tmpResult.size()]);
     LOG.debug("Listing of {} completed with {} results", path.toString(), result.size());
-    for (FileStatus status : result.values()) {
-      System.out.println("File status: " + status.getPath());
-    }
     return result.values().toArray(new FileStatus[result.size()]);
   }
 
