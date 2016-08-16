@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -442,7 +441,7 @@ public class SwiftAPIClient implements IStoreClient {
             LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
             delete(hostName, new Path(so.getName()), true);
           }
-        } else if (so.getContentLength() > 0 || fullListing){
+        } else if (so.getContentLength() > 0 || fullListing) {
           result.put(so.getName(), getFileStatus(so, cObj, hostName, path));
         }
       }
