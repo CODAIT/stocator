@@ -517,10 +517,8 @@ public class SwiftAPIClient implements IStoreClient {
         .getObject(obj);
     if (so.exists()) {
       so.delete();
-      return true;
-    } else {
-      return false;
     }
+    return true;
   }
 
   @Override

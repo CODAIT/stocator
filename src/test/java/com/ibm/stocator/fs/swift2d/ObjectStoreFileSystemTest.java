@@ -175,7 +175,7 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
     createFile(testFile, data);
     Assert.assertTrue(getFs().exists(testFile));
     stats = getFs().listStatus(testFile);
-    Assert.assertEquals(0, stats.length);
+    Assert.assertEquals(1, stats.length);
 
     FileStatus stat = stats[0];
     Assert.assertEquals("testFile", stat.getPath().getName());

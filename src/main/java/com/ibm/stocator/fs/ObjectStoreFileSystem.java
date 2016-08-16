@@ -223,22 +223,26 @@ public class ObjectStoreFileSystem extends FileSystem {
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true);
-      for (FileStatus fs: fsList) {
-        if (fs.getPath().getName().endsWith(f.getName())) {
-          result = storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+      if (fsList.length > 0) {
+        for (FileStatus fs: fsList) {
+          if (fs.getPath().getName().endsWith(f.getName())) {
+            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+          }
         }
       }
     } else {
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true);
-      for (FileStatus fs: fsList) {
-        if (fs.getPath().toString().equals(f.toString())
-            || fs.getPath().toString().startsWith(f.toString() + "/")) {
-          LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
-          result = storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+      if (fsList.length > 0) {
+        for (FileStatus fs: fsList) {
+          if (fs.getPath().toString().equals(f.toString())
+              || fs.getPath().toString().startsWith(f.toString() + "/")) {
+            LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
+            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+          }
         }
       }
     }
-    return result;
+    return true;
   }
 
   @Override

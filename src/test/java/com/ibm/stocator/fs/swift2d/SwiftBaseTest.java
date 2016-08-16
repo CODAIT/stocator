@@ -75,7 +75,7 @@ public class SwiftBaseTest extends Assert {
               sBaseURI.indexOf(".")), containerName);
       System.out.println("New uri is " + sBaseURI);
     }
-    
+
     final URI uri = new URI(sBaseURI);
     sFileSystem = new ObjectStoreFileSystem();
     try {
