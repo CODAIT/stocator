@@ -410,11 +410,9 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     LOG.debug("List container for {} container {}", obj, container);
-    ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     HashMap<String, FileStatus> result = new HashMap<>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
-    FileStatus fs;
-    StoredObject previousElement = null;
+
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
       Collection<StoredObject> res = cObj.list(paginationMap, page);
       if (page == 0 && (res == null || res.isEmpty())) {
@@ -425,66 +423,30 @@ public class SwiftAPIClient implements IStoreClient {
       for (StoredObject so : res) {
         String unifiedObjectName = extractUnifiedObjectName(so.getName());
         String simpleName = nameWithoutTaskID(so.getName());
-        //if (isSparkOrigin(unifiedObjectName)) {
-          if (so.getContentLength() > 0 || fullListing) {
-            if (result.containsKey(simpleName)) {
-              // Replace result with longer file length
+        if (isSparkOrigin(unifiedObjectName) && !fullListing) {
+          if (so.getContentLength() > 0) {
+            if (result.containsKey(simpleName)) { // Check for collisions
               FileStatus tmpFs = result.get(simpleName);
+              LOG.trace("Collision found between {} and {}", so.getName(), tmpFs.getPath());
               if (tmpFs.getLen() < so.getContentLength()) {
+                // Update key with file status of larger file
                 result.remove(simpleName);
                 result.put(simpleName, getFileStatus(so, cObj, hostName, path));
               }
             } else {
+              // Add to hash map FileStatus with name as key
               result.put(simpleName, getFileStatus(so, cObj, hostName, path));
             }
           } else if (!isJobSuccessful(unifiedObjectName) && fModeAutomaticDelete) {
             // Automatically delete failed uploads if enabled
+            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
             delete(hostName, new Path(so.getName()), true);
           }
-        //}
-      }
-/*      for (StoredObject tmp : res) {
-
-        if (isSparkOrigin(unifiedObjectName) && !fullListing) {
-          LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
-            if (fModeAutomaticDelete) {
-              delete(hostName, new Path(tmp.getName()), true);
-            }
-            continue;
-          } else {
-            // if we here - data created by spark and job completed successfully
-            // however there be might parts of failed tasks that were not aborted
-            // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(tmp.getName())
-                .equals(nameWithoutTaskID(previousElement.getName()))) {
-              // found failed that was not aborted.
-              LOG.trace("Colisiion found between {} and {}", previousElement.getName(),
-                  tmp.getName());
-              setCorrectSize(tmp, cObj);
-              if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
-                    previousElement.getName());
-                previousElement = tmp.getAsObject();
-              }
-              continue;
-            }
-          }
+        } else if (so.getContentLength() > 0 || fullListing){
+          result.put(so.getName(), getFileStatus(so, cObj, hostName, path));
         }
-        if (previousElement.getContentLength() > 0 || fullListing) {
-          fs = getFileStatus(previousElement, cObj, hostName, path);
-          tmpResult.add(fs);
-        }
-        previousElement = tmp.getAsObject();
       }
     }
-    if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
-      fs = getFileStatus(previousElement, cObj, hostName, path);
-      tmpResult.add(fs);*/
-    }
-    // LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
-    // return tmpResult.toArray(new FileStatus[tmpResult.size()]);
     LOG.debug("Listing of {} completed with {} results", path.toString(), result.size());
     return result.values().toArray(new FileStatus[result.size()]);
   }
