@@ -30,7 +30,7 @@ public class BaseInputStream extends FilterInputStream implements Releasable {
     super(in);
   }
 
-  protected final void abortIfNeeded() {
+  protected final void conditionalAbort() {
     if (Utils.shouldAbort()) {
       abort();
       throw new AbortedException();
@@ -45,49 +45,49 @@ public class BaseInputStream extends FilterInputStream implements Releasable {
 
   @Override
   public int read() throws IOException {
-    abortIfNeeded();
+    conditionalAbort();
     return in.read();
   }
 
   @Override
   public int read(byte[] b, int off, int len) throws IOException {
-    abortIfNeeded();
+    conditionalAbort();
     return in.read(b, off, len);
   }
 
   @Override
   public long skip(long n) throws IOException {
-    abortIfNeeded();
+    conditionalAbort();
     return in.skip(n);
   }
 
   @Override
   public int available() throws IOException {
-    abortIfNeeded();
+    conditionalAbort();
     return in.available();
   }
 
   @Override
   public void close() throws IOException {
     in.close();
-    abortIfNeeded();
+    conditionalAbort();
   }
 
   @Override
   public synchronized void mark(int readlimit) {
-    abortIfNeeded();
+    conditionalAbort();
     in.mark(readlimit);
   }
 
   @Override
   public synchronized void reset() throws IOException {
-    abortIfNeeded();
+    conditionalAbort();
     in.reset();
   }
 
   @Override
   public boolean markSupported() {
-    abortIfNeeded();
+    conditionalAbort();
     return in.markSupported();
   }
 
