@@ -67,7 +67,6 @@ public class SwiftBaseTest extends Assert {
     if (baseURI == null || baseURI.equals("")) {
       return;
     }
-    System.out.println("container name is " + containerName);
     baseURI = baseURI.replace(baseURI.substring(baseURI.indexOf("//") + 2,
         baseURI.indexOf(".")), containerName);
     System.out.println("New uri is " + baseURI);
@@ -131,7 +130,6 @@ public class SwiftBaseTest extends Assert {
    * @throws IOException on any problem
    */
   protected void createFile(Path path, byte[] sourceData) throws IOException {
-    System.out.print(".");
     FSDataOutputStream out = fs.create(path);
     out.write(sourceData, 0, sourceData.length);
     out.close();

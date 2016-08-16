@@ -65,8 +65,8 @@
         <hadoop.version>2.6.0</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.7</jackson.version>
-        <httpcomponents.httpcore.version>4.3.2</httpcomponents.httpcore.version>
-        <httpcomponents.httpclient.version>4.3.3</httpcomponents.httpclient.version>
+        <httpcomponents.httpcore.version>4.4.5</httpcomponents.httpcore.version>
+        <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
     </properties>

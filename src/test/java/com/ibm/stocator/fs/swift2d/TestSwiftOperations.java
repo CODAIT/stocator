@@ -65,7 +65,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
       String id = String.format("%0" + 2 + "d", i);
       params = new Object[]{objectName, id, String.valueOf(i), id};
       Path path = new Path(getBaseURI(), MessageFormat.format(swiftDataFormat, params));
-      System.out.print(".");
       byte[] res = SwiftTestUtils.readDataset(getFs(),
           path, data.length);
       Assert.assertArrayEquals(data, res);
@@ -75,7 +74,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
       String id = String.format("%0" + 2 + "d", i);
       params = new Object[]{objectName, id, String.valueOf(i), id};
       Path path = new Path(getBaseURI(), MessageFormat.format(swiftDataFormat, params));
-      System.out.print(".");
       getFs().delete(path, false);
     }
     // delete _SUCCESS object

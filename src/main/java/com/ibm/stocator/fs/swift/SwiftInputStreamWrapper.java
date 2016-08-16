@@ -17,173 +17,93 @@
 
 package com.ibm.stocator.fs.swift;
 
-import java.io.ByteArrayInputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.commons.httpclient.HttpMethod;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.http.client.methods.HttpRequestBase;
 
-import com.ibm.stocator.fs.common.exception.ConnectionClosedException;
+import com.ibm.stocator.fs.common.Utils;
 
-/**
- * Wraps the SwiftInputStream
- */
-public class SwiftInputStreamWrapper extends InputStream {
+public class SwiftInputStreamWrapper extends BaseInputStream {
 
-  /*
-   * Logger
-   */
-  private static final Logger LOG = LoggerFactory.getLogger(SwiftInputStreamWrapper.class);
-  /*
-   * HTTP method
-   */
-  private HttpMethod method;
-  /*
-   * Identify closed stream
-   */
-  private volatile boolean closed;
-  /*
-   * No more data to read
-   */
-  private volatile boolean finishReading;
-  /*
-   * Input stream
-   */
-  private InputStream inStream;
+  private final HttpRequestBase httpRequest;
 
-  /**
-   * Constructor
-   *
-   * @param methodT HTTP method
-   * @throws IOException if something went wrong
-   */
-  public SwiftInputStreamWrapper(HttpMethod methodT) throws IOException {
-    method = methodT;
-    try {
-      inStream = method.getResponseBodyAsStream();
-    } catch (IOException e) {
-      inStream = new ByteArrayInputStream(new byte[] {});
-      LOG.error(e.getMessage());
-      throw closeAndThrow(e);
-    }
+  private boolean eof;
+
+  public SwiftInputStreamWrapper(InputStream in, HttpRequestBase httpRequestT) {
+    super(in);
+    httpRequest = httpRequestT;
   }
 
   @Override
-  public void close() throws IOException {
-    innerClose();
+  public void abort() {
+    doAbort();
   }
 
-  /**
-   * Inner close method
-   *
-   * @return true if closed successfully
-   * @throws IOException if close failed
-   */
-  private synchronized boolean innerClose() throws IOException {
-    if (!closed) {
-      try {
-        if (method != null) {
-          if (!finishReading) {
-            method.abort();
-          }
-          method.releaseConnection();
-        }
-        if (inStream != null) {
-          inStream.close();
-        }
-        return true;
-      } finally {
-        closed = true;
-        finishReading = true;
-      }
-    } else {
-      return false;
+  private void doAbort() {
+    if (httpRequest != null) {
+      httpRequest.abort();
     }
+    Utils.closeWithoutException(in);
   }
 
-  /**
-   * Close connection and throw an exception
-   *
-   * @param ex the exception
-   * @return new exception
-   */
-  private IOException closeAndThrow(IOException ex) {
-    try {
-      innerClose();
-    } catch (IOException ioe) {
-      LOG.error(ioe.getMessage());
-      if (ex == null) {
-        ex = ioe;
-      }
-    }
-    return ex;
-  }
-
-  /**
-   * Check if connection is closed or input stream is null
-   *
-   * @throws ConnectionClosedException if connection is closed
-   */
-  private synchronized void verifyClosed() throws ConnectionClosedException {
-    if (closed || inStream == null) {
-      throw new ConnectionClosedException("Connection is closed");
-    }
+  public HttpRequestBase getHttpRequest() {
+    return httpRequest;
   }
 
   @Override
   public int available() throws IOException {
-    verifyClosed();
-    try {
-      return inStream.available();
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-      throw closeAndThrow(e);
-    }
+    int estimate = super.available();
+    return estimate == 0 ? 1 : estimate;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int read() throws IOException {
-    verifyClosed();
-    int read = 0;
-    try {
-      read = inStream.read();
-    } catch (EOFException e) {
-      LOG.error(e.getMessage());
-      read = -1;
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-      throw closeAndThrow(e);
+    int value = super.read();
+    if (value == -1) {
+      eof = true;
     }
-    if (read < 0) {
-      finishReading = true;
-      LOG.trace("No more left to read");
-      innerClose();
+    return value;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int read(byte[] b) throws IOException {
+    return read(b, 0, b.length);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int read(byte[] b, int off, int len) throws IOException {
+    int value = super.read(b, off, len);
+    if (value == -1) {
+      eof = true;
     }
-    return read;
+    return value;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    eof = false;
   }
 
   @Override
-  public int read(byte[] b, int off, int len) throws IOException {
-    verifyClosed();
-    int read;
-    try {
-      read = inStream.read(b, off, len);
-    } catch (EOFException e) {
-      LOG.error(e.getMessage());
-      read = -1;
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-      throw closeAndThrow(e);
+  public void close() throws IOException {
+    if (eof) {
+      super.close();
+    } else {
+      doAbort();
     }
-    if (read < 0) {
-      finishReading = true;
-      LOG.trace("No more data to read");
-      innerClose();
-    }
-    return read;
   }
-
 }
