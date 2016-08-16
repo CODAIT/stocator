@@ -28,7 +28,7 @@ import org.junit.Test;
 public class CollisionTest extends SwiftBaseTest {
 
   protected byte[] data = SwiftTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
-  protected byte[] smData = SwiftTestUtils.generateDataset(getBlockSize() * 1, 0, 255);
+  protected byte[] smData = SwiftTestUtils.generateDataset(getBlockSize(), 0, 255);
 
   private String objectName = "/data7.txt";
   private String objectNameTmp = objectName + "/_temporary";
@@ -52,11 +52,11 @@ public class CollisionTest extends SwiftBaseTest {
     Assume.assumeNotNull(getFs());
     getFs().delete(new Path(getBaseURI(), objectName), true);
     FileStatus[] stats = getFs().listStatus(new Path(getBaseURI(), objectName));
-    Assert.assertTrue(stats.length == 0);
+    Assert.assertEquals(0, stats.length );
     getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId));
     getFs().delete(new Path(getBaseURI(), objectName1), true);
     FileStatus[] stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
-    Assert.assertTrue(stats1.length == 0);
+    Assert.assertEquals(0, stats1.length);
     getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId1));
   }
 
@@ -82,11 +82,11 @@ public class CollisionTest extends SwiftBaseTest {
     // print created objects
     createEmptyFile(new Path(getBaseURI(), sparkSuccessFormat));
     FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName));
-    Assert.assertTrue(stats.length == parts);
+    Assert.assertEquals(parts, stats.length);
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectNameTmp), true));
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectName), true));
     FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName));
-    Assert.assertTrue(stats1.length == 0);
+    Assert.assertEquals(0, stats1.length);
   }
 
   @Test
@@ -110,12 +110,12 @@ public class CollisionTest extends SwiftBaseTest {
     }
     // print created objects
     createEmptyFile(new Path(getBaseURI(), sparkSuccessFormat1));
-    FileStatus[]  stats = getFs().listStatus(new Path(getBaseURI(), objectName1));
-    Assert.assertTrue(stats.length == parts);
+    FileStatus[] stats = getFs().listStatus(new Path(getBaseURI(), objectName1));
+    Assert.assertEquals(parts, stats.length);
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectNameTmp1), true));
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectName1), true));
-    FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
-    Assert.assertTrue(stats1.length == 0);
+    FileStatus[] stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
+    Assert.assertEquals(parts, stats1.length);
   }
 
 }

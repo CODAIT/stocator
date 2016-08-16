@@ -170,12 +170,12 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
     Path testFile = new Path(getBaseURI() + "/testFile");
     getFs().delete(testFile, false);
     FileStatus[] stats = getFs().listStatus(testFile);
-    Assert.assertTrue(0 == stats.length);
+    Assert.assertEquals(0, stats.length);
 
     createFile(testFile, data);
     Assert.assertTrue(getFs().exists(testFile));
     stats = getFs().listStatus(testFile);
-    Assert.assertTrue(1 == stats.length);
+    Assert.assertEquals(0, stats.length);
 
     FileStatus stat = stats[0];
     Assert.assertEquals("testFile", stat.getPath().getName());
@@ -185,6 +185,6 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
 
     getFs().delete(testFile, false);
     stats = getFs().listStatus(testFile);
-    Assert.assertTrue(0 == stats.length);
+    Assert.assertEquals(0, stats.length);
   }
 }

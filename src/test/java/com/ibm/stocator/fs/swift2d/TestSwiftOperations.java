@@ -106,7 +106,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
       getFs().delete(new Path(getBaseURI() + name), false);
     }
     results = getFs().listStatus(new Path(getBaseURI()));
-    Assert.assertTrue(0 == results.length);
+    Assert.assertEquals(0, results.length);
   }
 
   @Test
