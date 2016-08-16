@@ -26,9 +26,15 @@ import com.ibm.stocator.fs.common.Utils;
 
 public class SwiftInputStreamWrapper extends BaseInputStream {
 
+  /*
+   * Http request
+   */
   private final HttpRequestBase httpRequest;
 
-  private boolean eof;
+  /*
+   * no more left to read
+   */
+  private boolean finish;
 
   public SwiftInputStreamWrapper(InputStream in, HttpRequestBase httpRequestT) {
     super(in);
@@ -57,50 +63,38 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
     return estimate == 0 ? 1 : estimate;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public int read() throws IOException {
     int value = super.read();
     if (value == -1) {
-      eof = true;
+      finish = true;
     }
     return value;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public int read(byte[] b) throws IOException {
     return read(b, 0, b.length);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public int read(byte[] b, int off, int len) throws IOException {
     int value = super.read(b, off, len);
     if (value == -1) {
-      eof = true;
+      finish = true;
     }
     return value;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void reset() throws IOException {
     super.reset();
-    eof = false;
+    finish = false;
   }
 
   @Override
   public void close() throws IOException {
-    if (eof) {
+    if (finish) {
       super.close();
     } else {
       doAbort();
