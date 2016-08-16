@@ -73,4 +73,21 @@ public class Constants {
    * HTTP Range header
    */
   public static final String RANGES_HTTP_HEADER = "Range";
+
+  /*
+   * Read ahead range
+   */
+  public static final long DEFAULT_READAHEAD_RANGE = 64 * 1024;
+  /*
+   * Normal read strategy
+   */
+  public static final String NORMAL_READ_STRATEGY = "Normal";
+  /*
+   * Read current block or the current position + readahead
+   */
+  public static final String RANDOM_READ_STRATEGY = "Random";
+  /*
+   * The goal to read the entire object
+   */
+  public static final String SEQ_READ_STRATEGY = "Sequential";
 }

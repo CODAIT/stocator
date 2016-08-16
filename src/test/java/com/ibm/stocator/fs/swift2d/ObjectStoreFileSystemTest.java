@@ -136,10 +136,8 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
     Path testFile = new Path(getBaseURI() + "/testFile");
     createFile(testFile, data);
     FSDataInputStream inputStream = getFs().open(testFile);
-    long bufferSize = Whitebox.getInternalState(inputStream.getWrappedStream(), "bufferSize");
-    Assert.assertEquals(65536, bufferSize);
-
-    Path path = Whitebox.getInternalState(inputStream.getWrappedStream(), "path");
+    String uri = (Whitebox.getInternalState(inputStream.getWrappedStream(), "uri"));
+    Path path = new Path(uri);
     Assert.assertEquals(testFile.getName(), path.getName());
   }
 

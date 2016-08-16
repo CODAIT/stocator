@@ -130,11 +130,6 @@ public class SwiftAPIClient implements IStoreClient {
   private final int pageListSize = 100;
 
   /*
-   * Buffer size
-   */
-  private final long bufferSize = 65536;
-
-  /*
    * support for different schema models
    */
   private String schemaProvided;
@@ -364,14 +359,10 @@ public class SwiftAPIClient implements IStoreClient {
       objName = path.toString().substring(hostName.length());
     }
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
-    try {
-      SwiftInputStream sis = new SwiftInputStream(mJossAccount, new Path(url.toString()),
-          bufferSize);
-      return new FSDataInputStream(sis);
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-    }
-    return null;
+    FileStatus fs = getObjectMetadata(hostName, path);
+    SwiftInputStream sis = new SwiftInputStream(url.toString(),
+        fs.getLen(), mJossAccount, Constants.NORMAL_READ_STRATEGY);
+    return new FSDataInputStream(sis);
   }
 
   /**
