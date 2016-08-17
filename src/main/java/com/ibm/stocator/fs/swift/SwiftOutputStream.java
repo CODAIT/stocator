@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.URL;
+import java.net.ProtocolException;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +61,18 @@ public class SwiftOutputStream extends OutputStream {
   private HttpURLConnection mHttpCon;
 
   /*
+   * Maximum size to be written to a Swift object before a new object is created.
+   */
+  private long maxSplitSize;
+  private long totalBytesWritten = 0L;
+  private int splitCount = 0;
+  private static final int INT_BYTE_SIZE = 4;
+
+  private JossAccount jossAccount;
+  private String content;
+  private Map<String, String> requestProperties;
+
+  /*
    * Access url
    */
   private URL mUrl;
@@ -73,9 +87,13 @@ public class SwiftOutputStream extends OutputStream {
    * @throws IOException if error
    */
   public SwiftOutputStream(JossAccount account, URL url, String contentType,
-      Map<String, String> metadata) throws IOException {
+      Map<String, String> metadata, long maxObjectSize) throws IOException {
     mUrl = url;
-    HttpURLConnection httpCon = createConnection(account, url, contentType, metadata);
+    jossAccount = account;
+    content = contentType;
+    maxSplitSize = maxObjectSize;
+    requestProperties = metadata;
+    HttpURLConnection httpCon = createConnection(account, url, contentType, requestProperties);
     try {
       mOutputStream  = httpCon.getOutputStream();
       mHttpCon = httpCon;
@@ -84,7 +102,7 @@ public class SwiftOutputStream extends OutputStream {
       LOG.warn(e.getMessage());
       LOG.warn("Retry attempt. Re-authenticate");
       account.authenticate();
-      httpCon = createConnection(account, url, contentType, metadata);
+      httpCon = createConnection(account, url, contentType, requestProperties);
       mOutputStream  = httpCon.getOutputStream();
       mHttpCon = httpCon;
     } catch (IOException e) {
@@ -105,10 +123,10 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpURLConnection createConnection(JossAccount account, URL url, String contentType,
       Map<String, String> metadata) throws IOException {
+
     HttpURLConnection newHttpCon = (HttpURLConnection) url.openConnection();
     newHttpCon.setDoOutput(true);
     newHttpCon.setRequestMethod("PUT");
-
     newHttpCon.addRequestProperty("X-Auth-Token",account.getAuthToken());
     newHttpCon.addRequestProperty("Content-Type", contentType);
     if (metadata != null && !metadata.isEmpty()) {
@@ -129,21 +147,37 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
+    if (totalBytesWritten + INT_BYTE_SIZE >= maxSplitSize) {
+      splitFileUpload();
+      totalBytesWritten = 0;
+    }
     mOutputStream.write(b);
+    totalBytesWritten += INT_BYTE_SIZE;
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
+    if (totalBytesWritten + len >= maxSplitSize) {
+      splitFileUpload();
+      totalBytesWritten = 0;
+    }
     mOutputStream.write(b, off, len);
+    totalBytesWritten += len;
   }
 
   @Override
   public void write(byte[] b) throws IOException {
+    if (totalBytesWritten + b.length >= maxSplitSize) {
+      splitFileUpload();
+      totalBytesWritten = 0;
+    }
     mOutputStream.write(b);
+    totalBytesWritten += b.length;
   }
 
   @Override
   public void close() throws IOException {
+    LOG.trace("{} bytes written", totalBytesWritten);
     mOutputStream.close();
     InputStream is = null;
     try {
@@ -178,4 +212,40 @@ public class SwiftOutputStream extends OutputStream {
   public void flush() throws IOException {
     mOutputStream.flush();
   }
+
+  /*
+   * Closes the old stream and sets up a new stream
+   */
+  private void splitFileUpload() throws IOException {
+    mOutputStream.close();
+    URL oldURL = mHttpCon.getURL();
+    String prevSplitName = oldURL.getPath();
+    String currSplitName;
+    if (splitCount == 0) {
+      Pattern p = Pattern.compile("part-\\d\\d\\d\\d\\d-");
+      Matcher m = p.matcher(prevSplitName);
+      if (m.find()) {
+        currSplitName = new StringBuilder(prevSplitName).insert(m.end(),
+                "split-" + String.format("%05d", ++splitCount) + "-").toString();
+      } else {
+        currSplitName = new StringBuilder(prevSplitName).append("-split-"
+                + String.format("%05d", ++splitCount)).toString();
+      }
+    } else {
+      currSplitName = prevSplitName.replaceAll("split-\\d\\d\\d\\d\\d",
+              "split-" + String.format("%05d", ++splitCount));
+    }
+    URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority() + currSplitName);
+    try {
+      mHttpCon.disconnect();
+      HttpURLConnection newConn = createConnection(jossAccount, newURL, content,
+              requestProperties);
+      mOutputStream = newConn.getOutputStream();
+      mHttpCon = newConn;
+    } catch (IOException e) {
+      LOG.error(e.getMessage());
+      throw e;
+    }
+  }
+
 }

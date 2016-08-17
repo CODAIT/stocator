@@ -19,14 +19,21 @@ package  com.ibm.stocator.fs.swift2d;
 
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Properties;
 
+import com.ibm.stocator.fs.swift.ConfigurationHandler;
 import com.ibm.stocator.fs.common.ObjectStoreGlobFilter;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_OBJECT_SIZE_PROPERTY;
 
 public class TestSwiftOperations extends SwiftBaseTest {
 
@@ -81,6 +88,35 @@ public class TestSwiftOperations extends SwiftBaseTest {
             MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})), false);
     stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
     Assert.assertTrue(0 == stats.length);
+  }
+
+  @Test
+  public void testParitionedWrite() throws IOException {
+    Assume.assumeNotNull(getFs());
+    Configuration conf = new Configuration();
+    Properties props = ConfigurationHandler.initialize(new Path(getBaseURI()).toUri(), conf);
+    long maxObjectSize = Long.valueOf(props.getProperty(SWIFT_OBJECT_SIZE_PROPERTY,
+            "5")) * 1024 * 1024;
+
+    // Check object size is set in core-site.xml
+    Assume.assumeTrue(maxObjectSize != 0);
+
+    int expectedSplits = 5;
+
+    byte[] dataToSplit = SwiftTestUtils.generateDataset((int) maxObjectSize, 0, 255);
+    Path output = new Path(getBaseURI() + "/testDir/splits");
+    FSDataOutputStream stream = fs.create(output);
+    for (int i = 0; i < expectedSplits; i++) {
+      stream.write(dataToSplit);
+    }
+    stream.close();
+
+    FileStatus[] results = getFs().listStatus(output);
+    Assert.assertEquals(expectedSplits, results.length);
+    for (FileStatus status : results) {
+      Assert.assertTrue(status.getLen() <= maxObjectSize);
+    }
+    getFs().delete(output, false);
   }
 
   @Test

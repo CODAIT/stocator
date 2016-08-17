@@ -45,6 +45,8 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.REGION;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC;
 import static com.ibm.stocator.fs.swift.SwiftConstants.BLOCK_SIZE;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.OBJECT_SIZE;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_OBJECT_SIZE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
@@ -82,6 +84,9 @@ public final class ConfigurationHandler {
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_METHOD, props, SWIFT_AUTH_METHOD_PROPERTY,
           false);
       Utils.updateProperty(conf, prefix2D, prefix, BLOCK_SIZE, props, SWIFT_BLOCK_SIZE_PROPERTY,
+          false);
+
+      Utils.updateProperty(conf, prefix2D, prefix, OBJECT_SIZE, props, SWIFT_OBJECT_SIZE_PROPERTY,
           false);
       Utils.updateProperty(conf, prefix2D, prefix, FMODE_DELETE_TEMP_DATA, props,
           FMODE_AUTOMATIC_DELETE_PROPERTY, false);
