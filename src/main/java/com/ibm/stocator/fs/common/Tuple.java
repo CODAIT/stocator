@@ -15,31 +15,34 @@
  *
  */
 
-package com.ibm.stocator.fs.common.exception;
-
-import java.io.IOException;
+package com.ibm.stocator.fs.common;
 
 /**
- *Exception for closed connection to the object store
+ *
+ * Tuple class
+ *
+ * @param <X> first coordinate
+ * @param <Y> second coordinate
  */
-public class ConnectionClosedException extends IOException {
-  private static final long serialVersionUID = 1L;
+public class Tuple<X, Y> {
 
-  public static final String DESCRIPTION = "Connection is closed";
-
-  /**
-   * Default constructor
+  /*
+   * First coordinate
    */
-  public ConnectionClosedException() {
-    super(DESCRIPTION);
-  }
+  public final X x;
+  /*
+   * Second coordinate
+   */
+  public final Y y;
 
   /**
+   * Constructor
    *
-   * @param additionalInfo additional details to the exception message
+   * @param xT first coordinate
+   * @param yT second coordinate
    */
-  public ConnectionClosedException(String additionalInfo) {
-    super(DESCRIPTION + ": " + additionalInfo);
+  public Tuple(X xT, Y yT) {
+    x = xT;
+    y = yT;
   }
-
 }

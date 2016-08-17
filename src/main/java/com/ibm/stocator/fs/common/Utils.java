@@ -17,6 +17,7 @@
 
 package com.ibm.stocator.fs.common;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,8 +28,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ibm.stocator.fs.swift.SwiftAPIClient;
-
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class Utils {
@@ -38,7 +37,7 @@ public class Utils {
   /*
    * Logger
    */
-  private static final Logger LOG = LoggerFactory.getLogger(SwiftAPIClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
 
   /**
    * IOException if the host name is not comply with container.service
@@ -247,4 +246,19 @@ public class Utils {
   public static String extractReminder(String publicURL, String accessURL) {
     return publicURL.substring(accessURL.length());
   }
+
+  public static void closeWithoutException(Closeable is) {
+    if (is != null) {
+      try {
+        is.close();
+      } catch (IOException ex) {
+        LOG.debug("Ignore failure in closing the Closeable", ex);
+      }
+    }
+  }
+
+  public static boolean shouldAbort() {
+    return Thread.interrupted();
+  }
+
 }

@@ -74,6 +74,6 @@ public class ObjectStoreGlobFilter implements PathFilter {
 
   @Override
   public boolean accept(Path path) {
-    return pattern.matches(path.getName()) && userFilter.accept(path);
+    return pattern.matches(path.toString()) && userFilter.accept(path);
   }
 }

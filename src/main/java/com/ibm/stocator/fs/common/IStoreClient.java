@@ -140,4 +140,22 @@ public interface IStoreClient {
    */
   public URI getAccessURI() throws IOException;
 
+  /**
+   * Rename operation
+   *
+   * @param hostName URL to host
+   * @param srcPath source path
+   * @param dstPath destination path
+   * @return true if successful
+   * @throws IOException if something went wrong
+   */
+  public boolean rename(String hostName, String srcPath, String dstPath) throws IOException;
+
+  /**
+   * Contains the logic for the driver initialization
+   *
+   * @throws IOException if error
+   */
+  public void initiate() throws IOException;
+
 }

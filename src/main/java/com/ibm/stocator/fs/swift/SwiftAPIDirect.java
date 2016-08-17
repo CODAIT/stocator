@@ -19,15 +19,19 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
 
-import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpConnectionParams;
-import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.hadoop.fs.Path;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.common.Tuple;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 /**
  * Direct client to object store implementing Swift API
@@ -35,47 +39,75 @@ import com.ibm.stocator.fs.common.Constants;
  */
 public class SwiftAPIDirect {
 
+  /*
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(SwiftAPIDirect.class);
+
   /**
+   * Get object
    *
    * @param path path to object
-   * @param authToken authentication token
+   * @param account Joss account wrapper object
    * @return SwiftGETResponse input stream and content length
    * @throws IOException if network issues
    */
-  public static SwiftGETResponse getObject(Path path, String authToken)
+  public static SwiftInputStreamWrapper getObject(Path path, JossAccount account)
       throws IOException {
-    return getObject(path, authToken, 0, 0);
+    return getObject(path, account, 0, 0);
   }
 
   /**
    * GET object
    *
    * @param path path to object
-   * @param authToken authentication token
+   * @param account Joss Account wrapper object
    * @param bytesFrom from from
    * @param bytesTo bytes to
    * @return SwiftGETResponse that includes input stream and length
    * @throws IOException if network errors
    */
-  public static SwiftGETResponse getObject(Path path, String authToken,
+  public static SwiftInputStreamWrapper getObject(Path path, JossAccount account,
       long bytesFrom, long bytesTo) throws IOException {
-    GetMethod method = new GetMethod(path.toString());
-    method.addRequestHeader(new Header("X-Auth-Token", authToken));
+    Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>>  resp = httpGET(path.toString(),
+        bytesFrom, bytesTo, account);
+    if (resp.x.intValue() >= 400) {
+      LOG.warn("Get object {} returned {}", path.toString(), resp.x.intValue());
+      LOG.warn("GET {}. Second try. Re-authentication attempt", path.toString());
+      account.authenticate();
+      resp = httpGET(path.toString(), bytesFrom, bytesTo, account);
+    }
+
+    SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
+        resp.y.y.getEntity().getContent(), resp.y.x);
+    return httpStream;
+  }
+
+  /**
+   * @param path object path
+   * @param bytesFrom from bytes
+   * @param bytesTo to bytes
+   * @param account Joss Account object
+   * @return Tupple with HTTP response method and GetMethod
+   * @throws HttpException if error
+   * @throws IOException if error
+   */
+  private static Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>> httpGET(String path,
+      long bytesFrom, long bytesTo, JossAccount account) throws IOException {
+
+    HttpGet httpGet = new HttpGet(path);
+    httpGet.addHeader("X-Auth-Token", account.getAuthToken());
     if (bytesTo > 0) {
       final String rangeValue = String.format("bytes=%d-%d", bytesFrom, bytesTo);
-      method.addRequestHeader(new Header(Constants.RANGES_HTTP_HEADER, rangeValue));
+      httpGet.addHeader(Constants.RANGES_HTTP_HEADER, rangeValue);
     }
-    HttpMethodParams methodParams = method.getParams();
-    methodParams.setParameter(HttpMethodParams.RETRY_HANDLER,
-        new DefaultHttpMethodRetryHandler(3, false));
-    methodParams.setIntParameter(HttpConnectionParams.CONNECTION_TIMEOUT, 15000);
-    methodParams.setSoTimeout(60000);
-    method.addRequestHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
-    final HttpClient client = new HttpClient();
-    int statusCode = client.executeMethod(method);
-    SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(method);
-    SwiftGETResponse getResponse = new SwiftGETResponse(httpStream,
-        method.getResponseContentLength());
-    return getResponse;
+    httpGet.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
+    CloseableHttpClient httpclient = HttpClients.createDefault();
+    CloseableHttpResponse response = httpclient.execute(httpGet);
+    int responseCode = response.getStatusLine().getStatusCode();
+    Tuple<HttpRequestBase, HttpResponse> respData = new Tuple<HttpRequestBase,
+        HttpResponse>(httpGet, response);
+    return new Tuple<Integer, Tuple<HttpRequestBase,
+        HttpResponse>>(Integer.valueOf(responseCode), respData);
   }
 }

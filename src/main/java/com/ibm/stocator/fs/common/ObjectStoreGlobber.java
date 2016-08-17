@@ -68,6 +68,7 @@ public class ObjectStoreGlobber {
   private FileStatus[] listStatus(Path path) throws IOException {
     try {
       if (fs != null) {
+        //return fs.listStatus(new Path(path.toString() + "*"));
         return fs.listStatus(path);
       } else {
         return fc.util().listStatus(path);
@@ -78,7 +79,7 @@ public class ObjectStoreGlobber {
   }
 
   /**
-   * Convert a path component that contains backslash ecape sequences to a
+   * Convert a path component that contains backslash escape sequences to a
    * literal string. This is necessary when you want to explicitly refer to a
    * path that contains globber metacharacters.
    */
@@ -121,6 +122,16 @@ public class ObjectStoreGlobber {
     return authority;
   }
 
+  private String getPrefixUpToFirstWildcard(String path) {
+    for (int i = 0; i < path.length(); i++) {
+      char c = path.charAt(i);
+      if (c == '*' || c == '{' || c == '[' || c == '?') {
+        return path.substring(0, i);
+      }
+    }
+    return path;
+  }
+
   public FileStatus[] glob() throws IOException {
     // First we get the scheme and authority of the pattern that was passed
     // in.
@@ -128,83 +139,45 @@ public class ObjectStoreGlobber {
     String scheme = schemeFromPath(pathPattern);
     String authority = authorityFromPath(pathPattern);
 
-    // Next we strip off everything except the pathname itself, and expand all
-    // globs. Expansion is a process which turns "grouping" clauses,
-    // expressed as brackets, into separate path patterns.
     String pathPatternString = pathPattern.toUri().getPath();
-    List<String> flattenedPatterns = ObjectStoreGlobExpander.expand(pathPatternString);
+    String unescapePathString = unescapePathComponent(pathPatternString);
 
-    LOG.debug("expanded : " + pathPatternString);
-    // Now loop over all flattened patterns. In every case, we'll be trying to
-    // match them to entries in the filesystem.
-    ArrayList<FileStatus> results = new ArrayList<FileStatus>(flattenedPatterns.size());
-    boolean sawWildcard = false;
-    for (String flatPattern : flattenedPatterns) {
-      LOG.debug("pattern from list: " + flatPattern);
-      Path absPattern = new Path(flatPattern.isEmpty() ? Path.CUR_DIR : flatPattern);
-      List<String> components = getPathComponents(absPattern.toUri().getPath());
-      ArrayList<FileStatus> candidates = new ArrayList<FileStatus>(1);
+    ArrayList<FileStatus> results = new ArrayList<>(1);
+    ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
+
+    if (globFilter.hasPattern()) {
+      // Get a list of FileStatuses and filter
+      String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
-          new Path(scheme, authority, Path.SEPARATOR));
-      LOG.debug("Going to add candidate: " + rootPlaceholder.getPath().toString());
-      candidates.add(rootPlaceholder);
-      String cmpCombined = "";
-      ObjectStoreGlobFilter globFilter = null;
-      for (int componentIdx = 0; componentIdx < components.size() && !sawWildcard;
-          componentIdx++) {
-        globFilter = new ObjectStoreGlobFilter(components.get(componentIdx));
-        if (globFilter.hasPattern()) {
-          sawWildcard = true;
-        } else {
-          cmpCombined = cmpCombined + "/" + components.get(componentIdx);
-        }
-      }
-      String component = unescapePathComponent(cmpCombined);
-      if (component != null && component.length() > 0) {
-        for (FileStatus candidate : candidates) {
-          candidate.setPath(new Path(candidate.getPath(), component));
-        }
-      } else {
-        globFilter = new ObjectStoreGlobFilter("*");
-      }
-      ArrayList<FileStatus> newCandidates = new ArrayList<FileStatus>(candidates.size());
+              new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
+      FileStatus[] candidates = listStatus(rootPlaceholder.getPath());
       for (FileStatus candidate : candidates) {
-        if (globFilter.hasPattern()) {
-          FileStatus[] children = listStatus(candidate.getPath());
-          if (children.length == 1) {
-            if (!getFileStatus(candidate.getPath()).isDirectory()) {
-              continue;
-            }
-          }
-          for (FileStatus child : children) {
-            if (globFilter.accept(child.getPath())) {
-              newCandidates.add(child);
-            }
-          }
-        } else {
-          FileStatus childStatus = null;
-          childStatus = getFileStatus(new Path(candidate.getPath(), component));
-          if (childStatus != null) {
-            newCandidates.add(childStatus);
-          }
+        if (globFilter.accept(candidate.getPath())) {
+          LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
+          results.add(candidate);
         }
       }
-      candidates = newCandidates;
-      for (FileStatus status : candidates) {
-        if (status == rootPlaceholder) {
-          status = getFileStatus(rootPlaceholder.getPath());
-          if (status == null) {
-            continue;
-          }
-        }
-        if (filter.accept(status.getPath())) {
-          results.add(status);
+    } else {
+      LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
+          pathPattern.toString());
+      FileStatus[] candidates = listStatus(new Path(pathPattern.toString()));
+      if (candidates == null) {
+        return null;
+      }
+      for (FileStatus candidate : candidates) {
+        LOG.trace("No globber pattern. Candidate {}", candidate.getPath().toString());
+        if (filter.accept(candidate.getPath())
+            && (candidate.getPath().toString().startsWith(pathPattern.toString() + "/")
+                || (candidate.getPath().toString().equals(pathPattern.toString())))) {
+          LOG.trace("No globber pattern. Candidate accepted: {}", candidate.getPath().toString());
+          results.add(candidate);
         }
       }
     }
-    if (!sawWildcard && results.isEmpty() && (flattenedPatterns.size() <= 1)) {
+    if (results.isEmpty()) {
       return null;
     }
+
     return results.toArray(new FileStatus[0]);
   }
 }

@@ -17,29 +17,22 @@
 
 package com.ibm.stocator.fs.common.exception;
 
-import java.io.IOException;
-
-/**
- *Exception for closed connection to the object store
- */
-public class ConnectionClosedException extends IOException {
+public class ClientException extends RuntimeException {
   private static final long serialVersionUID = 1L;
 
-  public static final String DESCRIPTION = "Connection is closed";
-
-  /**
-   * Default constructor
-   */
-  public ConnectionClosedException() {
-    super(DESCRIPTION);
+  public ClientException(String message, Throwable t) {
+    super(message, t);
   }
 
-  /**
-   *
-   * @param additionalInfo additional details to the exception message
-   */
-  public ConnectionClosedException(String additionalInfo) {
-    super(DESCRIPTION + ": " + additionalInfo);
+  public ClientException(String message) {
+    super(message);
   }
 
+  public ClientException(Throwable t) {
+    super(t);
+  }
+
+  public boolean isRetryable() {
+    return true;
+  }
 }
