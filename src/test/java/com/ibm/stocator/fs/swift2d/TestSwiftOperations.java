@@ -96,7 +96,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Configuration conf = new Configuration();
     Properties props = ConfigurationHandler.initialize(new Path(getBaseURI()).toUri(), conf);
     long maxObjectSize = Long.valueOf(props.getProperty(SWIFT_OBJECT_SIZE_PROPERTY,
-            "0")) * 1024 * 1024;
+            "5")) * 1024 * 1024;
 
     // Check object size is set in core-site.xml
     Assume.assumeTrue(maxObjectSize != 0);

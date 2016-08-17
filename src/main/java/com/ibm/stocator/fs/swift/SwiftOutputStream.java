@@ -23,9 +23,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.ProtocolException;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,6 +68,10 @@ public class SwiftOutputStream extends OutputStream {
   private int splitCount = 0;
   private static final int INT_BYTE_SIZE = 4;
 
+  private JossAccount jossAccount;
+  private String content;
+  private Map<String, String> requestProperties;
+
   /*
    * Access url
    */
@@ -87,8 +89,11 @@ public class SwiftOutputStream extends OutputStream {
   public SwiftOutputStream(JossAccount account, URL url, String contentType,
       Map<String, String> metadata, long maxObjectSize) throws IOException {
     mUrl = url;
+    jossAccount = account;
+    content = contentType;
     maxSplitSize = maxObjectSize;
-    HttpURLConnection httpCon = createConnection(account, url, contentType, metadata);
+    requestProperties = metadata;
+    HttpURLConnection httpCon = createConnection(account, url, contentType, requestProperties);
     try {
       mOutputStream  = httpCon.getOutputStream();
       mHttpCon = httpCon;
@@ -97,7 +102,7 @@ public class SwiftOutputStream extends OutputStream {
       LOG.warn(e.getMessage());
       LOG.warn("Retry attempt. Re-authenticate");
       account.authenticate();
-      httpCon = createConnection(account, url, contentType, metadata);
+      httpCon = createConnection(account, url, contentType, requestProperties);
       mOutputStream  = httpCon.getOutputStream();
       mHttpCon = httpCon;
     } catch (IOException e) {
@@ -118,10 +123,10 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpURLConnection createConnection(JossAccount account, URL url, String contentType,
       Map<String, String> metadata) throws IOException {
+
     HttpURLConnection newHttpCon = (HttpURLConnection) url.openConnection();
     newHttpCon.setDoOutput(true);
     newHttpCon.setRequestMethod("PUT");
-
     newHttpCon.addRequestProperty("X-Auth-Token",account.getAuthToken());
     newHttpCon.addRequestProperty("Content-Type", contentType);
     if (metadata != null && !metadata.isEmpty()) {
@@ -233,21 +238,8 @@ public class SwiftOutputStream extends OutputStream {
     URL newURL = new URL(oldURL.getProtocol() + "://" + oldURL.getAuthority() + currSplitName);
     try {
       mHttpCon.disconnect();
-      HttpURLConnection newConn = (HttpURLConnection) newURL.openConnection();
-      newConn.setDoInput(true);
-      newConn.setRequestMethod("PUT");
-      newConn.setReadTimeout(READ_TIMEOUT);
-      newConn.setChunkedStreamingMode(STREAMING_CHUNK);
-
-      Set<Map.Entry<String, List<String>>> properties = mHttpCon.getRequestProperties().entrySet();
-      for (Map.Entry<String, List<String>> property : properties) {
-        for (String value : property.getValue()) {
-          if (!(property.getKey().contains("POST") || property.getKey().contains("PUT"))) {
-            newConn.setRequestProperty(property.getKey(), value);
-          }
-        }
-      }
-      newConn.setDoOutput(true);
+      HttpURLConnection newConn = createConnection(jossAccount, newURL, content,
+              requestProperties);
       mOutputStream = newConn.getOutputStream();
       mHttpCon = newConn;
     } catch (IOException e) {
