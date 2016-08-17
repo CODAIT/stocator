@@ -23,7 +23,6 @@ import java.net.URI;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -171,7 +170,7 @@ public class SwiftAPIClient implements IStoreClient {
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
     blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
-        "128")).longValue() * 1024 * 1024L;
+        "128")) * 1024 * 1024L;
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
@@ -401,10 +400,9 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     LOG.debug("List container for {} container {}", obj, container);
-    ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
+    HashMap<String, FileStatus> result = new HashMap<>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
-    FileStatus fs = null;
-    StoredObject previousElement = null;
+
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
       Collection<StoredObject> res = cObj.list(paginationMap, page);
       if (page == 0 && (res == null || res.isEmpty())) {
@@ -412,55 +410,35 @@ public class SwiftAPIClient implements IStoreClient {
         LOG.debug("List {} in container {} is empty", obj, container);
         return emptyRes;
       }
-      for (StoredObject tmp : res) {
-        if (previousElement == null) {
-          // first entry
-          setCorrectSize(tmp, cObj);
-          previousElement = tmp.getAsObject();
-          continue;
-        }
-        String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+      for (StoredObject so : res) {
+        String unifiedObjectName = extractUnifiedObjectName(so.getName());
+        String simpleName = nameWithoutTaskID(so.getName());
         if (isSparkOrigin(unifiedObjectName) && !fullListing) {
-          LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
-            if (fModeAutomaticDelete) {
-              delete(hostName, new Path(tmp.getName()), true);
-            }
-            continue;
-          } else {
-            // if we here - data created by spark and job completed successfully
-            // however there be might parts of failed tasks that were not aborted
-            // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(tmp.getName())
-                .equals(nameWithoutTaskID(previousElement.getName()))) {
-              // found failed that was not aborted.
-              LOG.trace("Colisiion found between {} and {}", previousElement.getName(),
-                  tmp.getName());
-              setCorrectSize(tmp, cObj);
-              if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
-                    previousElement.getName());
-                previousElement = tmp.getAsObject();
+          if (so.getContentLength() > 0) {
+            if (result.containsKey(simpleName)) { // Check for collisions
+              FileStatus tmpFs = result.get(simpleName);
+              LOG.trace("Collision found between {} and {}", so.getName(), tmpFs.getPath());
+              if (tmpFs.getLen() < so.getContentLength()) {
+                // Update key with file status of larger file
+                result.remove(simpleName);
+                result.put(simpleName, getFileStatus(so, cObj, hostName, path));
               }
-              continue;
+            } else {
+              // Add to hash map FileStatus with name as key
+              result.put(simpleName, getFileStatus(so, cObj, hostName, path));
             }
+          } else if (!isJobSuccessful(unifiedObjectName) && fModeAutomaticDelete) {
+            // Automatically delete failed uploads if enabled
+            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
+            delete(hostName, new Path(so.getName()), true);
           }
+        } else if (so.getContentLength() > 0 || fullListing) {
+          result.put(so.getName(), getFileStatus(so, cObj, hostName, path));
         }
-        fs = null;
-        if (previousElement.getContentLength() > 0 || fullListing) {
-          fs = getFileStatus(previousElement, cObj, hostName, path);
-          tmpResult.add(fs);
-        }
-        previousElement = tmp.getAsObject();
       }
     }
-    if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
-      fs = getFileStatus(previousElement, cObj, hostName, path);
-      tmpResult.add(fs);
-    }
-    LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
-    return tmpResult.toArray(new FileStatus[tmpResult.size()]);
+    LOG.debug("Listing of {} completed with {} results", path.toString(), result.size());
+    return result.values().toArray(new FileStatus[result.size()]);
   }
 
   /**
@@ -548,10 +526,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private boolean isSparkOrigin(String objectName) {
     if (cachedSparkOriginated.containsKey(objectName)) {
-      return cachedSparkOriginated.get(objectName).booleanValue();
+      return cachedSparkOriginated.get(objectName);
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
+    if (objectName.startsWith(container)) {
       obj = objectName.substring(container.length() + 1);
     }
     Boolean sparkOriginated = Boolean.FALSE;
@@ -566,7 +544,7 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     cachedSparkOriginated.put(objectName, sparkOriginated);
-    return sparkOriginated.booleanValue();
+    return sparkOriginated;
   }
 
   /**
@@ -579,10 +557,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private boolean isJobSuccessful(String objectName) {
     if (cachedSparkJobsStatus.containsKey(objectName)) {
-      return cachedSparkJobsStatus.get(objectName).booleanValue();
+      return cachedSparkJobsStatus.get(objectName);
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
+    if (objectName.startsWith(container)) {
       obj = objectName.substring(container.length() + 1);
     }
     Account account = mJossAccount.getAccount();
@@ -593,7 +571,7 @@ public class SwiftAPIClient implements IStoreClient {
       isJobOK = Boolean.TRUE;
     }
     cachedSparkJobsStatus.put(objectName, isJobOK);
-    return isJobOK.booleanValue();
+    return isJobOK;
   }
 
   /**
@@ -696,24 +674,28 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public boolean rename(String hostName, String srcPath, String dstPath) throws IOException {
     LOG.debug("Rename from {} to {}. hostname is {}", srcPath, dstPath, hostName);
-    String objNameSrc = srcPath.toString();
-    if (srcPath.toString().startsWith(hostName)) {
-      objNameSrc = srcPath.toString().substring(hostName.length());
+    String objNameSrc = srcPath;
+    if (srcPath.startsWith(hostName)) {
+      objNameSrc = srcPath.substring(hostName.length());
     }
-    String objNameDst = dstPath.toString();
-    if (objNameDst.toString().startsWith(hostName)) {
-      objNameDst = dstPath.toString().substring(hostName.length());
+    String objNameDst = dstPath;
+    if (objNameDst.startsWith(hostName)) {
+      objNameDst = dstPath.substring(hostName.length());
     }
 
     if (objNameSrc.contains(HADOOP_TEMPORARY)) {
       LOG.debug("Exists on temp object {}. Return false", objNameSrc);
-      return true;
+      return false;
     }
     LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
     Container cont = mJossAccount.getAccount().getContainer(container);
     StoredObject so = cont.getObject(objNameSrc);
     StoredObject soDst = cont.getObject(objNameDst);
     so.copyObject(cont, soDst);
-    return true;
+    if (soDst.exists()) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }
