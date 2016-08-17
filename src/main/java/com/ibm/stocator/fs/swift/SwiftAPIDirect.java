@@ -19,17 +19,18 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
 
+import org.apache.hadoop.fs.Path;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.common.Tuple;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
-
-import org.apache.hadoop.fs.Path;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.message.BasicHeader;
 
 /**
  * Direct client to object store implementing Swift API
@@ -50,7 +51,8 @@ public class SwiftAPIDirect {
    * @return HttpResponse input stream and content length
    * @throws IOException if network issues
    */
-  public static HttpResponse getObject(Path path, JossAccount account)
+
+  public static SwiftInputStreamWrapper getObject(Path path, JossAccount account)
       throws IOException {
     return getObject(path, account, 0, 0);
   }
@@ -59,34 +61,52 @@ public class SwiftAPIDirect {
    * GET object
    *
    * @param path path to object
-   * @param account Joss Account wrapper obejct
+   * @param account Joss Account wrapper object
    * @param bytesFrom from from
    * @param bytesTo bytes to
    * @return HttpResponse that includes input stream and length
    * @throws IOException if network errors
    */
+  public static SwiftInputStreamWrapper getObject(Path path, JossAccount account,
+      long bytesFrom, long bytesTo) throws IOException {
+    Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>>  resp = httpGET(path.toString(),
+        bytesFrom, bytesTo, account);
+    if (resp.x.intValue() >= 400) {
+      LOG.warn("Get object {} returned {}", path.toString(), resp.x.intValue());
+      LOG.warn("GET {}. Second try. Re-authentication attempt", path.toString());
+      account.authenticate();
+      resp = httpGET(path.toString(), bytesFrom, bytesTo, account);
+    }
 
-  public static HttpResponse getObject(final Path path, JossAccount account,
-                                       long bytesFrom, long bytesTo) throws IOException {
+    SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
+        resp.y.y.getEntity().getContent(), resp.y.x);
+    return httpStream;
+  }
 
-    HttpGet request = new HttpGet(path.toUri());
-    request.addHeader(new BasicHeader("X-Auth-Token", account.getAuthToken()));
+  /**
+   * @param path object path
+   * @param bytesFrom from bytes
+   * @param bytesTo to bytes
+   * @param account Joss Account object
+   * @return Tupple with HTTP response method and GetMethod
+   * @throws HttpException if error
+   * @throws IOException if error
+   */
+  private static Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>> httpGET(String path,
+      long bytesFrom, long bytesTo, JossAccount account) throws IOException {
 
+    HttpGet httpGet = new HttpGet(path);
+    httpGet.addHeader("X-Auth-Token", account.getAuthToken());
     if (bytesTo > 0) {
       final String rangeValue = String.format("bytes=%d-%d", bytesFrom, bytesTo);
-      request.addHeader(new BasicHeader(Constants.RANGES_HTTP_HEADER, rangeValue));
+      httpGet.addHeader(Constants.RANGES_HTTP_HEADER, rangeValue);
     }
-
-    request.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
-    HttpHost host = new HttpHost(path.toUri().getHost());
-    HttpResponse response = null;
-
-    try {
-      response = account.getHttpClient().execute(host, request);
-      return response;
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return response;
+    httpGet.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
+    HttpClient httpclient = account.getHttpClient();
+    HttpResponse response = httpclient.execute(httpGet);
+    int responseCode = response.getStatusLine().getStatusCode();
+    Tuple<HttpRequestBase, HttpResponse> respData = new Tuple<HttpRequestBase,
+        HttpResponse>(httpGet, response);
+    return new Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>>(responseCode, respData);
   }
 }

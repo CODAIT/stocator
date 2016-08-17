@@ -17,6 +17,7 @@
 
 package com.ibm.stocator.fs.common;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -245,4 +246,19 @@ public class Utils {
   public static String extractReminder(String publicURL, String accessURL) {
     return publicURL.substring(accessURL.length());
   }
+
+  public static void closeWithoutException(Closeable is) {
+    if (is != null) {
+      try {
+        is.close();
+      } catch (IOException ex) {
+        LOG.debug("Ignore failure in closing the Closeable", ex);
+      }
+    }
+  }
+
+  public static boolean shouldAbort() {
+    return Thread.interrupted();
+  }
+
 }

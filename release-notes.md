@@ -1,5 +1,9 @@
 ##Release notes
 
+### Version 1.0.5
+
+1. Fixing object store globber. Resolving issues with  container listings
+
 ### Version 1.0.4
 
 1.	Checking for 100-continue in write operations before uploading the data.

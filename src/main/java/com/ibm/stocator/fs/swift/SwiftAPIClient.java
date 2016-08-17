@@ -131,28 +131,39 @@ public class SwiftAPIClient implements IStoreClient {
   private final int pageListSize = 100;
 
   /*
-   * Buffer size
-   */
-  private final long bufferSize = 65536;
-
-  /*
    * support for different schema models
    */
-  private final String schemaProvided;
+  private String schemaProvided;
 
   /*
    * Keystone preferred region
    */
   private String preferredRegion;
 
+  /*
+   * file system URI
+   */
+  private final URI filesystemURI;
+
+  /*
+   * Hadoop configuration
+   */
+  private final Configuration conf;
+
   /**
    * Constructor method
    *
-   * @param filesystemURI The URI to the object store
-   * @param conf Configuration
+   * @param pFilesystemURI The URI to the object store
+   * @param pConf Configuration
    * @throws IOException when initialization is failed
    */
-  public SwiftAPIClient(URI filesystemURI, Configuration conf) throws IOException {
+  public SwiftAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
+    conf = pConf;
+    filesystemURI = pFilesystemURI;
+  }
+
+  @Override
+  public void initiate() throws IOException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = conf.get("fs.swift.schema", Constants.SWIFT2D);
@@ -363,15 +374,11 @@ public class SwiftAPIClient implements IStoreClient {
       objName = path.toString().substring(hostName.length());
     }
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
-    try {
-      SwiftInputStream sis = new SwiftInputStream(mJossAccount, new Path(url.toString()),
-          bufferSize);
-      return new FSDataInputStream(sis);
-    } catch (IOException e) {
-      e.printStackTrace();
-      LOG.error(e.getMessage());
-    }
-    return null;
+
+    FileStatus fs = getObjectMetadata(hostName, path);
+    SwiftInputStream sis = new SwiftInputStream(url.toString(),
+        fs.getLen(), mJossAccount, Constants.NORMAL_READ_STRATEGY);
+    return new FSDataInputStream(sis);
   }
 
   /**
@@ -444,11 +451,11 @@ public class SwiftAPIClient implements IStoreClient {
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
-              LOG.trace("Collisiion found between {} and {}", previousElement.getName(),
+              LOG.trace("Colisiion found between {} and {}", previousElement.getName(),
                   tmp.getName());
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.trace("New canditate is {}. Removed {}", tmp.getName(),
+                LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
                     previousElement.getName());
                 previousElement = tmp.getAsObject();
               }
@@ -700,5 +707,29 @@ public class SwiftAPIClient implements IStoreClient {
     return new FileStatus(tmp.getContentLength(), false, 1, blockSize,
         getLastModified(tmp.getLastModified()), 0, null,
         null, null, new Path(newMergedPath));
+  }
+
+  @Override
+  public boolean rename(String hostName, String srcPath, String dstPath) throws IOException {
+    LOG.debug("Rename from {} to {}. hostname is {}", srcPath, dstPath, hostName);
+    String objNameSrc = srcPath.toString();
+    if (srcPath.toString().startsWith(hostName)) {
+      objNameSrc = srcPath.toString().substring(hostName.length());
+    }
+    String objNameDst = dstPath.toString();
+    if (objNameDst.toString().startsWith(hostName)) {
+      objNameDst = dstPath.toString().substring(hostName.length());
+    }
+
+    if (objNameSrc.contains(HADOOP_TEMPORARY)) {
+      LOG.debug("Exists on temp object {}. Return false", objNameSrc);
+      return true;
+    }
+    LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
+    Container cont = mJossAccount.getAccount().getContainer(container);
+    StoredObject so = cont.getObject(objNameSrc);
+    StoredObject soDst = cont.getObject(objNameDst);
+    so.copyObject(cont, soDst);
+    return true;
   }
 }
