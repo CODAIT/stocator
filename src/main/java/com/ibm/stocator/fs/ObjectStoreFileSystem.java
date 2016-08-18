@@ -216,32 +216,38 @@ public class ObjectStoreFileSystem extends FileSystem {
     LOG.debug("delete: {} recursive {}", f.toString(), recursive);
     String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
     LOG.debug("Modified object name {} hostname {}", objNameModified, hostNameScheme);
+    boolean result = true;
     if (objNameModified.contains(HADOOP_TEMPORARY)) {
       return true;
     }
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true);
-      if (fsList.length > 0) {
-        for (FileStatus fs: fsList) {
-          if (fs.getPath().getName().endsWith(f.getName())) {
-            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
-          }
-        }
-      }
-    } else {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true);
-      if (fsList.length > 0) {
-        for (FileStatus fs: fsList) {
-          if (fs.getPath().toString().equals(f.toString())
-              || fs.getPath().toString().startsWith(f.toString() + "/")) {
-            LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
-            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
-          }
-        }
-      }
+      pathToObj = pathToObj.getParent();
     }
-    return true;
+
+    FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true);
+    if (fsList.length == 0) {
+      return false;
+    }
+
+    if (f.getName().startsWith(HADOOP_ATTEMPT)) {
+      for (FileStatus fs: fsList) {
+        if (fs.getPath().getName().endsWith(f.getName())) {
+          // If client delete ever returns a false, the result will be false
+          result &= storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+        }
+      }
+      return result;
+    } else {
+      for (FileStatus fs: fsList) {
+        if (fs.getPath().toString().equals(f.toString())
+            || fs.getPath().toString().startsWith(f.toString() + "/")) {
+          LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
+          result &= storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+        }
+      }
+      return result;
+    }
   }
 
   @Override
@@ -376,7 +382,7 @@ public class ObjectStoreFileSystem extends FileSystem {
    * aa/bb/cc/201610052038_0001_m_000007_15-one3.txt
    * otherwise object name will be aa/bb/cc/one3.txt
    *
-   * @param path path to extract from
+   * @param fullPath path to extract from
    * @param boundary boundary to search in a path
    * @param addTaskIdCompositeName if true will add task-id to the object name
    * @return new object name
