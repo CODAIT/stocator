@@ -64,16 +64,16 @@ public class SwiftAPIDirect {
    * @param account Joss Account wrapper object
    * @param bytesFrom from from
    * @param bytesTo bytes to
-   * @return HttpResponse that includes input stream and length
+   * @return SwiftInputStreamWrapper that includes input stream and length
    * @throws IOException if network errors
    */
   public static SwiftInputStreamWrapper getObject(Path path, JossAccount account,
       long bytesFrom, long bytesTo) throws IOException {
     Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>>  resp = httpGET(path.toString(),
         bytesFrom, bytesTo, account);
-    if (resp.x.intValue() >= 400) {
-      LOG.warn("Get object {} returned {}", path.toString(), resp.x.intValue());
-      LOG.warn("GET {}. Second try. Re-authentication attempt", path.toString());
+    if (resp.x >= 400) {
+      LOG.warn("Get object {} returned {}", path.toString(), resp.x);
+      LOG.warn("Re-authentication attempt for GET {}", path.toString());
       account.authenticate();
       resp = httpGET(path.toString(), bytesFrom, bytesTo, account);
     }
@@ -84,17 +84,16 @@ public class SwiftAPIDirect {
   }
 
   /**
-   * @param path object path
+   * @param path path to object
    * @param bytesFrom from bytes
    * @param bytesTo to bytes
    * @param account Joss Account object
-   * @return Tupple with HTTP response method and GetMethod
-   * @throws HttpException if error
+   * @return Tupple with HTTP response method and HttpRequestBase HttpResponse
    * @throws IOException if error
    */
   private static Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>> httpGET(String path,
       long bytesFrom, long bytesTo, JossAccount account) throws IOException {
-
+    LOG.debug("Prepare HTTP GET {}. From {}, To {}", path, bytesFrom, bytesTo);
     HttpGet httpGet = new HttpGet(path);
     httpGet.addHeader("X-Auth-Token", account.getAuthToken());
     if (bytesTo > 0) {
@@ -105,6 +104,7 @@ public class SwiftAPIDirect {
     HttpClient httpclient = account.getHttpClient();
     HttpResponse response = httpclient.execute(httpGet);
     int responseCode = response.getStatusLine().getStatusCode();
+    LOG.debug("GET {} returned with {}", path, responseCode);
     Tuple<HttpRequestBase, HttpResponse> respData = new Tuple<HttpRequestBase,
         HttpResponse>(httpGet, response);
     return new Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>>(responseCode, respData);

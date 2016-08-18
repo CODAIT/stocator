@@ -451,7 +451,7 @@ public class SwiftAPIClient implements IStoreClient {
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
-              LOG.trace("Colisiion found between {} and {}", previousElement.getName(),
+              LOG.trace("Colision found between {} and {}", previousElement.getName(),
                   tmp.getName());
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
