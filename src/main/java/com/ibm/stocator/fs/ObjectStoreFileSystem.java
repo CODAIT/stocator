@@ -67,6 +67,9 @@ public class ObjectStoreFileSystem extends FileSystem {
    */
   private String hostNameScheme;
 
+  /*
+   * full URL to the data path
+   */
   private URI uri;
 
   @Override
