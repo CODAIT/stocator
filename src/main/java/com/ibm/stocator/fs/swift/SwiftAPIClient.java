@@ -435,7 +435,7 @@ public class SwiftAPIClient implements IStoreClient {
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
-              LOG.trace("Colision found between {} and {}", previousElement.getName(),
+              LOG.trace("Colision identified between {} and {}", previousElement.getName(),
                   tmp.getName());
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
@@ -562,6 +562,7 @@ public class SwiftAPIClient implements IStoreClient {
         String tmp = (String) sparkOrigin;
         if (tmp.equals("stocator")) {
           sparkOriginated = Boolean.TRUE;
+          LOG.trace("Object {} was created by Stocator", objectName);
         }
       }
     }
@@ -706,7 +707,7 @@ public class SwiftAPIClient implements IStoreClient {
     }
 
     if (objNameSrc.contains(HADOOP_TEMPORARY)) {
-      LOG.debug("Exists on temp object {}. Return false", objNameSrc);
+      LOG.debug("Rename on the temp object {}. Return true", objNameSrc);
       return true;
     }
     LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);

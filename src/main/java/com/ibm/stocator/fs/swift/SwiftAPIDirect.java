@@ -34,8 +34,8 @@ import com.ibm.stocator.fs.common.Tuple;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 /**
- * Direct client to object store implementing Swift API
- * This class is bypass JOSS library
+ * Direct client to the object store implementing Swift API
+ * This class bypass JOSS library and uses JOSS only to obtain access token and authenticated url
  */
 public class SwiftAPIDirect {
 
