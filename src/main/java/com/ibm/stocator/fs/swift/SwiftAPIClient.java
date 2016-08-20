@@ -547,16 +547,14 @@ public class SwiftAPIClient implements IStoreClient {
    * @return boolean if object was created by Spark
    */
   private boolean isSparkOrigin(String objectName) {
+    LOG.trace("Check if created by Stocator: {}", objectName);
     if (cachedSparkOriginated.containsKey(objectName)) {
       return cachedSparkOriginated.get(objectName).booleanValue();
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
-      obj = objectName.substring(container.length() + 1);
-    }
     Boolean sparkOriginated = Boolean.FALSE;
     StoredObject so = mJossAccount.getAccount().getContainer(container).getObject(obj);
-    if (so.exists()) {
+    if (so != null && so.exists()) {
       Object sparkOrigin = so.getMetadata("Data-Origin");
       if (sparkOrigin != null) {
         String tmp = (String) sparkOrigin;
