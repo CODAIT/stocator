@@ -577,18 +577,18 @@ public class SwiftAPIClient implements IStoreClient {
    * @return boolean if job is successful
    */
   private boolean isJobSuccessful(String objectName) {
+    LOG.trace("Checking if job completed successfull for {}", objectName);
     if (cachedSparkJobsStatus.containsKey(objectName)) {
       return cachedSparkJobsStatus.get(objectName).booleanValue();
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
-      obj = objectName.substring(container.length() + 1);
-    }
     Account account = mJossAccount.getAccount();
+    LOG.trace("HEAD {}", obj + "/" + HADOOP_SUCCESS);
     StoredObject so = account.getContainer(container).getObject(obj
         + "/" + HADOOP_SUCCESS);
     Boolean isJobOK = Boolean.FALSE;
     if (so.exists()) {
+      LOG.debug("{} exists", obj + "/" + HADOOP_SUCCESS);
       isJobOK = Boolean.TRUE;
     }
     cachedSparkJobsStatus.put(objectName, isJobOK);

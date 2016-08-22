@@ -202,7 +202,7 @@ public class SwiftAPIClientTest {
             mContainerName + "/" + objectName);
     Assert.assertEquals("isJobSuccessful() failed when the container name"
             + "is part of the object name",
-            true, result);
+            false, result);
   }
 
   @Test
