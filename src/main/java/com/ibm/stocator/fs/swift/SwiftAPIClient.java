@@ -420,6 +420,12 @@ public class SwiftAPIClient implements IStoreClient {
           continue;
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+        if (!unifiedObjectName.equals(obj)) {
+          // JOSS returns all objects that start with the prefix of obj.
+          // These may include other unrelated objects.
+          LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
+          continue;
+        }
         if (isSparkOrigin(unifiedObjectName) && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
           if (!isJobSuccessful(unifiedObjectName)) {
