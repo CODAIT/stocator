@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
@@ -34,12 +33,12 @@ import org.slf4j.LoggerFactory;
 public class ObjectStoreGlobber {
   public static final Logger LOG = LoggerFactory.getLogger(ObjectStoreGlobber.class.getName());
 
-  private final FileSystem fs;
+  private final ExtendedFileSystem fs;
   private final FileContext fc;
   private final Path pathPattern;
   private final PathFilter filter;
 
-  public ObjectStoreGlobber(FileSystem fsT, Path pathPatternT, PathFilter filterT) {
+  public ObjectStoreGlobber(ExtendedFileSystem fsT, Path pathPatternT, PathFilter filterT) {
     fs = fsT;
     fc = null;
     pathPattern = pathPatternT;
@@ -69,7 +68,7 @@ public class ObjectStoreGlobber {
     try {
       if (fs != null) {
         //return fs.listStatus(new Path(path.toString() + "*"));
-        return fs.listStatus(path);
+        return fs.listStatus(path, null, true);
       } else {
         return fc.util().listStatus(path);
       }

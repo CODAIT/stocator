@@ -7,7 +7,7 @@ import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.FSDataInputStream;
-
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -23,11 +23,40 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
   private ObjectStoreFileSystem mMockObjectStoreFileSystem;
   private String hostName = "swift2d://out1003.lvm";
   protected byte[] data = SwiftTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
+  String fileName = null;
+  int iterNum = 3;
 
   @Before
-  public final void before() {
+  public final void before() throws Exception {
     mMockObjectStoreFileSystem = PowerMockito.mock(ObjectStoreFileSystem.class);
     Whitebox.setInternalState(mMockObjectStoreFileSystem, "hostNameScheme", hostName);
+    int iterNum = 3;
+    fileName = getBaseURI() + "/testFile";
+    Path[] testFile0 = new Path[iterNum];
+    for (int i = 0; i < iterNum; i++) {
+      testFile0[i] = new Path(fileName + "0" + i);
+      createFile(testFile0[i], data);
+    }
+    Path[] testFile1 = new Path[iterNum * 2];
+    for (int i = 0; i < iterNum * 2; i++) {
+      testFile1[i] = new Path(fileName + "1" + i);
+      createFile(testFile1[i], data);
+    }
+  }
+
+  @After
+  public final void after() throws Exception {
+    fileName = getBaseURI() + "/testFile";
+    Path[] testFile0 = new Path[iterNum];
+    for (int i = 0; i < iterNum; i++) {
+      testFile0[i] = new Path(fileName + "0" + i);
+      getFs().delete(testFile0[i], false);
+    }
+    Path[] testFile1 = new Path[iterNum * 2];
+    for (int i = 0; i < iterNum * 2; i++) {
+      testFile1[i] = new Path(fileName + "1" + i);
+      getFs().delete(testFile1[i], false);
+    }
   }
 
   @Test
@@ -98,19 +127,6 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
   @Test
   public void listLocatedStatusTest() throws Exception {
     Assume.assumeNotNull(getFs());
-    int iterNum = 3;
-    Path[] testFile0 = new Path[iterNum];
-    String fileName = getBaseURI() + "/testFile";
-    for (int i = 0; i < iterNum; i++) {
-      testFile0[i] = new Path(fileName + "0" + i);
-      createFile(testFile0[i], data);
-    }
-    Path[] testFile1 = new Path[iterNum * 2];
-    for (int i = 0; i < iterNum * 2; i++) {
-      testFile1[i] = new Path(fileName + "1" + i);
-      createFile(testFile1[i], data);
-    }
-
     int count = 0;
     RemoteIterator<LocatedFileStatus> stats = getFs().listLocatedStatus(new Path(fileName));
     while (stats.hasNext()) {
@@ -118,7 +134,16 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
       Assert.assertTrue(stat.getPath().getName().startsWith("testFile"));
       count++;
     }
-    Assert.assertEquals(iterNum * 3, count);
+    Assert.assertEquals(iterNum * 0, count);
+
+    count = 0;
+    stats = getFs().listLocatedStatus(new Path(getBaseURI() + "/testFile01"));
+    while (stats.hasNext()) {
+      LocatedFileStatus stat = stats.next();
+      Assert.assertTrue(stat.getPath().getName().startsWith("testFile01"));
+      count++;
+    }
+    Assert.assertEquals(1, count);
 
     count = 0;
     stats = getFs().listLocatedStatus(new Path(fileName + "0"));
@@ -127,7 +152,7 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
       Assert.assertTrue(stat.getPath().getName().startsWith("testFile0"));
       count++;
     }
-    Assert.assertEquals(iterNum, count);
+    Assert.assertEquals(iterNum * 0, count);
   }
 
   @Test
