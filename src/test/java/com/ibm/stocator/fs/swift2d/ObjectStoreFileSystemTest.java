@@ -30,32 +30,36 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
   public final void before() throws Exception {
     mMockObjectStoreFileSystem = PowerMockito.mock(ObjectStoreFileSystem.class);
     Whitebox.setInternalState(mMockObjectStoreFileSystem, "hostNameScheme", hostName);
-    int iterNum = 3;
-    fileName = getBaseURI() + "/testFile";
-    Path[] testFile0 = new Path[iterNum];
-    for (int i = 0; i < iterNum; i++) {
-      testFile0[i] = new Path(fileName + "0" + i);
-      createFile(testFile0[i], data);
-    }
-    Path[] testFile1 = new Path[iterNum * 2];
-    for (int i = 0; i < iterNum * 2; i++) {
-      testFile1[i] = new Path(fileName + "1" + i);
-      createFile(testFile1[i], data);
+    if (getFs() != null) {
+      int iterNum = 3;
+      fileName = getBaseURI() + "/testFile";
+      Path[] testFile0 = new Path[iterNum];
+      for (int i = 0; i < iterNum; i++) {
+        testFile0[i] = new Path(fileName + "0" + i);
+        createFile(testFile0[i], data);
+      }
+      Path[] testFile1 = new Path[iterNum * 2];
+      for (int i = 0; i < iterNum * 2; i++) {
+        testFile1[i] = new Path(fileName + "1" + i);
+        createFile(testFile1[i], data);
+      }
     }
   }
 
   @After
   public final void after() throws Exception {
-    fileName = getBaseURI() + "/testFile";
-    Path[] testFile0 = new Path[iterNum];
-    for (int i = 0; i < iterNum; i++) {
-      testFile0[i] = new Path(fileName + "0" + i);
-      getFs().delete(testFile0[i], false);
-    }
-    Path[] testFile1 = new Path[iterNum * 2];
-    for (int i = 0; i < iterNum * 2; i++) {
-      testFile1[i] = new Path(fileName + "1" + i);
-      getFs().delete(testFile1[i], false);
+    if (getFs() != null) {
+      fileName = getBaseURI() + "/testFile";
+      Path[] testFile0 = new Path[iterNum];
+      for (int i = 0; i < iterNum; i++) {
+        testFile0[i] = new Path(fileName + "0" + i);
+        getFs().delete(testFile0[i], false);
+      }
+      Path[] testFile1 = new Path[iterNum * 2];
+      for (int i = 0; i < iterNum * 2; i++) {
+        testFile1[i] = new Path(fileName + "1" + i);
+        getFs().delete(testFile1[i], false);
+      }
     }
   }
 
