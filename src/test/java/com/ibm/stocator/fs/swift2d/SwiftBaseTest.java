@@ -130,9 +130,11 @@ public class SwiftBaseTest extends Assert {
    * @throws IOException on any problem
    */
   protected void createFile(Path path, byte[] sourceData) throws IOException {
-    FSDataOutputStream out = fs.create(path);
-    out.write(sourceData, 0, sourceData.length);
-    out.close();
+    if (fs != null) {
+      FSDataOutputStream out = fs.create(path);
+      out.write(sourceData, 0, sourceData.length);
+      out.close();
+    }
   }
 
   /**
