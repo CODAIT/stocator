@@ -90,12 +90,15 @@ public class Utils {
    * @return true if hostName of the form container.service
    */
   public static boolean validSchema(URI uri) {
+    LOG.trace("Checking schema {}", uri.toString());
     String hostName = Utils.getHost(uri);
+    LOG.trace("Got hostname as {}", hostName);
     int i = hostName.indexOf(".");
     if (i < 0) {
       return false;
     }
     String service = hostName.substring(i + 1);
+    LOG.trace("Got service as {}", service);
     if (service.isEmpty() || service.contains(".")) {
       return false;
     }

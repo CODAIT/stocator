@@ -80,6 +80,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   @Override
   public void initialize(URI fsuri, Configuration conf) throws IOException {
     super.initialize(fsuri, conf);
+    LOG.trace("Initialize for {}", fsuri);
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
