@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 /**
  * Hard coded constants for the test timeouts

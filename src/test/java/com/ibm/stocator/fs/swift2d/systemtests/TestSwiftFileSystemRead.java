@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -25,8 +25,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.readBytesToString;
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.writeTextFile;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.readBytesToString;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.writeTextFile;
 /**
  * Test filesystem read operations
  */

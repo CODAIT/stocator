@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.IOException;
 
@@ -27,10 +27,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.assertListStatusFinds;
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.cleanup;
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.dumpStats;
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.touch;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.assertListStatusFinds;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.cleanup;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.dumpStats;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.touch;
 
 /**
  * Test the FileSystem#listStatus() operations

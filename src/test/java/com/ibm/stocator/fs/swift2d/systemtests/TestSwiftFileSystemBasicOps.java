@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,9 +29,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.assertFileHasLength;
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.readBytesToString;
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.writeTextFile;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.assertFileHasLength;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.readBytesToString;
+import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.writeTextFile;
 
 /**
  * Test basic filesystem operations.

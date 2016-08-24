@@ -1,4 +1,4 @@
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.IOException;
 
