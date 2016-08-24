@@ -100,8 +100,8 @@ public class TestSwiftOperations extends SwiftBaseTest {
     for (String name : testFileNames) {
       createFile(new Path(getBaseURI() + name), data);
     }
-    FileStatus[] results = getFs().listStatus(new Path(getBaseURI()));
-    Assert.assertEquals(testFileNames.length, results.length);
+    FileStatus[] results = getFs().globStatus(new Path(getBaseURI() + "/File*"));
+    Assert.assertEquals(2, results.length);
     for (String name : testFileNames) {
       getFs().delete(new Path(getBaseURI() + name), false);
     }
@@ -117,7 +117,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
       createFile(path, data);
     }
 
-    Path wildcard = new Path(getBaseURI() + "/*"); // All files
+    Path wildcard = new Path(getBaseURI() + "/Dir*"); // All files
     ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
             new ObjectStoreGlobFilter(""));
     FileStatus[] results = globber.glob();

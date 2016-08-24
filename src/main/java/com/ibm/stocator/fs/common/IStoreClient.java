@@ -90,10 +90,12 @@ public interface IStoreClient {
    * @param hostName URL to host
    * @param path path to the object
    * @param fullListing if true, return all the content, including 0 byte size objects
+   * @param prefixBased if set to true, container will be listed with prefix based query
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
-  public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException;
+  public FileStatus[] list(String hostName, Path path, boolean fullListing,
+      boolean prefixBased) throws IOException;
 
   /**
    * Create object. Return output stream

@@ -28,7 +28,6 @@ import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
@@ -42,6 +41,7 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
@@ -51,7 +51,7 @@ import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
  * Based on the Hadoop FileSystem interface
  *
  */
-public class ObjectStoreFileSystem extends FileSystem {
+public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   /*
    * Logger
@@ -67,6 +67,9 @@ public class ObjectStoreFileSystem extends FileSystem {
    */
   private String hostNameScheme;
 
+  /*
+   * full URL to the data path
+   */
   private URI uri;
 
   @Override
@@ -77,6 +80,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   @Override
   public void initialize(URI fsuri, Configuration conf) throws IOException {
     super.initialize(fsuri, conf);
+    LOG.trace("Initialize for {}", fsuri);
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
@@ -222,7 +226,7 @@ public class ObjectStoreFileSystem extends FileSystem {
     }
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           if (fs.getPath().getName().endsWith(f.getName())) {
@@ -231,11 +235,17 @@ public class ObjectStoreFileSystem extends FileSystem {
         }
       }
     } else {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
+          LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
+          String pathToDelete = f.toString();
+          if (!pathToDelete.endsWith("/")) {
+            pathToDelete = pathToDelete + "/";
+          }
+          LOG.trace("Delete candidate {} pathToDelete {}", fs.getPath().toString(), pathToDelete);
           if (fs.getPath().toString().equals(f.toString())
-              || fs.getPath().toString().startsWith(f.toString() + "/")) {
+              || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
           }
@@ -248,16 +258,7 @@ public class ObjectStoreFileSystem extends FileSystem {
   @Override
   public FileStatus[] listStatus(Path f,
       PathFilter filter) throws FileNotFoundException, IOException {
-    if (filter != null) {
-      LOG.debug("list status: {}, filter: {}",f.toString(), filter.toString());
-    } else {
-      LOG.debug("list status: {}", f.toString());
-    }
-    FileStatus[] res = {};
-    if (f.toString().contains(HADOOP_TEMPORARY)) {
-      return res;
-    }
-    return storageClient.list(hostNameScheme, f, false);
+    return listStatus(f, filter, false);
   }
 
   @Override
@@ -274,11 +275,33 @@ public class ObjectStoreFileSystem extends FileSystem {
   @Override
   public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
     LOG.debug("List status of {}", f.toString());
-    FileStatus[] res = {};
-    if (f.toString().contains(HADOOP_TEMPORARY)) {
-      return res;
+    return listStatus(f, null);
+  }
+
+  @Override
+  public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased)
+      throws FileNotFoundException, IOException {
+    if (filter != null) {
+      LOG.debug("list status: {}, filter: {}",f.toString(), filter.toString());
+    } else {
+      LOG.debug("list status: {}", f.toString());
     }
-    return storageClient.list(hostNameScheme, f, false);
+    FileStatus[] result = {};
+
+    if (f.toString().contains(HADOOP_TEMPORARY)) {
+      return result;
+    }
+    final FileStatus fileStatus =  getFileStatus(f);
+
+    if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
+      LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
+      result = storageClient.list(hostNameScheme, f, false, prefixBased);
+    } else if (fileStatus != null) {
+      LOG.debug("{} is not directory. Adding without list", f);
+      result = new FileStatus[1];
+      result[0] = fileStatus;
+    }
+    return result;
   }
 
   @Override
@@ -334,7 +357,7 @@ public class ObjectStoreFileSystem extends FileSystem {
       Map<String, String> metadata = new HashMap<String, String>();
       metadata.put("Data-Origin", "stocator");
       FSDataOutputStream outStream = storageClient.createObject(plainObjName,
-          "application/directory", metadata, statistics);
+          Constants.APPLICATION_DIRECTORY, metadata, statistics);
       outStream.close();
     }
     return true;
