@@ -221,6 +221,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
     LOG.debug("Modified object name {} hostname {}", objNameModified, hostNameScheme);
     boolean result = true;
+
     if (objNameModified.contains(HADOOP_TEMPORARY)) {
       return true;
     }

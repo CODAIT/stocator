@@ -15,7 +15,7 @@
  *
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -290,6 +290,27 @@ public class SwiftTestUtils extends org.junit.Assert {
       }
     } catch (Exception e) {
       LOG.error("Error deleting in " + action + " - "  + cleanupPath + ": " + e, e);
+    }
+  }
+
+  /**
+   * Deletes all files in a container
+   * @param fileSystem
+   * @param BaseUri
+   * @throws IOException
+     */
+  public static void cleanupAllFiles(FileSystem fileSystem, String BaseUri) throws IOException {
+    try {
+      if (fileSystem != null) {
+        // Clean up generated files
+        Path rootDir = new Path(BaseUri);
+        FileStatus[] files = fileSystem.listStatus(rootDir);
+        for (FileStatus file : files) {
+          fileSystem.delete(file.getPath(), false);
+        }
+      }
+    } catch (Exception e) {
+      LOG.error("Error in deleting all files.");
     }
   }
 

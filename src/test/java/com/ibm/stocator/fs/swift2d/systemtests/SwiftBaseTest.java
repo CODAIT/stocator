@@ -15,19 +15,20 @@
  *
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.IOException;
 import java.net.URI;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,61 +40,60 @@ import com.ibm.stocator.fs.ObjectStoreFileSystem;
 public class SwiftBaseTest extends Assert {
 
   protected static final Logger LOG = LoggerFactory.getLogger(SwiftBaseTest.class);
-  protected ObjectStoreFileSystem fs;
-  protected String baseURI;
+  protected static ObjectStoreFileSystem sFileSystem;
+  protected static String sBaseURI;
   private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
-  private Configuration conf;
+  private static Configuration sConf;
 
   @Before
   public void setUp() throws Exception {
-    conf = new Configuration();
-    baseURI = conf.get(BASE_URI_PROPERTY);
-    if (baseURI == null || baseURI.equals("")) {
-      return;
-    }
-    final URI uri = new URI(baseURI);
-    fs = new ObjectStoreFileSystem();
-    try {
-      fs.initialize(uri, conf);
-    } catch (Exception e) {
-      fs = null;
-      throw e;
-    }
+    Assume.assumeNotNull(sFileSystem);
+  }
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    createSwiftFileSystem();
   }
 
   public void manualSetUp(String containerName) throws Exception {
-    conf = new Configuration();
-    baseURI = conf.get(BASE_URI_PROPERTY);
-    if (baseURI == null || baseURI.equals("")) {
+    createSwiftFileSystem(containerName);
+  }
+
+  public static void createSwiftFileSystem() throws Exception {
+    createSwiftFileSystem("");
+  }
+
+  public static void createSwiftFileSystem(String containerName) throws Exception {
+    sConf = new Configuration();
+    sBaseURI = sConf.get(BASE_URI_PROPERTY);
+    if (sBaseURI == null || sBaseURI.equals("")) {
       return;
     }
-    baseURI = baseURI.replace(baseURI.substring(baseURI.indexOf("//") + 2,
-        baseURI.indexOf(".")), containerName);
-    System.out.println("New uri is " + baseURI);
-    final URI uri = new URI(baseURI);
-    fs = new ObjectStoreFileSystem();
+
+    if (!containerName.isEmpty()) {
+      sBaseURI = sBaseURI.replace(sBaseURI.substring(sBaseURI.indexOf("//") + 2,
+              sBaseURI.indexOf(".")), containerName);
+      System.out.println("New uri is " + sBaseURI);
+    }
+
+    final URI uri = new URI(sBaseURI);
+    sFileSystem = new ObjectStoreFileSystem();
     try {
-      fs.initialize(uri, conf);
+      sFileSystem.initialize(uri, sConf);
     } catch (Exception e) {
-      fs = null;
+      sFileSystem = null;
       throw e;
     }
   }
 
   @After
   public void tearDown() throws Exception {
-    if (getBaseURI() != null) {
-      // Clean up generated files
-      Path rootDir = new Path(getBaseURI());
-      FileStatus[] files = getFs().listStatus(rootDir);
-      for (FileStatus file : files) {
-        getFs().delete(file.getPath(), false);
-      }
-    }
+
   }
 
   @AfterClass
   public static void classTearDown() throws Exception {
+    SwiftTestUtils.cleanupAllFiles(sFileSystem, sBaseURI);
   }
 
   /**
@@ -102,7 +102,7 @@ public class SwiftBaseTest extends Assert {
    * @return the configuration
    */
   public Configuration getConf() {
-    return conf;
+    return sConf;
   }
 
   protected int getBlockSize() {
@@ -115,11 +115,11 @@ public class SwiftBaseTest extends Assert {
    * @return the current FS
    */
   public ObjectStoreFileSystem getFs() {
-    return fs;
+    return sFileSystem;
   }
 
   public String getBaseURI() {
-    return baseURI;
+    return sBaseURI;
   }
 
   /**
@@ -129,9 +129,10 @@ public class SwiftBaseTest extends Assert {
    * @param sourceData source dataset
    * @throws IOException on any problem
    */
-  protected void createFile(Path path, byte[] sourceData) throws IOException {
-    if (fs != null) {
-      FSDataOutputStream out = fs.create(path);
+
+  protected static void createFile(Path path, byte[] sourceData) throws IOException {
+    if (sFileSystem != null) {
+      FSDataOutputStream out = sFileSystem.create(path);
       out.write(sourceData, 0, sourceData.length);
       out.close();
     }
@@ -143,8 +144,8 @@ public class SwiftBaseTest extends Assert {
    * @param path path to create
    * @throws IOException on a failure
    */
-  protected void createEmptyFile(Path path) throws IOException {
-    FSDataOutputStream out = fs.create(path);
+  protected static void createEmptyFile(Path path) throws IOException {
+    FSDataOutputStream out = sFileSystem.create(path);
     out.close();
   }
 

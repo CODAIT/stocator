@@ -15,7 +15,7 @@
  *
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.unittests;
 
 import org.javaswift.joss.model.StoredObject;
 import java.util.HashMap;
