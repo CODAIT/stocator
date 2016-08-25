@@ -147,8 +147,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   @Override
   public synchronized void seek(long targetPos) throws IOException {
     checkNotClosed();
-
-    // Do not allow negative seek
     if (targetPos < 0) {
       throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK + " " + targetPos);
     }

@@ -77,15 +77,18 @@ public class SwiftOutputStream extends OutputStream {
     mUrl = url;
     HttpURLConnection httpCon = createConnection(account, url, contentType, metadata);
     try {
+      LOG.debug("Going to obtain output stream for PUT {}", url.toString());
       mOutputStream  = httpCon.getOutputStream();
+      LOG.debug("Output stream created for PUT {}", url.toString());
       mHttpCon = httpCon;
     } catch (ProtocolException e) {
       LOG.warn("Failed to connect to {}", url.toString());
       LOG.warn(e.getMessage());
-      LOG.warn("Retry attempt. Re-authenticate");
+      LOG.warn("Retry attempt for PUT {}. Re-authenticate", url.toString());
       account.authenticate();
       httpCon = createConnection(account, url, contentType, metadata);
       mOutputStream  = httpCon.getOutputStream();
+      LOG.debug("Second attempt PUT {} successfull. Got output stream", url.toString());
       mHttpCon = httpCon;
     } catch (IOException e) {
       LOG.error(e.getMessage());
@@ -98,13 +101,15 @@ public class SwiftOutputStream extends OutputStream {
    *
    * @param account Joss Account
    * @param url URL to the object
-   * @param contentType content type
-   * @param metadata metadata
+   * @param contentType object content type
+   * @param metadata user provided meta data
    * @return HttpURLConnection if success
    * @throws IOException if error
    */
   private HttpURLConnection createConnection(JossAccount account, URL url, String contentType,
       Map<String, String> metadata) throws IOException {
+    LOG.debug("Create chunked HTTP connection for PUT {}. Read timeout {}. Streaming chunk {}",
+        url.toString(), READ_TIMEOUT, STREAMING_CHUNK);
     HttpURLConnection newHttpCon = (HttpURLConnection) url.openConnection();
     newHttpCon.setDoOutput(true);
     newHttpCon.setRequestMethod("PUT");
@@ -144,6 +149,7 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
+    LOG.trace("Close the output stream for {}", mUrl.toString());
     mOutputStream.close();
     InputStream is = null;
     try {

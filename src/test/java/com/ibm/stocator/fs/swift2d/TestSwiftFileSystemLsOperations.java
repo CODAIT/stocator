@@ -119,7 +119,6 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
         data.length, lsStat.getLen());
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testListEmptyRoot() throws Throwable {
     describe("Empty the root dir and verify that an LS / returns {}");
     cleanup("testListEmptyRoot", fs, "/test");

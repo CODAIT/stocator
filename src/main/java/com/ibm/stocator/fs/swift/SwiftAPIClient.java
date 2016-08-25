@@ -268,15 +268,16 @@ public class SwiftAPIClient implements IStoreClient {
       2) no zero byte object with the name of the directory
     */
     String objectName = path.toString().substring(hostName.length());
+    String objectNameNoSlash = objectName;
     if (objectName.endsWith("/")) {
       /*
         removing the trailing slash because it is not supported in Swift
         an request on an object (not a container) that has a trailing slash will lead
         to a 404 response message
       */
-      objectName = objectName.substring(0, objectName.length() - 1);
+      objectNameNoSlash = objectName.substring(0, objectName.length() - 1);
     }
-    StoredObject so = cont.getObject(objectName);
+    StoredObject so = cont.getObject(objectNameNoSlash);
     boolean isDirectory = false;
     if (so.exists()) {
       // We need to check if the object size is equal to zero
@@ -295,9 +296,15 @@ public class SwiftAPIClient implements IStoreClient {
               getLastModified(lastModified), path);
     }
     // We need to check if it may be a directory with no zero byte file associated
-    Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
+    LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
+    Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
+        "", 10);
+    if (directoryFiles != null) {
+      LOG.trace("{} got {} candidates", objectName + "/", directoryFiles.size());
+    }
     if (directoryFiles != null && directoryFiles.size() != 0) {
       // In this case there is no lastModified
+      isDirectory = true;
       LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, null);
       return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
     }
@@ -384,22 +391,26 @@ public class SwiftAPIClient implements IStoreClient {
    * @param hostName hostname
    * @param path path to the object
    * @param fullListing if true, will return objects of size 0
+   * @param prefixBased if set to true, container will be listed with prefix based query
    * @return Array of Hadoop FileStatus
    * @throws IOException in case of network failure
    */
-  public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException {
-    LOG.debug("List container: raw path parent", path.toString());
+  public FileStatus[] list(String hostName, Path path, boolean fullListing,
+      boolean prefixBased) throws IOException {
+    LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
+        container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
-    if (path.toString().startsWith(container)) {
+    if (path.toString().equals(container)) {
+      obj = "";
+    } else if (path.toString().startsWith(container + "/")) {
       obj = path.toString().substring(container.length() + 1);
+    } else if (path.toString().startsWith(hostName)) {
+      obj = path.toString().substring(hostName.length());
     } else {
-      if (path.toString().length() + 1 == hostName.length()) {
-        obj = "";
-      } else {
-        obj = path.toString().substring(hostName.length());
-      }
+      obj = path.toString();
     }
+
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
@@ -420,6 +431,13 @@ public class SwiftAPIClient implements IStoreClient {
           continue;
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+        if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
+            && !unifiedObjectName.equals(obj)) {
+          // JOSS returns all objects that start with the prefix of obj.
+          // These may include other unrelated objects.
+          LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
+          continue;
+        }
         if (isSparkOrigin(unifiedObjectName) && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
           if (!isJobSuccessful(unifiedObjectName)) {
@@ -435,7 +453,7 @@ public class SwiftAPIClient implements IStoreClient {
             if (nameWithoutTaskID(tmp.getName())
                 .equals(nameWithoutTaskID(previousElement.getName()))) {
               // found failed that was not aborted.
-              LOG.trace("Colisiion found between {} and {}", previousElement.getName(),
+              LOG.trace("Colision identified between {} and {}", previousElement.getName(),
                   tmp.getName());
               setCorrectSize(tmp, cObj);
               if (previousElement.getContentLength() < tmp.getContentLength()) {
@@ -549,21 +567,20 @@ public class SwiftAPIClient implements IStoreClient {
    * @return boolean if object was created by Spark
    */
   private boolean isSparkOrigin(String objectName) {
+    LOG.trace("Check if created by Stocator: {}", objectName);
     if (cachedSparkOriginated.containsKey(objectName)) {
       return cachedSparkOriginated.get(objectName).booleanValue();
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
-      obj = objectName.substring(container.length() + 1);
-    }
     Boolean sparkOriginated = Boolean.FALSE;
     StoredObject so = mJossAccount.getAccount().getContainer(container).getObject(obj);
-    if (so.exists()) {
+    if (so != null && so.exists()) {
       Object sparkOrigin = so.getMetadata("Data-Origin");
       if (sparkOrigin != null) {
         String tmp = (String) sparkOrigin;
         if (tmp.equals("stocator")) {
           sparkOriginated = Boolean.TRUE;
+          LOG.trace("Object {} was created by Stocator", objectName);
         }
       }
     }
@@ -580,18 +597,18 @@ public class SwiftAPIClient implements IStoreClient {
    * @return boolean if job is successful
    */
   private boolean isJobSuccessful(String objectName) {
+    LOG.trace("Checking if job completed successfull for {}", objectName);
     if (cachedSparkJobsStatus.containsKey(objectName)) {
       return cachedSparkJobsStatus.get(objectName).booleanValue();
     }
     String obj = objectName;
-    if (objectName.toString().startsWith(container)) {
-      obj = objectName.substring(container.length() + 1);
-    }
     Account account = mJossAccount.getAccount();
+    LOG.trace("HEAD {}", obj + "/" + HADOOP_SUCCESS);
     StoredObject so = account.getContainer(container).getObject(obj
         + "/" + HADOOP_SUCCESS);
     Boolean isJobOK = Boolean.FALSE;
     if (so.exists()) {
+      LOG.debug("{} exists", obj + "/" + HADOOP_SUCCESS);
       isJobOK = Boolean.TRUE;
     }
     cachedSparkJobsStatus.put(objectName, isJobOK);
@@ -708,7 +725,7 @@ public class SwiftAPIClient implements IStoreClient {
     }
 
     if (objNameSrc.contains(HADOOP_TEMPORARY)) {
-      LOG.debug("Exists on temp object {}. Return false", objNameSrc);
+      LOG.debug("Rename on the temp object {}. Return true", objNameSrc);
       return true;
     }
     LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
