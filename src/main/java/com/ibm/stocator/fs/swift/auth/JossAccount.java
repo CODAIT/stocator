@@ -124,8 +124,8 @@ public class JossAccount {
    */
   private HttpClient initHttpClient() {
     PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
-    manager.setDefaultMaxPerRoute(15);
-    manager.setMaxTotal(15);
+    manager.setDefaultMaxPerRoute(25);
+    manager.setMaxTotal(50);
 
     return HttpClients.custom().setConnectionManager(manager).build();
 
