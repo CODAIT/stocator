@@ -6,6 +6,7 @@ import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
 
 import org.apache.http.client.HttpClient;
+import org.apache.http.config.SocketConfig;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
@@ -126,9 +127,12 @@ public class JossAccount {
     PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
     manager.setDefaultMaxPerRoute(25);
     manager.setMaxTotal(50);
-
+    SocketConfig socketConfig = SocketConfig.custom()
+                                            .setSoKeepAlive(false)
+                                            .setSoTimeout(60000)
+                                            .build();
+    manager.setDefaultSocketConfig(socketConfig);
     return HttpClients.custom().setConnectionManager(manager).build();
-
   }
 
   /**
