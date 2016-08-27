@@ -162,10 +162,10 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public void initiate() throws IOException {
+  public void initiate(String scheme) throws IOException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
-    schemaProvided = conf.get("fs.swift.schema", Constants.SWIFT2D);
+    schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
@@ -178,7 +178,7 @@ public class SwiftAPIClient implements IStoreClient {
 
     if (authMethod.equals(PUBLIC_ACCESS)) {
       // we need to extract container name and path from the public URL
-      String publicURL = filesystemURI.toString().replace("swift2d", "https");
+      String publicURL = filesystemURI.toString().replace(schemaProvided, "https");
       LOG.debug("publicURL: {}", publicURL);
       String accessURL = Utils.extractAccessURL(publicURL);
       LOG.debug("auth url {}", accessURL);

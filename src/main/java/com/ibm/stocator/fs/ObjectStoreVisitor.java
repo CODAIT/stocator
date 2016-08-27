@@ -118,7 +118,7 @@ public class ObjectStoreVisitor {
           throw new IOException("No object store for: " + fsSchema);
         }
         try {
-          storeClient.initiate();
+          storeClient.initiate(supportedScheme);
           return storeClient;
         } catch (IOException e) {
           LOG.error(e.getMessage());

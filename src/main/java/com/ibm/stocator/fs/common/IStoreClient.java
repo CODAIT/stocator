@@ -155,9 +155,9 @@ public interface IStoreClient {
 
   /**
    * Contains the logic for the driver initialization
-   *
+   * @param scheme schema
    * @throws IOException if error
    */
-  public void initiate() throws IOException;
+  public void initiate(String scheme) throws IOException;
 
 }
