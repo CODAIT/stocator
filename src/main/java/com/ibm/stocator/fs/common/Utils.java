@@ -28,6 +28,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
+
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class Utils {
@@ -158,11 +160,12 @@ public class Utils {
    * @param props destination property set
    * @param propsKey key in the property set
    * @param required if the key is mandatory
-   * @throws IOException if there was no match for the key
+   * @throws ConfigurationParseException if there was no match for the key
    */
 
   public static void updateProperty(Configuration conf, String prefix, String alternativePrefix,
-      String key, Properties props, String propsKey, boolean required) throws IOException {
+      String key, Properties props, String propsKey,
+      boolean required) throws ConfigurationParseException {
     String val = conf.get(prefix + key);
     if (val == null) {
       // try alternative key
@@ -170,7 +173,7 @@ public class Utils {
       LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
     }
     if (required && val == null) {
-      throw new IOException("Missing mandatory configuration: " + key);
+      throw new ConfigurationParseException("Missing mandatory configuration: " + key);
     }
     if (val != null) {
       props.setProperty(propsKey, val.trim());

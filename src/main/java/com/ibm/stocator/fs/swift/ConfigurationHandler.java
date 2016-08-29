@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.Properties;
 
 import com.ibm.stocator.fs.common.Utils;
+import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -62,9 +63,10 @@ public final class ConfigurationHandler {
    * @param uri uri of the file system
    * @param conf configuration
    * @return parsed configuration for the Swift driver
-   * @throws IOException if the configuration is invalid
+   * @throws ConfigurationParseException is failed to parse configuration
    */
-  public static Properties initialize(URI uri, Configuration conf) throws IOException {
+  public static Properties initialize(URI uri, Configuration conf) throws IOException,
+  ConfigurationParseException {
     String host = Utils.getHost(uri);
     Properties props = new Properties();
     if (!Utils.validSchema(uri)) {

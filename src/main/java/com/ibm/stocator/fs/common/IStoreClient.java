@@ -28,6 +28,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.Path;
 
+import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
+
 /**
  * Internal object store driver interface
  * Each object back-end driver should implement this interface
@@ -156,8 +158,9 @@ public interface IStoreClient {
   /**
    * Contains the logic for the driver initialization
    * @param scheme schema
-   * @throws IOException if error
+   * @throws ConfigurationParseException if failed to parse the configuration
+   * @throws IOException otherwise
    */
-  public void initiate(String scheme) throws IOException;
+  public void initiate(String scheme) throws IOException, ConfigurationParseException;
 
 }

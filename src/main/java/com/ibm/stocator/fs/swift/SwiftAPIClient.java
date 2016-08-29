@@ -50,6 +50,7 @@ import org.apache.hadoop.fs.FileSystem.Statistics;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
+import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
@@ -162,7 +163,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public void initiate(String scheme) throws IOException {
+  public void initiate(String scheme) throws IOException, ConfigurationParseException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
@@ -219,9 +220,22 @@ public class SwiftAPIClient implements IStoreClient {
         config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
       }
       mJossAccount = new JossAccount(config,preferredRegion, usePublicURL);
-      mJossAccount.createAccount();
+      try {
+        mJossAccount.createAccount();
+      } catch (Exception e) {
+        throw new IOException("Failed to create an account model."
+            + " Please check the provided access credentials."
+            + " Verify the validitiy of the auth url: " + config.getAuthUrl());
+      }
     }
-    mJossAccount.authenticate();
+    try {
+      mJossAccount.authenticate();
+    } catch (Exception e) {
+      throw new IOException("Failed to authenticate."
+          + " Please check the provided access credentials."
+          + " Verify the validitiy of the auth url: " + config.getAuthUrl()
+          + " : " + e.getMessage());
+    }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
     if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();
