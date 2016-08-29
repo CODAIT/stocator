@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.CanSetReadahead;
 import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.fs.Path;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +85,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    */
   private long contentRangeStart;
   /**
-   * Swift API client
+   * Wrapper for Joss Account
    */
   private JossAccount mJossAccount;
 
@@ -97,13 +98,15 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * @param readStrategyT read strategy
    */
   public SwiftInputStream(String pathT, long contentLengthT, JossAccount jossAccountT,
-      String readStrategyT) {
+      String readStrategyT) throws IOException {
     contentLength = contentLengthT;
     mJossAccount = jossAccountT;
+
     uri = pathT;
     readStrategy = readStrategyT;
     readahead = Constants.DEFAULT_READAHEAD_RANGE;
     setReadahead(readahead);
+
   }
 
   /**

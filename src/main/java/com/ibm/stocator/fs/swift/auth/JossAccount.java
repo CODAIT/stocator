@@ -5,6 +5,11 @@ import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
 
+import org.apache.http.client.HttpClient;
+import org.apache.http.config.SocketConfig;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+
 /**
  *
  * The account model in Joss has session that contains token.
@@ -35,6 +40,10 @@ public class JossAccount {
    * Cached Access object. Will be renewed when token expire
    */
   private Access mAccess;
+  /*
+   * HttpClient to be used for requests
+   */
+  private HttpClient client;
 
   /**
    * Constructor
@@ -48,20 +57,21 @@ public class JossAccount {
     mRegion = region;
     mUsePublicURL = usePublicURL;
     mAccess = null;
+    client = initHttpClient();
   }
 
   /**
    * Creates account model
    */
   public void createAccount() {
-    mAccount = new AccountFactory(mAccountConfig).createAccount();
+    mAccount = new AccountFactory(mAccountConfig).setHttpClient(client).createAccount();
   }
 
   /**
    * Creates virtual account. Used for public containers
    */
   public void createDummyAccount() {
-    mAccount = new DummyAccountFactory(mAccountConfig).createAccount();
+    mAccount = new DummyAccountFactory(mAccountConfig).setHttpClient(client).createAccount();
   }
 
   /**
@@ -108,5 +118,28 @@ public class JossAccount {
       createAccount();
     }
     return mAccount;
+  }
+
+  /**
+   * Creates a thread safe HttpClient to use for requests
+   */
+  private HttpClient initHttpClient() {
+    PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager();
+    manager.setDefaultMaxPerRoute(25);
+    manager.setMaxTotal(50);
+    SocketConfig socketConfig = SocketConfig.custom()
+                                            .setSoKeepAlive(false)
+                                            .setSoTimeout(60000)
+                                            .build();
+    manager.setDefaultSocketConfig(socketConfig);
+    return HttpClients.custom().setConnectionManager(manager).build();
+  }
+
+  /**
+   * Get HttpClient
+   * @return client The client being used
+   */
+  public HttpClient getHttpClient() {
+    return client;
   }
 }
