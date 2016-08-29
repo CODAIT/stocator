@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.IOException;
 
@@ -43,10 +43,10 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     createEmptyFile(file);
     assertDeleted(file, true);
     SwiftTestUtils.noteAction("multiple creates, and deletes");
-    assertFalse("Delete returned true", fs.delete(file, false));
+    assertFalse("Delete returned true", sFileSystem.delete(file, false));
     createEmptyFile(file);
     assertDeleted(file, true);
-    assertFalse("Delete returned true", fs.delete(file, false));
+    assertFalse("Delete returned true", sFileSystem.delete(file, false));
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
@@ -61,16 +61,16 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     final Path file = new Path(getBaseURI() + "/test/testDeleteNonEmptyFileTwice");
     createFile(file);
     assertDeleted(file, true);
-    assertFalse("Delete returned true", fs.delete(file, false));
+    assertFalse("Delete returned true", sFileSystem.delete(file, false));
     createFile(file);
     assertDeleted(file, true);
-    assertFalse("Delete returned true", fs.delete(file, false));
+    assertFalse("Delete returned true", sFileSystem.delete(file, false));
   }
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteTestDir() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/");
-    fs.delete(file, true);
+    sFileSystem.delete(file, true);
     assertPathDoesNotExist("Test dir found", file);
   }
 
@@ -83,7 +83,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     Path root = path(getBaseURI() + "/");
     Path testFile = path(getBaseURI() + "/test");
     createFile(testFile);
-    assertTrue("rm(/) returned false", fs.delete(root, true));
+    assertTrue("rm(/) returned false", sFileSystem.delete(root, true));
     assertExists("Root dir is missing", root);
     assertPathDoesNotExist("test file not deleted", testFile);
   }

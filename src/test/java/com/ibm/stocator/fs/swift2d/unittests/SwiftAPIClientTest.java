@@ -15,7 +15,7 @@
  *
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.unittests;
 
 import org.javaswift.joss.model.StoredObject;
 import java.util.HashMap;
@@ -202,7 +202,7 @@ public class SwiftAPIClientTest {
             mContainerName + "/" + objectName);
     Assert.assertEquals("isJobSuccessful() failed when the container name"
             + "is part of the object name",
-            true, result);
+            false, result);
   }
 
   @Test
@@ -237,5 +237,24 @@ public class SwiftAPIClientTest {
             hostName, new Path(pathName), objectName);
     Assert.assertEquals("getFileStatus() shows incorrect path",
             new Path(result), fs.getPath());
+  }
+
+  @Test
+  public void isSparkOriginTest() throws Exception {
+    String mContainerName1 = "cont1";
+    ContainerMock mContainer1 = (ContainerMock)new ContainerMock(mAccount,
+        mContainerName1).create();
+
+    StoredObjectMock mStoredObject1 = new StoredObjectMock(mContainer1, mContainer1.getName());
+    Assert.assertEquals("object already exists",
+            false, mStoredObject1.exists());
+
+    mStoredObject1.uploadObject(new byte[]{});
+    Assert.assertEquals("object doesn't exists",
+            true, mStoredObject1.exists());
+
+    boolean result = Whitebox.invokeMethod(mSwiftAPIClient, "isSparkOrigin", mContainer1.getName());
+    Assert.assertEquals("is Spark origin. Expected not.",
+            false, result);
   }
 }

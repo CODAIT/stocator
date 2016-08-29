@@ -90,4 +90,9 @@ public class Constants {
    * The goal to read the entire object
    */
   public static final String SEQ_READ_STRATEGY = "Sequential";
+
+  /*
+   * directory mime type
+   */
+  public static final String APPLICATION_DIRECTORY = "application/directory";
 }

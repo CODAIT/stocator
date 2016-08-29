@@ -28,6 +28,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.Path;
 
+import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
+
 /**
  * Internal object store driver interface
  * Each object back-end driver should implement this interface
@@ -90,10 +92,12 @@ public interface IStoreClient {
    * @param hostName URL to host
    * @param path path to the object
    * @param fullListing if true, return all the content, including 0 byte size objects
+   * @param prefixBased if set to true, container will be listed with prefix based query
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
-  public FileStatus[] list(String hostName, Path path, boolean fullListing) throws IOException;
+  public FileStatus[] list(String hostName, Path path, boolean fullListing,
+      boolean prefixBased) throws IOException;
 
   /**
    * Create object. Return output stream
@@ -153,9 +157,10 @@ public interface IStoreClient {
 
   /**
    * Contains the logic for the driver initialization
-   *
-   * @throws IOException if error
+   * @param scheme schema
+   * @throws ConfigurationParseException if failed to parse the configuration
+   * @throws IOException otherwise
    */
-  public void initiate() throws IOException;
+  public void initiate(String scheme) throws IOException, ConfigurationParseException;
 
 }

@@ -16,15 +16,13 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.IOException;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assume;
-
-import static com.ibm.stocator.fs.swift2d.SwiftTestUtils.noteAction;
 
 /**
  * This is the base class for most of the Swift tests
@@ -35,10 +33,10 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
 
   @Override
   public void setUp() throws Exception {
-    noteAction("setup");
+    SwiftTestUtils.noteAction("setup");
     super.setUp();
     Assume.assumeNotNull(getFs());
-    noteAction("setup complete");
+    SwiftTestUtils.noteAction("setup complete");
   }
 
   /**
@@ -48,7 +46,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @param description test description
    */
   protected void describe(String description) {
-    noteAction(description);
+    SwiftTestUtils.noteAction(description);
   }
 
   /**
@@ -58,7 +56,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @return a qualified path instance
    */
   protected Path path(String pathString) {
-    return new Path(pathString).makeQualified(fs.getUri(), fs.getWorkingDirectory());
+    return new Path(pathString);
   }
 
   /**
@@ -78,7 +76,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @throws IOException IO problems
    */
   public void assertExists(String message, Path path) throws IOException {
-    SwiftTestUtils.assertPathExists(fs, message, path);
+    SwiftTestUtils.assertPathExists(sFileSystem, message, path);
   }
 
   /**
@@ -89,7 +87,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    */
   public void assertPathDoesNotExist(String message, Path path) throws
           IOException {
-    SwiftTestUtils.assertPathDoesNotExist(fs, message, path);
+    SwiftTestUtils.assertPathDoesNotExist(sFileSystem, message, path);
   }
 
   /**
@@ -99,7 +97,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @throws IOException IO problems during file operations
    */
   protected void mkdirs(Path path) throws IOException {
-    assertTrue("Failed to mkdir" + path, fs.mkdirs(path));
+    createEmptyFile(path);
   }
 
   /**
@@ -109,7 +107,7 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @throws IOException IO problems
    */
   protected void assertDeleted(Path path, boolean recursive) throws IOException {
-    SwiftTestUtils.assertDeleted(fs, path, recursive);
+    SwiftTestUtils.assertDeleted(sFileSystem, path, recursive);
   }
 
   /**
