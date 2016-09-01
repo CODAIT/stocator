@@ -23,6 +23,7 @@ import java.io.IOException;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.exception.ClientException;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
+import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -88,6 +89,8 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    */
   private JossAccount mJossAccount;
 
+  private final SwiftConnectionManager scm;
+
   /**
    * Default constructor
    *
@@ -95,11 +98,13 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * @param contentLengthT object size
    * @param jossAccountT joss client
    * @param readStrategyT read strategy
+   * @param scmT Swift connection manager
    */
   public SwiftInputStream(String pathT, long contentLengthT, JossAccount jossAccountT,
-      String readStrategyT) {
+      String readStrategyT, SwiftConnectionManager scmT) {
     contentLength = contentLengthT;
     mJossAccount = jossAccountT;
+    scm = scmT;
     uri = pathT;
     readStrategy = readStrategyT;
     readahead = Constants.DEFAULT_READAHEAD_RANGE;
@@ -127,7 +132,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
     try {
       wrappedStream = SwiftAPIDirect.getObject(new Path(uri),
-          mJossAccount, targetPos, contentRangeFinish);
+          mJossAccount, targetPos, contentRangeFinish, scm);
       contentRangeStart = targetPos;
       if (wrappedStream == null) {
         throw new IOException("Null IO stream from reopen of (" + msg + ") " + uri);

@@ -54,6 +54,7 @@ import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
+import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
@@ -150,6 +151,8 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final Configuration conf;
 
+  private final SwiftConnectionManager swiftConnectionManager;
+
   /**
    * Constructor method
    *
@@ -160,6 +163,7 @@ public class SwiftAPIClient implements IStoreClient {
   public SwiftAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
     conf = pConf;
     filesystemURI = pFilesystemURI;
+    swiftConnectionManager = new SwiftConnectionManager();
   }
 
   @Override
@@ -188,12 +192,13 @@ public class SwiftAPIClient implements IStoreClient {
       container = Utils.extractDataRoot(publicURL, accessURL);
       DummyAccessProvider p = new DummyAccessProvider(accessURL);
       config.setAccessProvider(p);
-      mJossAccount = new JossAccount(config, null, true);
+      mJossAccount = new JossAccount(config, null, true, swiftConnectionManager);
       mJossAccount.createDummyAccount();
     } else {
       container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
       String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
       usePublicURL = "true".equals(isPubProp);
+      LOG.trace("Use public key value is {}. Use public {}", isPubProp, usePublicURL);
       config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
       config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
 
@@ -219,7 +224,7 @@ public class SwiftAPIClient implements IStoreClient {
         config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
         config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
       }
-      mJossAccount = new JossAccount(config,preferredRegion, usePublicURL);
+      mJossAccount = new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
       try {
         mJossAccount.createAccount();
       } catch (Exception e) {
@@ -382,7 +387,7 @@ public class SwiftAPIClient implements IStoreClient {
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
     FileStatus fs = getObjectMetadata(hostName, path);
     SwiftInputStream sis = new SwiftInputStream(url.toString(),
-        fs.getLen(), mJossAccount, Constants.NORMAL_READ_STRATEGY);
+        fs.getLen(), mJossAccount, Constants.NORMAL_READ_STRATEGY, swiftConnectionManager);
     return new FSDataInputStream(sis);
   }
 
