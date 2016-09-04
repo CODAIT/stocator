@@ -18,10 +18,27 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Connection manager for Swift API object store
+ * Use pooling connection pool manager and custom retry handler
+ * The same pooling manager is used by other components and not only by JOSS
+ */
 public class SwiftConnectionManager {
+  /*
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(SwiftConnectionManager.class);
+  /*
+   * Connection pool
+   */
   private final PoolingHttpClientConnectionManager connectionPool;
 
+  /**
+   * Default constructor
+   */
   public SwiftConnectionManager() {
     connectionPool = new PoolingHttpClientConnectionManager();
     connectionPool.setDefaultMaxPerRoute(25);
@@ -31,69 +48,68 @@ public class SwiftConnectionManager {
     connectionPool.setDefaultSocketConfig(socketConfig);
   }
 
+  /**
+   * Creates custom retry handler to be used if HTTP exception happens
+   *
+   * @return retry handler
+   */
   private HttpRequestRetryHandler getRetryHandler() {
 
     HttpRequestRetryHandler myRetryHandler = new HttpRequestRetryHandler() {
 
       public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
-        System.out.println("Execution count " + executionCount);
         if (executionCount >= 100) {
           // Do not retry if over max retry count
-          System.out.println(executionCount);
+          LOG.debug("Execution count {} is bigger then threashold. Stop" ,executionCount);
           return false;
         }
         if (exception instanceof NoHttpResponseException) {
-          System.out.println("NoHttpResponseException exception");
+          LOG.debug("NoHttpResponseException exception. Retry count {}", executionCount);
           return true;
         }
         if (exception instanceof UnknownHostException) {
-          // Unknown host
-          System.out.println("11");
+          LOG.debug("UnknownHostException. Retry count {}", executionCount);
           return true;
         }
         if (exception instanceof ConnectTimeoutException) {
+          LOG.debug("ConnectTimeoutException. Retry count {}", executionCount);
+          return true;
+        }
+        if (exception instanceof SocketTimeoutException
+            || exception.getClass() == SocketTimeoutException.class
+            || exception.getClass().isInstance(SocketTimeoutException.class)) {
           // Connection refused
-          System.out.println("12");
-          return true;
-        }
-        if (exception instanceof SocketTimeoutException) {
-          // Connection refused
-          System.out.println("java.net.SocketTimeoutException");
-          return true;
-        }
-        if (exception.getClass() == SocketTimeoutException.class) {
-          System.out.println("java.net.SocketTimeoutException - 1");
-          return true;
-        }
-        if (exception.getClass().isInstance(SocketTimeoutException.class)) {
-          System.out.println("java.net.SocketTimeoutException - 2");
+          LOG.debug("socketTimeoutException Retry count {}", executionCount);
           return true;
         }
         if (exception instanceof InterruptedIOException) {
           // Timeout
-          System.out.println("1");
+          LOG.debug("InterruptedIOException Retry count {}", executionCount);
           return true;
         }
         if (exception instanceof SSLException) {
-          // SSL handshake exception
-          System.out.println("13");
+          LOG.debug("SSLException Retry count {}", executionCount);
           return true;
         }
-        System.out.println("weird...");
         HttpClientContext clientContext = HttpClientContext.adapt(context);
         HttpRequest request = clientContext.getRequest();
         boolean idempotent = !(request instanceof HttpEntityEnclosingRequest);
         if (idempotent) {
-          // Retry if the request is considered idempotent
+          LOG.debug("HttpEntityEnclosingRequest. Retry count {}", executionCount);
           return true;
         }
-        System.out.println("return false");
+        LOG.debug("Retry stopped. Retry count {}", executionCount);
         return false;
       }
     };
     return myRetryHandler;
   }
 
+  /**
+   * Creates HTTP connection based on the connection pool
+   *
+   * @return http client
+   */
   public CloseableHttpClient createHttpConnection() {
     /*
      * RequestConfig rConfig = RequestConfig.custom() .setConnectTimeout(5000)
