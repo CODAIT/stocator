@@ -63,10 +63,12 @@ public class SwiftOutputStream extends OutputStream {
    */
   private URL mUrl;
 
+  private long totalWritten;
+
   /**
    * Default constructor
    *
-   * @param account Joss account object
+   * @param account JOSS account object
    * @param url URL connection
    * @param contentType content type
    * @param metadata input metadata
@@ -75,6 +77,7 @@ public class SwiftOutputStream extends OutputStream {
   public SwiftOutputStream(JossAccount account, URL url, String contentType,
       Map<String, String> metadata) throws IOException {
     mUrl = url;
+    totalWritten = 0;
     HttpURLConnection httpCon = createConnection(account, url, contentType, metadata);
     try {
       LOG.debug("Going to obtain output stream for PUT {}", url.toString());
@@ -99,7 +102,7 @@ public class SwiftOutputStream extends OutputStream {
   /**
    * Creates HTTP Connection
    *
-   * @param account Joss Account
+   * @param account JOSS Account
    * @param url URL to the object
    * @param contentType object content type
    * @param metadata user provided meta data
@@ -134,22 +137,35 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
+    if (LOG.isTraceEnabled()) {
+      totalWritten = totalWritten + 1;
+      LOG.trace("Write {} one byte. Total written {}", mUrl.toString(), totalWritten);
+    }
     mOutputStream.write(b);
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
+    if (LOG.isTraceEnabled()) {
+      totalWritten = totalWritten + len;
+      LOG.trace("Write {} off {} len {}. Total {}", mUrl.toString(), off, len, totalWritten);
+    }
     mOutputStream.write(b, off, len);
   }
 
   @Override
   public void write(byte[] b) throws IOException {
+    if (LOG.isTraceEnabled()) {
+      totalWritten = totalWritten + b.length;
+      LOG.trace("Write {} len {}. Total {}", mUrl.toString(), b.length, totalWritten);
+    }
     mOutputStream.write(b);
   }
 
   @Override
   public void close() throws IOException {
     LOG.trace("Close the output stream for {}", mUrl.toString());
+    flush();
     mOutputStream.close();
     InputStream is = null;
     try {
@@ -182,6 +198,7 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void flush() throws IOException {
+    LOG.trace("{} flush method", mUrl.toString());
     mOutputStream.flush();
   }
 }
