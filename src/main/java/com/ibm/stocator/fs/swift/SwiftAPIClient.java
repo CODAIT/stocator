@@ -233,14 +233,6 @@ public class SwiftAPIClient implements IStoreClient {
             + " Verify the validitiy of the auth url: " + config.getAuthUrl());
       }
     }
-    try {
-      mJossAccount.authenticate();
-    } catch (Exception e) {
-      throw new IOException("Failed to authenticate."
-          + " Please check the provided access credentials."
-          + " Verify the validitiy of the auth url: " + config.getAuthUrl()
-          + " : " + e.getMessage());
-    }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
     if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();

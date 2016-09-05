@@ -61,7 +61,7 @@
         <findbugs.path>build/findbugs</findbugs.path>
         <slf4j.version>1.7.2</slf4j.version>
         <java.version>1.7</java.version>
-        <joss.version>0.9.12</joss.version>
+        <joss.version>0.9.13</joss.version>
         <hadoop.version>2.6.0</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.7</jackson.version>

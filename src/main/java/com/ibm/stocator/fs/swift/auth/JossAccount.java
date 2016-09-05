@@ -69,6 +69,10 @@ public class JossAccount {
    */
   public void createAccount() {
     mAccount = new AccountFactory(mAccountConfig).setHttpClient(httpclient).createAccount();
+    mAccess = mAccount.getAccess();
+    if (mRegion != null) {
+      mAccess.setPreferredRegion(mRegion);
+    }
   }
 
   /**
@@ -83,11 +87,13 @@ public class JossAccount {
    */
   public void authenticate() {
     if (mAccount == null) {
+      // Create account also performs authentication.
       createAccount();
-    }
-    mAccess = mAccount.authenticate();
-    if (mRegion != null) {
-      mAccess.setPreferredRegion(mRegion);
+    } else {
+      mAccess = mAccount.authenticate();
+      if (mRegion != null) {
+        mAccess.setPreferredRegion(mRegion);
+      }
     }
   }
 
