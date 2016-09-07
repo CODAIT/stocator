@@ -269,7 +269,7 @@ and import it into Eclipse workspace.
 
 Please follow the [development guide](https://github.com/SparkTC/development-guidelines/blob/master/contributing-to-projects.md), prior you submit pull requests.
 
-To easy the debug process, Please modify `conf/log4j.properties` and add
+To ease the debugging process, Please modify `conf/log4j.properties` and add
 
 	log4j.logger.com.ibm.stocator=ALL
 
