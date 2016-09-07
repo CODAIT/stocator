@@ -20,11 +20,18 @@ package com.ibm.stocator.fs.swift;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.Map;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,13 +63,28 @@ public class SwiftOutputStream extends OutputStream {
   /*
    * HTTP connection object
    */
-  private HttpURLConnection mHttpCon;
+  //private HttpURLConnection mHttpCon;
 
   /*
    * Access url
    */
   private URL mUrl;
 
+  /*
+   * Client used
+   */
+  private HttpClient client;
+
+  /*
+   * Request
+   */
+  private HttpPut request;
+
+  /*
+   * Response
+   */
+  private HttpResponse response;
+  private Thread writeThread;
   private long totalWritten;
 
   /**
@@ -78,7 +100,34 @@ public class SwiftOutputStream extends OutputStream {
       Map<String, String> metadata) throws IOException {
     mUrl = url;
     totalWritten = 0;
-    HttpURLConnection httpCon = createConnection(account, url, contentType, metadata);
+    //mOutputStream = new ByteArrayOutputStream();
+    client = HttpClients.createDefault();
+    request = new HttpPut(mUrl.toString());
+    request.addHeader("X-Auth-Token", account.getAuthToken());
+    request.addHeader("Content-Type", contentType);
+    if (metadata != null && !metadata.isEmpty()) {
+      for (Map.Entry<String, String> entry : metadata.entrySet()) {
+        request.addHeader("X-Object-Meta-" + entry.getKey(), entry.getValue());
+      }
+    }
+    PipedOutputStream out = new PipedOutputStream();
+    final PipedInputStream in = new PipedInputStream();
+    out.connect(in);
+    mOutputStream = out;
+    writeThread = new Thread() {
+      public void run() {
+        //create your http request
+        InputStreamEntity entity = new InputStreamEntity(in, -1);
+        request.setEntity(entity);
+        try {
+          client.execute(request);
+        } catch (IOException e) {
+          System.out.println("IOException");
+        }
+      }
+    };
+
+/*
     try {
       LOG.debug("Going to obtain output stream for PUT {}", url.toString());
       mOutputStream  = httpCon.getOutputStream();
@@ -96,6 +145,12 @@ public class SwiftOutputStream extends OutputStream {
     } catch (IOException e) {
       LOG.error(e.getMessage());
       throw e;
+    }*/
+  }
+
+  private void startThread() {
+    if (writeThread.getState().equals(Thread.State.NEW)) {
+      writeThread.start();
     }
   }
 
@@ -137,26 +192,28 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
+    totalWritten = totalWritten + 1;
     if (LOG.isTraceEnabled()) {
-      totalWritten = totalWritten + 1;
       LOG.trace("Write {} one byte. Total written {}", mUrl.toString(), totalWritten);
     }
+    startThread();
     mOutputStream.write(b);
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
+    totalWritten = totalWritten + len;
     if (LOG.isTraceEnabled()) {
-      totalWritten = totalWritten + len;
       LOG.trace("Write {} off {} len {}. Total {}", mUrl.toString(), off, len, totalWritten);
     }
+    startThread();
     mOutputStream.write(b, off, len);
   }
 
   @Override
   public void write(byte[] b) throws IOException {
+    totalWritten = totalWritten + b.length;
     if (LOG.isTraceEnabled()) {
-      totalWritten = totalWritten + b.length;
       LOG.trace("Write {} len {}. Total {}", mUrl.toString(), b.length, totalWritten);
     }
     mOutputStream.write(b);
@@ -164,41 +221,39 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
+    System.out.println("Close called, bytes written: " + totalWritten
+            + " to file: " + mUrl.getPath());
     LOG.trace("Close the output stream for {}", mUrl.toString());
+    //response = client.execute(request);
     flush();
     mOutputStream.close();
-    InputStream is = null;
-    try {
-      // Status 400 and up should be read from error stream
-      // Expecting here 201 Create or 202 Accepted
-      int responseCode = mHttpCon.getResponseCode();
-      if (responseCode >= 400) {
-        LOG.warn("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
-        is = mHttpCon.getErrorStream();
-      } else {
-        is = mHttpCon.getInputStream();
-        LOG.debug("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
-      }
-      if (responseCode == 401 || responseCode == 403 || responseCode == 407) {
-        // special handling. HTTPconnection already closed stream.
-        LOG.warn("{} : stream closed to {}", responseCode, mUrl.toString());
-      }
-      if (is != null) {
-        is.close();
-      }
-    } catch (Exception e) {
-      if (is != null) {
-        is.close();
-      }
-      LOG.error(e.getMessage());
-      throw e;
-    }
-    mHttpCon.disconnect();
+//    InputStream is = null;
+//    try {
+//      // Status 400 and up should be read from error stream
+//      // Expecting here 201 Create or 202 Accepted
+//      int responseCode = response.getStatusLine().getStatusCode();
+//      LOG.warn("{}, {}, {}", mUrl.toString(), responseCode,
+//              response.getStatusLine().getReasonPhrase());
+//      is = response.getEntity().getContent();
+//
+//      if (responseCode == 401 || responseCode == 403 || responseCode == 407) {
+//        // special handling. HTTPconnection already closed stream.
+//        LOG.warn("{} : stream closed to {}", responseCode, mUrl.toString());
+//      }
+//      if (is != null) {
+//        is.close();
+//      }
+//    } catch (Exception e) {
+//      if (is != null) {
+//        is.close();
+//      }
+//      LOG.error(e.getMessage());
+//      throw e;
+//    }
   }
 
   @Override
   public void flush() throws IOException {
     LOG.trace("{} flush method", mUrl.toString());
-    mOutputStream.flush();
   }
 }
