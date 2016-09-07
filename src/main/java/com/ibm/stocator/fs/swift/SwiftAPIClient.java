@@ -443,7 +443,7 @@ public class SwiftAPIClient implements IStoreClient {
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
         if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
-            && !unifiedObjectName.equals(obj)) {
+            && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
           // JOSS returns all objects that start with the prefix of obj.
           // These may include other unrelated objects.
           LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
@@ -485,6 +485,7 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
+      LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
       tmpResult.add(fs);
     }
