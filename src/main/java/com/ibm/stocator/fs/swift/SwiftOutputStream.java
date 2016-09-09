@@ -18,17 +18,21 @@
 package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.ProtocolException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.URL;
 import java.util.Map;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.InputStreamEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.swift.auth.JossAccount;
+import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
 /**
  *
@@ -54,15 +58,21 @@ public class SwiftOutputStream extends OutputStream {
    */
   private OutputStream mOutputStream;
   /*
-   * HTTP connection object
-   */
-  private HttpURLConnection mHttpCon;
-
-  /*
    * Access url
    */
   private URL mUrl;
 
+  /*
+   * Client used
+   */
+  private HttpClient client;
+
+  /*
+   * Request
+   */
+  private HttpPut request;
+
+  private Thread writeThread;
   private long totalWritten;
 
   /**
@@ -74,65 +84,48 @@ public class SwiftOutputStream extends OutputStream {
    * @param metadata input metadata
    * @throws IOException if error
    */
-  public SwiftOutputStream(JossAccount account, URL url, String contentType,
-      Map<String, String> metadata) throws IOException {
+  public SwiftOutputStream(JossAccount account, URL url, final String contentType,
+                           Map<String, String> metadata, SwiftConnectionManager connectionManager)
+          throws IOException {
     mUrl = url;
     totalWritten = 0;
-    HttpURLConnection httpCon = createConnection(account, url, contentType, metadata);
-    try {
-      LOG.debug("Going to obtain output stream for PUT {}", url.toString());
-      mOutputStream  = httpCon.getOutputStream();
-      LOG.debug("Output stream created for PUT {}", url.toString());
-      mHttpCon = httpCon;
-    } catch (ProtocolException e) {
-      LOG.warn("Failed to connect to {}", url.toString());
-      LOG.warn(e.getMessage());
-      LOG.warn("Retry attempt for PUT {}. Re-authenticate", url.toString());
-      account.authenticate();
-      httpCon = createConnection(account, url, contentType, metadata);
-      mOutputStream  = httpCon.getOutputStream();
-      LOG.debug("Second attempt PUT {} successfull. Got output stream", url.toString());
-      mHttpCon = httpCon;
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-      throw e;
-    }
-  }
-
-  /**
-   * Creates HTTP Connection
-   *
-   * @param account JOSS Account
-   * @param url URL to the object
-   * @param contentType object content type
-   * @param metadata user provided meta data
-   * @return HttpURLConnection if success
-   * @throws IOException if error
-   */
-  private HttpURLConnection createConnection(JossAccount account, URL url, String contentType,
-      Map<String, String> metadata) throws IOException {
-    LOG.debug("Create chunked HTTP connection for PUT {}. Read timeout {}. Streaming chunk {}",
-        url.toString(), READ_TIMEOUT, STREAMING_CHUNK);
-    HttpURLConnection newHttpCon = (HttpURLConnection) url.openConnection();
-    newHttpCon.setDoOutput(true);
-    newHttpCon.setRequestMethod("PUT");
-
-    newHttpCon.addRequestProperty("X-Auth-Token",account.getAuthToken());
-    newHttpCon.addRequestProperty("Content-Type", contentType);
+    client = connectionManager.createHttpConnection();
+    request = new HttpPut(mUrl.toString());
+    request.addHeader("X-Auth-Token", account.getAuthToken());
     if (metadata != null && !metadata.isEmpty()) {
       for (Map.Entry<String, String> entry : metadata.entrySet()) {
-        newHttpCon.addRequestProperty("X-Object-Meta-" + entry.getKey(), entry.getValue());
+        request.addHeader("X-Object-Meta-" + entry.getKey(), entry.getValue());
       }
     }
-    newHttpCon.setDoInput(true);
-    newHttpCon.setRequestProperty("Connection", "close");
-    newHttpCon.setReadTimeout(READ_TIMEOUT);
-    newHttpCon.setRequestProperty("Transfer-Encoding","chunked");
-    newHttpCon.setDoOutput(true);
-    newHttpCon.setRequestProperty("Expect", "100-continue");
-    newHttpCon.setChunkedStreamingMode(STREAMING_CHUNK);
 
-    return newHttpCon;
+    PipedOutputStream out = new PipedOutputStream();
+    final PipedInputStream in = new PipedInputStream();
+    out.connect(in);
+    mOutputStream = out;
+    writeThread = new Thread() {
+      public void run() {
+        InputStreamEntity entity = new InputStreamEntity(in, -1);
+        entity.setChunked(true);
+        entity.setContentType(contentType);
+        request.setEntity(entity);
+        try {
+          HttpResponse response = client.execute(request);
+          int responseCode = response.getStatusLine().getStatusCode();
+          if (responseCode >= 400) {
+            LOG.warn("Http Error Code: {} for {}, \nReason:", responseCode, mUrl.toString(),
+                    response.getStatusLine().getReasonPhrase());
+          }
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    };
+  }
+
+  private void startThread() {
+    if (writeThread.getState().equals(Thread.State.NEW)) {
+      writeThread.start();
+    }
   }
 
   @Override
@@ -141,6 +134,7 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + 1;
       LOG.trace("Write {} one byte. Total written {}", mUrl.toString(), totalWritten);
     }
+    startThread();
     mOutputStream.write(b);
   }
 
@@ -150,6 +144,7 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + len;
       LOG.trace("Write {} off {} len {}. Total {}", mUrl.toString(), off, len, totalWritten);
     }
+    startThread();
     mOutputStream.write(b, off, len);
   }
 
@@ -159,41 +154,21 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + b.length;
       LOG.trace("Write {} len {}. Total {}", mUrl.toString(), b.length, totalWritten);
     }
+    startThread();
     mOutputStream.write(b);
   }
 
   @Override
   public void close() throws IOException {
+    startThread();
     LOG.trace("Close the output stream for {}", mUrl.toString());
     flush();
     mOutputStream.close();
-    InputStream is = null;
     try {
-      // Status 400 and up should be read from error stream
-      // Expecting here 201 Create or 202 Accepted
-      int responseCode = mHttpCon.getResponseCode();
-      if (responseCode >= 400) {
-        LOG.warn("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
-        is = mHttpCon.getErrorStream();
-      } else {
-        is = mHttpCon.getInputStream();
-        LOG.debug("{}, {}, {}", mUrl.toString(), responseCode, mHttpCon.getResponseMessage());
-      }
-      if (responseCode == 401 || responseCode == 403 || responseCode == 407) {
-        // special handling. HTTPconnection already closed stream.
-        LOG.warn("{} : stream closed to {}", responseCode, mUrl.toString());
-      }
-      if (is != null) {
-        is.close();
-      }
-    } catch (Exception e) {
-      if (is != null) {
-        is.close();
-      }
-      LOG.error(e.getMessage());
-      throw e;
+      writeThread.join();
+    } catch (InterruptedException ie) {
+      ie.printStackTrace();
     }
-    mHttpCon.disconnect();
   }
 
   @Override
