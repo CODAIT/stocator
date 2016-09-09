@@ -527,8 +527,8 @@ public class SwiftAPIClient implements IStoreClient {
     URL url = new URL(mJossAccount.getAccessURL() + "/" + objName);
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
     try {
-      return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType, metadata),
-          statistics);
+      return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType,
+              metadata, swiftConnectionManager), statistics);
     } catch (IOException e) {
       LOG.error(e.getMessage());
       throw e;
