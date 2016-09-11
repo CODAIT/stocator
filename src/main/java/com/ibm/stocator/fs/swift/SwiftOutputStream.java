@@ -83,6 +83,7 @@ public class SwiftOutputStream extends OutputStream {
    * @param url URL connection
    * @param contentType content type
    * @param metadata input metadata
+   * @param connectionManager SwiftConnectionManager
    * @throws IOException if error
    */
   public SwiftOutputStream(JossAccount account, URL url, final String contentType,
