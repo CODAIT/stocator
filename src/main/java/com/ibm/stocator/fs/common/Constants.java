@@ -95,4 +95,13 @@ public class Constants {
    * directory mime type
    */
   public static final String APPLICATION_DIRECTORY = "application/directory";
+  public static final String MAX_PER_ROUTE = "fs.stocator.MaxPerRoute";
+  public static final String MAX_TOTAL_CONNECTIONS = "fs.stocator.MaxTotal";
+  public static final String SOCKET_TIMEOUT = "fs.stocator.SoTimeout";
+  public static final String EXECUTION_RETRY = "fs.stocator.executionCount";
+  public static final String REQUEST_CONNECT_TIMEOUT = "fs.stocator.ReqConnectTimeout";
+  public static final String REQUEST_CONNECTION_TIMEOUT = "fs.stocator."
+      + "ReqConnectionRequestTimeout";
+  public static final String REQUEST_SOCKET_TIMEOUT = "fs.stocator.ReqSocketTimeout";
+
 }
