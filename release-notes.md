@@ -3,6 +3,14 @@
 ### Version 1.0.5
 
 1. Fixing object store globber. Resolving issues with  container listings
+2. Introducing SwiftConnectionManager that is based on  PoolingHttpClientConnectionManager. This makes better connection utilizations both for SwiftAPIDirect and JOSS.
+3. Resolving issues with 16 minutes timeouts. Using custom retry handler to retry failed attempts
+4. Redesign SwiftOutputStream. This resolved various Parquet related issues, like EOF bug
+5. Fixing double authentication calls during SwiftAPIClient init method
+6. Supporting multiple schemas
+7. Improving error messages
+8. Better logging
+9. Improving unitests
 
 ### Version 1.0.4
 
