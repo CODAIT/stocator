@@ -74,6 +74,7 @@ public class SwiftOutputStream extends OutputStream {
 
   private Thread writeThread;
   private long totalWritten;
+  private JossAccount mAccount;
 
   /**
    * Default constructor
@@ -89,6 +90,7 @@ public class SwiftOutputStream extends OutputStream {
           throws IOException {
     mUrl = url;
     totalWritten = 0;
+    mAccount = account;
     client = connectionManager.createHttpConnection();
     request = new HttpPut(mUrl.toString());
     request.addHeader("X-Auth-Token", account.getAuthToken());
@@ -114,6 +116,11 @@ public class SwiftOutputStream extends OutputStream {
           if (responseCode >= 400) {
             LOG.warn("Http Error Code: {} for {}, \nReason:", responseCode, mUrl.toString(),
                     response.getStatusLine().getReasonPhrase());
+            mAccount.authenticate();
+            request.removeHeaders("X-Auth-Token");
+            request.addHeader("X-Auth-Token", mAccount.getAuthToken());
+            response = client.execute(request);
+            responseCode = response.getStatusLine().getStatusCode();
           }
         } catch (IOException e) {
           e.printStackTrace();

@@ -28,6 +28,7 @@ import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectTimeoutException;
@@ -75,6 +76,7 @@ public class SwiftConnectionManager {
     HttpRequestRetryHandler myRetryHandler = new HttpRequestRetryHandler() {
 
       public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
+        System.out.println(executionCount);
         if (executionCount >= 100) {
           // Do not retry if over max retry count
           LOG.debug("Execution count {} is bigger then threashold. Stop" ,executionCount);
@@ -128,15 +130,15 @@ public class SwiftConnectionManager {
    * @return http client
    */
   public CloseableHttpClient createHttpConnection() {
-    /*
-     * RequestConfig rConfig = RequestConfig.custom() .setConnectTimeout(5000)
-     * .setConnectionRequestTimeout(5000) .setSocketTimeout(5000).build();
-     */
+    RequestConfig rConfig = RequestConfig.custom().setExpectContinueEnabled(true)
+        .setConnectTimeout(5000)
+        .setConnectionRequestTimeout(5000).setSocketTimeout(5000)
+        .build();
 
     CloseableHttpClient httpclient = HttpClients.custom()
         .setRetryHandler(getRetryHandler())
         .setConnectionManager(connectionPool)
-        // .setDefaultRequestConfig(rConfig)
+        .setDefaultRequestConfig(rConfig)
         .build();
     return httpclient;
   }
