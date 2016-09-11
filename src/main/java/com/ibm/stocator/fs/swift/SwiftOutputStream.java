@@ -125,7 +125,7 @@ public class SwiftOutputStream extends OutputStream {
             responseCode = response.getStatusLine().getStatusCode();
           }
         } catch (IOException e) {
-          e.printStackTrace();
+          LOG.error(e.getMessage());
         }
       }
     };
