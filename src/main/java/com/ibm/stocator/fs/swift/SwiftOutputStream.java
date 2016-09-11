@@ -115,11 +115,12 @@ public class SwiftOutputStream extends OutputStream {
           HttpResponse response = client.execute(request);
           int responseCode = response.getStatusLine().getStatusCode();
           if (responseCode >= 400) {
-            LOG.warn("Http Error Code: {} for {}, \nReason:", responseCode, mUrl.toString(),
+            LOG.warn("Http Error Code: {} for {}, \nReason: {}", responseCode, mUrl.toString(),
                     response.getStatusLine().getReasonPhrase());
             mAccount.authenticate();
             request.removeHeaders("X-Auth-Token");
             request.addHeader("X-Auth-Token", mAccount.getAuthToken());
+            LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
             response = client.execute(request);
             responseCode = response.getStatusLine().getStatusCode();
           }
