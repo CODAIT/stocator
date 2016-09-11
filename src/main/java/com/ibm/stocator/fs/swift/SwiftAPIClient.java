@@ -54,6 +54,7 @@ import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
+import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -153,6 +154,8 @@ public class SwiftAPIClient implements IStoreClient {
 
   private final SwiftConnectionManager swiftConnectionManager;
 
+  private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
+
   /**
    * Constructor method
    *
@@ -163,7 +166,23 @@ public class SwiftAPIClient implements IStoreClient {
   public SwiftAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
     conf = pConf;
     filesystemURI = pFilesystemURI;
-    swiftConnectionManager = new SwiftConnectionManager();
+    connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
+        ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
+    connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
+        ConnectionConfiguration.DEFAULT_MAX_PER_ROUTE));
+    connectionConfiguration.setMaxTotal(conf.getInt(Constants.MAX_TOTAL_CONNECTIONS,
+        ConnectionConfiguration.DEFAULT_MAX_TOTAL_CONNECTIONS));
+    connectionConfiguration.setReqConnectionRequestTimeout(conf.getInt(
+        Constants.REQUEST_CONNECTION_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_CONNECTION_TIMEOUT));
+    connectionConfiguration.setReqConnectTimeout(conf.getInt(Constants.REQUEST_CONNECT_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_CONNECT_TIMEOUT));
+    connectionConfiguration.setReqSocketTimeout(conf.getInt(Constants.REQUEST_SOCKET_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT));
+    connectionConfiguration.setSoTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
+
+    swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
   }
 
   @Override

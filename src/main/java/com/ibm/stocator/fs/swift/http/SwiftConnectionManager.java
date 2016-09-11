@@ -53,16 +53,19 @@ public class SwiftConnectionManager {
    * Connection pool
    */
   private final PoolingHttpClientConnectionManager connectionPool;
+  private ConnectionConfiguration connectionConfiguration;
 
   /**
    * Default constructor
+   * @param connectionConfigurationT connection conf
    */
-  public SwiftConnectionManager() {
+  public SwiftConnectionManager(ConnectionConfiguration connectionConfigurationT) {
+    connectionConfiguration = connectionConfigurationT;
     connectionPool = new PoolingHttpClientConnectionManager();
-    connectionPool.setDefaultMaxPerRoute(25);
-    connectionPool.setMaxTotal(50);
+    connectionPool.setDefaultMaxPerRoute(connectionConfiguration.getMaxPerRoute());
+    connectionPool.setMaxTotal(connectionConfiguration.getMaxTotal());
     SocketConfig socketConfig = SocketConfig.custom()
-        .setSoKeepAlive(false).setSoTimeout(10000).build();
+        .setSoKeepAlive(false).setSoTimeout(connectionConfiguration.getSoTimeout()).build();
     connectionPool.setDefaultSocketConfig(socketConfig);
   }
 
@@ -77,7 +80,7 @@ public class SwiftConnectionManager {
 
       public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
         System.out.println(executionCount);
-        if (executionCount >= 100) {
+        if (executionCount >= connectionConfiguration.getExecutionCount()) {
           // Do not retry if over max retry count
           LOG.debug("Execution count {} is bigger then threashold. Stop" ,executionCount);
           return false;
@@ -130,9 +133,11 @@ public class SwiftConnectionManager {
    * @return http client
    */
   public CloseableHttpClient createHttpConnection() {
-    RequestConfig rConfig = RequestConfig.custom().setExpectContinueEnabled(true)
-        .setConnectTimeout(5000)
-        .setConnectionRequestTimeout(5000).setSocketTimeout(5000)
+    RequestConfig rConfig = RequestConfig.custom()
+        .setExpectContinueEnabled(true)
+        .setConnectTimeout(connectionConfiguration.getReqConnectTimeout())
+        .setConnectionRequestTimeout(connectionConfiguration.getReqConnectionRequestTimeout())
+        .setSocketTimeout(connectionConfiguration.getReqSocketTimeout())
         .build();
 
     CloseableHttpClient httpclient = HttpClients.custom()
