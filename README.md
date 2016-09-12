@@ -163,6 +163,20 @@ the properties below with the correspondent values :
 	    <value>dallas</value>
 	</property>
 
+## Stocator configuration (optional)
+Stocator uses Apache httpcomponents.httpclient.version version 4.5.2 to access object stores based on Swift API.
+Below is the optional configuration that can be provided to Stocator and used internally to configure HttpClient.
+
+| Configuration key | Default | Info |
+| ------------------------ | --------------- |------|
+| fs.stocator.MaxPerRoute | 25 | maximal connections per IP route |
+| fs.stocator.MaxTotal | 50 | maximal concurrent connections |
+| fs.stocator.SoTimeout | 1000 | low level socket timeout in milliseconds |
+| fs.stocator.executionCount | 100 | number of retries for certain HTTP issues |
+| fs.stocator.ReqConnectTimeout | 5000 | Request level connect timeout. Determines the timeout in milliseconds until a connection is established
+| fs.stocator.ReqConnectionRequestTimeout | 5000 | Request level connection timeout. Returns the timeout in milliseconds used when requesting a connection from the connection manager
+| fs.stocator.ReqSocketTimeout | 5000 | Defines the socket timeout (SO_TIMEOUT) in milliseconds, which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets).
+
 ## Providing configuration keys in run time
 It's possible to provide configuration keys in run time, without keeping them in core-sites.xml. Just use SparkContext variable with
 
