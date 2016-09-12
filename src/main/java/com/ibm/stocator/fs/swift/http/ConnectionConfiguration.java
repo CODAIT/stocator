@@ -16,7 +16,10 @@
  */
 
 package com.ibm.stocator.fs.swift.http;
-
+/**
+ * HTTP Connection configuration
+ *
+ */
 public class ConnectionConfiguration {
 
   public static final int DEFAULT_MAX_PER_ROUTE = 50;
@@ -27,12 +30,38 @@ public class ConnectionConfiguration {
   public static final int DEFAULT_REQUEST_CONNECTION_TIMEOUT = 5000;
   public static final int DEFAULT_REQUEST_SOCKET_TIMEOUT = 5000;
 
+  /*
+   * maximal connections per IP route
+   */
   private int maxPerRoute;
+  /*
+   * maximal concurrent connections
+   */
   private int maxTotal;
+  /*
+   * low level socket timeout in milliseconds
+   */
   private int soTimeout;
+  /*
+   * number of retries for certain HTTP issues
+   */
   private int executionCount;
+  /*
+   * Request level connect timeout
+   * Determines the timeout in milliseconds until a connection is established
+   */
   private int reqConnectTimeout;
+  /*
+   * Request level connection timeout
+   * Returns the timeout in milliseconds used when requesting a connection from the
+   * connection manager
+   */
   private int reqConnectionRequestTimeout;
+  /*
+   * Defines the socket timeout (SO_TIMEOUT) in milliseconds,
+   * which is the timeout for waiting for data or, put differently,
+   * a maximum period inactivity between two consecutive data packets).
+   */
   private int reqSocketTimeout;
 
   public ConnectionConfiguration() {
