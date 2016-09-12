@@ -22,7 +22,7 @@ package com.ibm.stocator.fs.swift.http;
  */
 public class ConnectionConfiguration {
 
-  public static final int DEFAULT_MAX_PER_ROUTE = 50;
+  public static final int DEFAULT_MAX_PER_ROUTE = 25;
   public static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 50;
   public static final int DEFAULT_SOCKET_TIMEOUT = 1000;
   public static final int DEFAULT_EXECUTION_RETRY = 100;
