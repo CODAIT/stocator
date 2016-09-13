@@ -125,6 +125,13 @@ public class SwiftOutputStream extends OutputStream {
 
   private void startThread() {
     if (writeThread.getState().equals(Thread.State.NEW)) {
+      Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+          LOG.info(t.getName() + e);
+        }
+      };
+      writeThread.setUncaughtExceptionHandler(handler);
       writeThread.start();
     }
   }
