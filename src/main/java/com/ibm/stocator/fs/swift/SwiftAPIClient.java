@@ -384,9 +384,11 @@ public class SwiftAPIClient implements IStoreClient {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
     }
-    StoredObject so = mJossAccount.getAccount().getContainer(container)
-        .getObject(objName);
-    return so.exists();
+    FileStatus status = getObjectMetadata(hostName, path);
+    if (status == null) {
+      return false;
+    }
+    return true;
   }
 
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
