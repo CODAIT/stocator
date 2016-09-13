@@ -46,14 +46,6 @@ public class SwiftOutputStream extends OutputStream {
    */
   private static final Logger LOG = LoggerFactory.getLogger(SwiftOutputStream.class);
   /*
-   * Streaming chunk size
-   */
-  private static final int STREAMING_CHUNK = 8 * 1024 * 1024;
-  /*
-   * Read time out
-   */
-  private static final int READ_TIMEOUT = 100 * 1000;
-  /*
    * Output stream
    */
   private OutputStream mOutputStream;
