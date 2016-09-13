@@ -109,12 +109,14 @@ public class SwiftOutputStream extends OutputStream {
           if (responseCode >= 400) {
             LOG.warn("Http Error Code: {} for {}, \nReason: {}", responseCode, mUrl.toString(),
                     response.getStatusLine().getReasonPhrase());
-            mAccount.authenticate();
-            request.removeHeaders("X-Auth-Token");
-            request.addHeader("X-Auth-Token", mAccount.getAuthToken());
-            LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
-            response = client.execute(request);
-            responseCode = response.getStatusLine().getStatusCode();
+            if (responseCode == 401) { // Unauthorized error
+              mAccount.authenticate();
+              request.removeHeaders("X-Auth-Token");
+              request.addHeader("X-Auth-Token", mAccount.getAuthToken());
+              LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
+              response = client.execute(request);
+              responseCode = response.getStatusLine().getStatusCode();
+            }
           }
         } catch (IOException e) {
           LOG.error(e.getMessage());
@@ -128,7 +130,7 @@ public class SwiftOutputStream extends OutputStream {
       Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         @Override
         public void uncaughtException(Thread t, Throwable e) {
-          LOG.info(t.getName() + e);
+          LOG.error(t.getName() + e);
         }
       };
       writeThread.setUncaughtExceptionHandler(handler);
