@@ -125,16 +125,19 @@ public class SwiftOutputStream extends OutputStream {
     };
   }
 
-  private void startThread() {
+  private void checkThreadState() throws IOException {
     if (writeThread.getState().equals(Thread.State.NEW)) {
       Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         @Override
         public void uncaughtException(Thread t, Throwable e) {
           LOG.error(t.getName() + e);
+          t.interrupt();
         }
       };
       writeThread.setUncaughtExceptionHandler(handler);
       writeThread.start();
+    } else if (writeThread.isInterrupted()) {
+      throw new IOException("Thread was interrupted, write was not completed.");
     }
   }
 
@@ -144,7 +147,7 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + 1;
       LOG.trace("Write {} one byte. Total written {}", mUrl.toString(), totalWritten);
     }
-    startThread();
+    checkThreadState();
     mOutputStream.write(b);
   }
 
@@ -154,7 +157,7 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + len;
       LOG.trace("Write {} off {} len {}. Total {}", mUrl.toString(), off, len, totalWritten);
     }
-    startThread();
+    checkThreadState();
     mOutputStream.write(b, off, len);
   }
 
@@ -164,13 +167,13 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + b.length;
       LOG.trace("Write {} len {}. Total {}", mUrl.toString(), b.length, totalWritten);
     }
-    startThread();
+    checkThreadState();
     mOutputStream.write(b);
   }
 
   @Override
   public void close() throws IOException {
-    startThread();
+    checkThreadState();
     LOG.trace("Close the output stream for {}", mUrl.toString());
     flush();
     mOutputStream.close();
