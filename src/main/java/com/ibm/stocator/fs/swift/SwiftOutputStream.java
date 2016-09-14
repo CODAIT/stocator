@@ -120,7 +120,7 @@ public class SwiftOutputStream extends OutputStream {
           }
         } catch (IOException e) {
           LOG.error(e.getMessage());
-          this.interrupt();
+          interrupt();
         }
       }
     };
