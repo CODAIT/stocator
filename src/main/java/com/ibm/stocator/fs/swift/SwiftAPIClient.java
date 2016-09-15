@@ -152,7 +152,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final Configuration conf;
 
-  private final SwiftConnectionManager swiftConnectionManager;
+  private SwiftConnectionManager swiftConnectionManager;
 
   private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
 
@@ -164,8 +164,17 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException when initialization is failed
    */
   public SwiftAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
+    LOG.debug("SwiftAPIClient constructor for {}", pFilesystemURI.toString());
     conf = pConf;
     filesystemURI = pFilesystemURI;
+  }
+
+  @Override
+  public void initiate(String scheme) throws IOException, ConfigurationParseException {
+    cachedSparkOriginated = new HashMap<String, Boolean>();
+    cachedSparkJobsStatus = new HashMap<String, Boolean>();
+    schemaProvided = scheme;
+    Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
         ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
     connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
@@ -181,16 +190,9 @@ public class SwiftAPIClient implements IStoreClient {
         ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT));
     connectionConfiguration.setSoTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
         ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
-
+    LOG.trace("{} set connection manager", filesystemURI.toString());
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
-  }
 
-  @Override
-  public void initiate(String scheme) throws IOException, ConfigurationParseException {
-    cachedSparkOriginated = new HashMap<String, Boolean>();
-    cachedSparkJobsStatus = new HashMap<String, Boolean>();
-    schemaProvided = scheme;
-    Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
@@ -586,7 +588,16 @@ public class SwiftAPIClient implements IStoreClient {
    */
   @Override
   public Path getWorkingDirectory() {
-    return null;
+    // Hadoop eco system depends on working directory value
+    // Although it's not needed by Spark, it still in use when native Hadoop uses Stocator
+    // Current approach is similar to the hadoop-openstack logic that generates working folder
+    // We should re-consider another approach
+    String username = System.getProperty("user.name");
+    Path path = new Path("/user", username)
+        .makeQualified(filesystemURI, new Path(username));
+    LOG.debug("Initializing SwiftNativeFileSystem against URI {} and working dir {}",
+        filesystemURI ,path.toString());
+    return path;
   }
 
   /**
