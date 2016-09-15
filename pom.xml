@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -62,7 +62,7 @@
         <slf4j.version>1.7.2</slf4j.version>
         <java.version>1.7</java.version>
         <joss.version>0.9.13</joss.version>
-        <hadoop.version>2.6.0</hadoop.version>
+        <hadoop.version>2.7.2</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.7</jackson.version>
         <httpcomponents.httpcore.version>4.4.5</httpcomponents.httpcore.version>
@@ -92,6 +92,12 @@
             <groupId>org.javaswift</groupId>
             <artifactId>joss</artifactId>
             <version>${joss.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.apache.httpcomponents</artifactId>
+                    <groupId>httpclient</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
 	        <groupId>com.googlecode.json-simple</groupId>
@@ -157,7 +163,6 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>${httpcomponents.httpclient.version}</version>
-            <scope>provided</scope>
             <exclusions>
                 <exclusion>
                     <artifactId>commons-logging</artifactId>

@@ -95,4 +95,39 @@ public class Constants {
    * directory mime type
    */
   public static final String APPLICATION_DIRECTORY = "application/directory";
+  /*
+   * maximal connections per IP route
+   */
+  public static final String MAX_PER_ROUTE = "fs.stocator.MaxPerRoute";
+  /*
+   * maximal concurrent connections
+   */
+  public static final String MAX_TOTAL_CONNECTIONS = "fs.stocator.MaxTotal";
+  /*
+   * low level socket timeout in milliseconds
+   */
+  public static final String SOCKET_TIMEOUT = "fs.stocator.SoTimeout";
+  /*
+   * number of retries for certain HTTP issues
+   */
+  public static final String EXECUTION_RETRY = "fs.stocator.executionCount";
+  /*
+   * Request level connect timeout
+   * Determines the timeout in milliseconds until a connection is established
+   */
+  public static final String REQUEST_CONNECT_TIMEOUT = "fs.stocator.ReqConnectTimeout";
+  /*
+   * Request level connection timeout
+   * Returns the timeout in milliseconds used when requesting a connection from the
+   * connection manager
+   */
+  public static final String REQUEST_CONNECTION_TIMEOUT = "fs.stocator."
+      + "ReqConnectionRequestTimeout";
+  /*
+   * Defines the socket timeout (SO_TIMEOUT) in milliseconds,
+   * which is the timeout for waiting for data or, put differently,
+   * a maximum period inactivity between two consecutive data packets).
+   */
+  public static final String REQUEST_SOCKET_TIMEOUT = "fs.stocator.ReqSocketTimeout";
+
 }

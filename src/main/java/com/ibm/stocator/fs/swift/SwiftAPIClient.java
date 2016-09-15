@@ -54,6 +54,7 @@ import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
+import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -151,7 +152,9 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final Configuration conf;
 
-  private final SwiftConnectionManager swiftConnectionManager;
+  private SwiftConnectionManager swiftConnectionManager;
+
+  private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
 
   /**
    * Constructor method
@@ -161,9 +164,9 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException when initialization is failed
    */
   public SwiftAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
+    LOG.debug("SwiftAPIClient constructor for {}", pFilesystemURI.toString());
     conf = pConf;
     filesystemURI = pFilesystemURI;
-    swiftConnectionManager = new SwiftConnectionManager();
   }
 
   @Override
@@ -172,6 +175,24 @@ public class SwiftAPIClient implements IStoreClient {
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
+    connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
+        ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
+    connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
+        ConnectionConfiguration.DEFAULT_MAX_PER_ROUTE));
+    connectionConfiguration.setMaxTotal(conf.getInt(Constants.MAX_TOTAL_CONNECTIONS,
+        ConnectionConfiguration.DEFAULT_MAX_TOTAL_CONNECTIONS));
+    connectionConfiguration.setReqConnectionRequestTimeout(conf.getInt(
+        Constants.REQUEST_CONNECTION_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_CONNECTION_TIMEOUT));
+    connectionConfiguration.setReqConnectTimeout(conf.getInt(Constants.REQUEST_CONNECT_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_CONNECT_TIMEOUT));
+    connectionConfiguration.setReqSocketTimeout(conf.getInt(Constants.REQUEST_SOCKET_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT));
+    connectionConfiguration.setSoTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
+        ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
+    LOG.trace("{} set connection manager", filesystemURI.toString());
+    swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
+
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
@@ -375,9 +396,11 @@ public class SwiftAPIClient implements IStoreClient {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
     }
-    StoredObject so = mJossAccount.getAccount().getContainer(container)
-        .getObject(objName);
-    return so.exists();
+    FileStatus status = getObjectMetadata(hostName, path);
+    if (status == null) {
+      return false;
+    }
+    return true;
   }
 
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
@@ -453,7 +476,7 @@ public class SwiftAPIClient implements IStoreClient {
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
         if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
-            && !unifiedObjectName.equals(obj)) {
+            && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
           // JOSS returns all objects that start with the prefix of obj.
           // These may include other unrelated objects.
           LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
@@ -495,6 +518,7 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
+      LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
       tmpResult.add(fs);
     }
@@ -537,8 +561,8 @@ public class SwiftAPIClient implements IStoreClient {
     URL url = new URL(mJossAccount.getAccessURL() + "/" + objName);
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
     try {
-      return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType, metadata),
-          statistics);
+      return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType,
+              metadata, swiftConnectionManager), statistics);
     } catch (IOException e) {
       LOG.error(e.getMessage());
       throw e;
@@ -574,7 +598,16 @@ public class SwiftAPIClient implements IStoreClient {
    */
   @Override
   public Path getWorkingDirectory() {
-    return null;
+    // Hadoop eco system depends on working directory value
+    // Although it's not needed by Spark, it still in use when native Hadoop uses Stocator
+    // Current approach is similar to the hadoop-openstack logic that generates working folder
+    // We should re-consider another approach
+    String username = System.getProperty("user.name");
+    Path path = new Path("/user", username)
+        .makeQualified(filesystemURI, new Path(username));
+    LOG.debug("Initializing SwiftNativeFileSystem against URI {} and working dir {}",
+        filesystemURI ,path.toString());
+    return path;
   }
 
   /**
