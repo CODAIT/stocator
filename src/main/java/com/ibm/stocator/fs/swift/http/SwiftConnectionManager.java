@@ -62,8 +62,14 @@ public class SwiftConnectionManager {
   public SwiftConnectionManager(ConnectionConfiguration connectionConfigurationT) {
     connectionConfiguration = connectionConfigurationT;
     connectionPool = new PoolingHttpClientConnectionManager();
+    LOG.trace("SwiftConnectionManager: setDefaultMaxPerRoute {}",
+        connectionConfiguration.getMaxPerRoute());
     connectionPool.setDefaultMaxPerRoute(connectionConfiguration.getMaxPerRoute());
+    LOG.trace("SwiftConnectionManager: getMaxTotal {}",
+        connectionConfiguration.getMaxTotal());
     connectionPool.setMaxTotal(connectionConfiguration.getMaxTotal());
+    LOG.trace("Generate SocketConfig with soTimeout of {}",
+        connectionConfiguration.getSoTimeout());
     SocketConfig socketConfig = SocketConfig.custom()
         .setSoKeepAlive(false).setSoTimeout(connectionConfiguration.getSoTimeout()).build();
     connectionPool.setDefaultSocketConfig(socketConfig);
