@@ -287,7 +287,7 @@ public class SwiftAPIClient implements IStoreClient {
       Containers have to lastModified.
      */
     if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
-      LOG.debug("Object metadata requested on container!");
+      LOG.debug("{}: metadata requested on container", path.toString());
       return new FileStatus(0L, true, 1, blockSize, 0L, path);
     }
     /*
@@ -323,7 +323,8 @@ public class SwiftAPIClient implements IStoreClient {
           isDirectory = true;
         }
       }
-      LOG.trace("Got object. isDirectory: {}  lastModified: {}", isDirectory, lastModified);
+      LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
+          isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
               getLastModified(lastModified), path);
     }
@@ -405,14 +406,13 @@ public class SwiftAPIClient implements IStoreClient {
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
     //stocator need to support this and identify relevant object
     //for this, we perform list to idenfify correct attempt_id
-    LOG.debug("Status is {}, object name is {}", fs, objName);
     if (fs == null && (objName.contains("part-")
         && !objName.contains(Constants.HADOOP_TEMPORARY))) {
-      LOG.debug("getObject {} on the non existing. Trying listing", objName);
+      LOG.debug("get object {} on the non existing. Trying listing", objName);
       FileStatus[] res = list(hostName, path, true, true);
       LOG.debug("Listing on {} returned {}", path.toString(), res.length);
       if (res.length == 1) {
-        LOG.debug("original {}. modified {}", objName, res[0].getPath());
+        LOG.trace("Original name {}  modified to {}", objName, res[0].getPath());
         objName = res[0].getPath().toString();
         if (res[0].getPath().toString().startsWith(hostName)) {
           objName = res[0].getPath().toString().substring(hostName.length());

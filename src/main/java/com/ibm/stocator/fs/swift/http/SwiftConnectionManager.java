@@ -54,6 +54,7 @@ public class SwiftConnectionManager {
    */
   private final PoolingHttpClientConnectionManager connectionPool;
   private ConnectionConfiguration connectionConfiguration;
+  private RequestConfig rConfig;
 
   /**
    * Default constructor
@@ -73,6 +74,12 @@ public class SwiftConnectionManager {
     SocketConfig socketConfig = SocketConfig.custom()
         .setSoKeepAlive(false).setSoTimeout(connectionConfiguration.getSoTimeout()).build();
     connectionPool.setDefaultSocketConfig(socketConfig);
+    rConfig = RequestConfig.custom()
+        .setExpectContinueEnabled(true)
+        .setConnectTimeout(connectionConfiguration.getReqConnectTimeout())
+        .setConnectionRequestTimeout(connectionConfiguration.getReqConnectionRequestTimeout())
+        .setSocketTimeout(connectionConfiguration.getReqSocketTimeout())
+        .build();
   }
 
   /**
@@ -136,21 +143,16 @@ public class SwiftConnectionManager {
   /**
    * Creates HTTP connection based on the connection pool
    *
-   * @return http client
+   * @return HTTP client
    */
   public CloseableHttpClient createHttpConnection() {
-    RequestConfig rConfig = RequestConfig.custom()
-        .setExpectContinueEnabled(true)
-        .setConnectTimeout(connectionConfiguration.getReqConnectTimeout())
-        .setConnectionRequestTimeout(connectionConfiguration.getReqConnectionRequestTimeout())
-        .setSocketTimeout(connectionConfiguration.getReqSocketTimeout())
-        .build();
-
+    LOG.trace("HTTP build new connection based on connection pool");
     CloseableHttpClient httpclient = HttpClients.custom()
         .setRetryHandler(getRetryHandler())
         .setConnectionManager(connectionPool)
         .setDefaultRequestConfig(rConfig)
         .build();
+    LOG.trace("HTTP created connection based on connection pool");
     return httpclient;
   }
 }
