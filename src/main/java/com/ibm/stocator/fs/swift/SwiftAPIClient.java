@@ -401,6 +401,26 @@ public class SwiftAPIClient implements IStoreClient {
     }
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
     FileStatus fs = getObjectMetadata(hostName, path);
+    //hadoop sometimes access parts directly, for example
+    //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
+    //stocator need to support this and identify relevant object
+    //for this, we perform list to idenfify correct attempt_id
+    LOG.debug("Status is {}, object name is {}", fs, objName);
+    if (fs == null && (objName.contains("part-")
+        && !objName.contains(Constants.HADOOP_TEMPORARY))) {
+      LOG.debug("getObject {} on the non existing. Trying listing", objName);
+      FileStatus[] res = list(hostName, path, true, true);
+      LOG.debug("Listing on {} returned {}", path.toString(), res.length);
+      if (res.length == 1) {
+        LOG.debug("original {}. modified {}", objName, res[0].getPath());
+        objName = res[0].getPath().toString();
+        if (res[0].getPath().toString().startsWith(hostName)) {
+          objName = res[0].getPath().toString().substring(hostName.length());
+        }
+        url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
+        fs = getObjectMetadata(hostName, res[0].getPath());
+      }
+    }
     SwiftInputStream sis = new SwiftInputStream(url.toString(),
         fs.getLen(), mJossAccount, Constants.NORMAL_READ_STRATEGY, swiftConnectionManager);
     return new FSDataInputStream(sis);
@@ -595,8 +615,6 @@ public class SwiftAPIClient implements IStoreClient {
     String username = System.getProperty("user.name");
     Path path = new Path("/user", username)
         .makeQualified(filesystemURI, new Path(username));
-    LOG.debug("Initializing SwiftNativeFileSystem against URI {} and working dir {}",
-        filesystemURI ,path.toString());
     return path;
   }
 

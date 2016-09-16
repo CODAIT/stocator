@@ -389,8 +389,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public long getDefaultBlockSize(Path f) {
-    LOG.trace("Get default block size for: {}", f.toString());
-    return super.getDefaultBlockSize(f);
+    long defaultBlockSize = super.getDefaultBlockSize(f);
+    LOG.trace("Default block size for: {} is {}", f.toString(), defaultBlockSize);
+    return defaultBlockSize;
   }
 
   /**
