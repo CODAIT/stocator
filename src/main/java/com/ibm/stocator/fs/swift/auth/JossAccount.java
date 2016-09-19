@@ -79,7 +79,7 @@ public class JossAccount {
    * Creates virtual account. Used for public containers
    */
   public void createDummyAccount() {
-    mAccount = new DummyAccountFactory(mAccountConfig).createAccount();
+    mAccount = new DummyAccountFactory(mAccountConfig).setHttpClient(httpclient).createAccount();
   }
 
   /**
