@@ -220,39 +220,45 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("delete: {} recursive {}", f.toString(), recursive);
     String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
     LOG.debug("Modified object name {} hostname {}", objNameModified, hostNameScheme);
-    boolean result = false;
+    boolean result = true;
+
     if (objNameModified.contains(HADOOP_TEMPORARY)) {
       return true;
     }
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true);
-      if (fsList.length > 0) {
-        for (FileStatus fs: fsList) {
-          if (fs.getPath().getName().endsWith(f.getName())) {
-            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
-          }
+      pathToObj = pathToObj.getParent();
+    }
+
+    FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
+    if (fsList.length == 0) {
+      return false;
+    }
+
+    if (f.getName().startsWith(HADOOP_ATTEMPT)) {
+      for (FileStatus fs: fsList) {
+        if (fs.getPath().getName().endsWith(f.getName())) {
+          // If client delete ever returns a false, the result will be false
+          result &= storageClient.delete(hostNameScheme, fs.getPath(), recursive);
         }
       }
     } else {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
-      if (fsList.length > 0) {
-        for (FileStatus fs: fsList) {
-          LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
-          String pathToDelete = f.toString();
-          if (!pathToDelete.endsWith("/")) {
-            pathToDelete = pathToDelete + "/";
-          }
-          LOG.trace("Delete candidate {} pathToDelete {}", fs.getPath().toString(), pathToDelete);
-          if (fs.getPath().toString().equals(f.toString())
-              || fs.getPath().toString().startsWith(pathToDelete)) {
-            LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
-            storageClient.delete(hostNameScheme, fs.getPath(), recursive);
-          }
+      for (FileStatus fs: fsList) {
+        LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
+        String pathToDelete = f.toString();
+        if (!pathToDelete.endsWith("/")) {
+          pathToDelete = pathToDelete + "/";
+        }
+        LOG.trace("Delete candidate {} pathToDelete {}", fs.getPath().toString(), pathToDelete);
+
+        if (fs.getPath().toString().equals(f.toString())
+            || fs.getPath().toString().startsWith(pathToDelete)) {
+          LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
+          result &= storageClient.delete(hostNameScheme, fs.getPath(), recursive);
         }
       }
     }
-    return true;
+    return result;
   }
 
   @Override
@@ -401,7 +407,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    * aa/bb/cc/201610052038_0001_m_000007_15-one3.txt
    * otherwise object name will be aa/bb/cc/one3.txt
    *
-   * @param path path to extract from
+   * @param fullPath path to extract from
    * @param boundary boundary to search in a path
    * @param addTaskIdCompositeName if true will add task-id to the object name
    * @return new object name
