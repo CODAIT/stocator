@@ -26,10 +26,7 @@ import org.javaswift.joss.command.shared.identity.AuthenticationCommand;
 import org.javaswift.joss.model.Access;
 
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.params.HttpConnectionParams;
-import org.apache.http.params.HttpParams;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +38,6 @@ public class DummyClientImpl extends AbstractClient<AccountImpl> {
 
   public DummyClientImpl(AccountConfig accountConfig) {
     super(accountConfig);
-    initHttpClient(accountConfig.getSocketTimeout());
   }
 
   @Override
@@ -49,23 +45,6 @@ public class DummyClientImpl extends AbstractClient<AccountImpl> {
     AccountImpl account = createAccount();
     return account;
 
-  }
-
-  private void initHttpClient(int socketTimeout) {
-    PoolingClientConnectionManager connectionManager = initConnectionManager();
-    mHttpClient = new DefaultHttpClient(connectionManager);
-    if (socketTimeout != -1) {
-      LOG.info("JOSS / Set socket timeout on mHttpClient: " + socketTimeout);
-      HttpParams params = mHttpClient.getParams();
-      HttpConnectionParams.setSoTimeout(params, socketTimeout);
-    }
-  }
-
-  protected PoolingClientConnectionManager initConnectionManager() {
-    PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
-    connectionManager.setMaxTotal(50);
-    connectionManager.setDefaultMaxPerRoute(25);
-    return connectionManager;
   }
 
   @Override
@@ -106,10 +85,7 @@ public class DummyClientImpl extends AbstractClient<AccountImpl> {
   }
 
   public DummyClientImpl setHttpClient(HttpClient httpClient) {
-    if (httpClient != null) {
-      LOG.info("JOSS / Use HTTP client set by client (overrides previous mHttpClient settings)");
-      mHttpClient = httpClient;
-    }
+    mHttpClient = httpClient;
     return this;
   }
 }

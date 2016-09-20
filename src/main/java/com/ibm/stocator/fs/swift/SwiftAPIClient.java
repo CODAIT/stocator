@@ -192,6 +192,7 @@ public class SwiftAPIClient implements IStoreClient {
         ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
     LOG.trace("{} set connection manager", filesystemURI.toString());
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
+    LOG.trace("{}", connectionConfiguration.toString());
 
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
@@ -252,6 +253,7 @@ public class SwiftAPIClient implements IStoreClient {
       config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
       config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
     }
+    LOG.trace("{}", config.toString());
     return new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
   }
 
@@ -297,7 +299,7 @@ public class SwiftAPIClient implements IStoreClient {
       Containers have to lastModified.
      */
     if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
-      LOG.debug("Object metadata requested on container!");
+      LOG.debug("{}: metadata requested on container", path.toString());
       return new FileStatus(0L, true, 1, blockSize, 0L, path);
     }
     /*
@@ -333,7 +335,8 @@ public class SwiftAPIClient implements IStoreClient {
           isDirectory = true;
         }
       }
-      LOG.trace("Got object. isDirectory: {}  lastModified: {}", isDirectory, lastModified);
+      LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
+          isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
               getLastModified(lastModified), path);
     }
@@ -347,7 +350,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (directoryFiles != null && directoryFiles.size() != 0) {
       // In this case there is no lastModified
       isDirectory = true;
-      LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, null);
+      LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
       return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
     }
     LOG.debug("Not found {}", path.toString());
@@ -411,6 +414,25 @@ public class SwiftAPIClient implements IStoreClient {
     }
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
     FileStatus fs = getObjectMetadata(hostName, path);
+    //hadoop sometimes access parts directly, for example
+    //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
+    //stocator need to support this and identify relevant object
+    //for this, we perform list to idenfify correct attempt_id
+    if (fs == null && (objName.contains("part-")
+        && !objName.contains(Constants.HADOOP_TEMPORARY))) {
+      LOG.debug("get object {} on the non existing. Trying listing", objName);
+      FileStatus[] res = list(hostName, path, true, true);
+      LOG.debug("Listing on {} returned {}", path.toString(), res.length);
+      if (res.length == 1) {
+        LOG.trace("Original name {}  modified to {}", objName, res[0].getPath());
+        objName = res[0].getPath().toString();
+        if (res[0].getPath().toString().startsWith(hostName)) {
+          objName = res[0].getPath().toString().substring(hostName.length());
+        }
+        url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
+        fs = getObjectMetadata(hostName, res[0].getPath());
+      }
+    }
     SwiftInputStream sis = new SwiftInputStream(url.toString(),
         fs.getLen(), mJossAccount, Constants.NORMAL_READ_STRATEGY, swiftConnectionManager);
     return new FSDataInputStream(sis);
@@ -605,8 +627,6 @@ public class SwiftAPIClient implements IStoreClient {
     String username = System.getProperty("user.name");
     Path path = new Path("/user", username)
         .makeQualified(filesystemURI, new Path(username));
-    LOG.debug("Initializing SwiftNativeFileSystem against URI {} and working dir {}",
-        filesystemURI ,path.toString());
     return path;
   }
 

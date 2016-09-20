@@ -104,8 +104,11 @@ public class SwiftOutputStream extends OutputStream {
         entity.setContentType(contentType);
         request.setEntity(entity);
         try {
+          LOG.debug("HTTP PUT request {}", mUrl.toString());
           HttpResponse response = client.execute(request);
           int responseCode = response.getStatusLine().getStatusCode();
+          LOG.debug("HTTP PUT response {}. Response code {}",
+              mUrl.toString(), responseCode);
           if (responseCode == 401) { // Unauthorized error
             mAccount.authenticate();
             request.removeHeaders("X-Auth-Token");
@@ -175,13 +178,13 @@ public class SwiftOutputStream extends OutputStream {
   @Override
   public void close() throws IOException {
     checkThreadState();
-    LOG.trace("Close the output stream for {}", mUrl.toString());
+    LOG.debug("HTTP PUT close {}", mUrl.toString());
     flush();
     mOutputStream.close();
     try {
       writeThread.join();
     } catch (InterruptedException ie) {
-      ie.printStackTrace();
+      LOG.error(ie.getMessage());
     }
   }
 

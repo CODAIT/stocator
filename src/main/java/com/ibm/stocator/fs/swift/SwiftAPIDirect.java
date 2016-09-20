@@ -75,7 +75,6 @@ public class SwiftAPIDirect {
     Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>>  resp = httpGET(path.toString(),
         bytesFrom, bytesTo, account, scm);
     if (resp.x.intValue() >= 400) {
-      LOG.warn("Get object {} returned {}", path.toString(), resp.x.intValue());
       LOG.warn("Re-authentication attempt for GET {}", path.toString());
       account.authenticate();
       resp = httpGET(path.toString(), bytesFrom, bytesTo, account, scm);
@@ -90,14 +89,14 @@ public class SwiftAPIDirect {
    * @param path path to object
    * @param bytesFrom from bytes
    * @param bytesTo to bytes
-   * @param account Joss Account object
-   * @return Tupple with HTTP response method and HttpRequestBase HttpResponse
+   * @param account JOSS Account object
+   * @return Tuple with HTTP response method and HttpRequestBase HttpResponse
    * @throws IOException if error
    */
   private static Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>> httpGET(String path,
       long bytesFrom, long bytesTo, JossAccount account, SwiftConnectionManager scm)
           throws IOException {
-    LOG.debug("Prepare HTTP GET {}. From {}, To {}", path, bytesFrom, bytesTo);
+    LOG.debug("HTTP GET {} request. From {}, To {}", path, bytesFrom, bytesTo);
     HttpGet httpGet = new HttpGet(path);
     httpGet.addHeader("X-Auth-Token", account.getAuthToken());
     if (bytesTo > 0) {
@@ -108,7 +107,7 @@ public class SwiftAPIDirect {
     CloseableHttpClient httpclient = scm.createHttpConnection();
     CloseableHttpResponse response = httpclient.execute(httpGet);
     int responseCode = response.getStatusLine().getStatusCode();
-    LOG.debug("GET {} returned with {}", path, responseCode);
+    LOG.debug("HTTP GET {} response. Status code {}", path, responseCode);
     Tuple<HttpRequestBase, HttpResponse> respData = new Tuple<HttpRequestBase,
         HttpResponse>(httpGet, response);
     return new Tuple<Integer, Tuple<HttpRequestBase,

@@ -315,7 +315,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
         closeStream("close() operation", contentRangeFinish);
         super.close();
       } finally {
-        LOG.trace("Stream closed");
+        LOG.trace("{}. Stream closed", uri);
       }
     }
   }
@@ -341,7 +341,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       if (shouldAbort) {
         wrappedStream.abort();
       }
-      LOG.trace("Stream {} {}: {}; streamPos={}, nextReadPos={},"
+      LOG.trace("Close stream {} {}: {}; streamPos={}, nextReadPos={},"
           + " request range {}-{} length={}", uri, (shouldAbort ? "aborted" : "closed"), msg,
           pos, nextReadPos, contentRangeStart, contentRangeFinish, length);
       wrappedStream = null;
