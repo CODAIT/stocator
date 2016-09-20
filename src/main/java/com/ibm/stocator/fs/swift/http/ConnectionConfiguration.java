@@ -122,4 +122,16 @@ public class ConnectionConfiguration {
   public void setReqSocketTimeout(int reqSocketTimeoutT) {
     reqSocketTimeout = reqSocketTimeoutT;
   }
+
+  @Override
+  public String toString() {
+    return "ConnectionConfiguration [maxPerRoute=" + maxPerRoute + ", maxTotal=" + maxTotal
+        + ", soTimeout=" + soTimeout
+        + ", executionCount=" + executionCount + ", reqConnectTimeout="
+        + reqConnectTimeout
+        + ", reqConnectionRequestTimeout=" + reqConnectionRequestTimeout
+        + ", reqSocketTimeout=" + reqSocketTimeout
+        + "]";
+  }
+
 }

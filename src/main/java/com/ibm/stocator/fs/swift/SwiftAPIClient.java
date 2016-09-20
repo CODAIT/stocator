@@ -192,6 +192,7 @@ public class SwiftAPIClient implements IStoreClient {
         ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
     LOG.trace("{} set connection manager", filesystemURI.toString());
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
+    LOG.trace("{}", connectionConfiguration.toString());
 
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
@@ -245,6 +246,7 @@ public class SwiftAPIClient implements IStoreClient {
         config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
         config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
       }
+      LOG.trace("{}", config.toString());
       mJossAccount = new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
       try {
         mJossAccount.createAccount();
@@ -338,7 +340,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (directoryFiles != null && directoryFiles.size() != 0) {
       // In this case there is no lastModified
       isDirectory = true;
-      LOG.debug("Got object. isDirectory: {}  lastModified: {}", isDirectory, null);
+      LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
       return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
     }
     LOG.debug("Not found {}", path.toString());
