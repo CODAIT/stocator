@@ -1,7 +1,7 @@
 package com.ibm.stocator.fs.swift.auth;
 
-import org.javaswift.joss.client.factory.AccountConfig;
-import org.javaswift.joss.client.factory.AccountFactory;
+import java.io.IOException;
+
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
 
@@ -10,7 +10,15 @@ import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
+
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 /**
  *
@@ -26,9 +34,9 @@ public class JossAccount {
    */
   private Account mAccount;
   /*
-   * Joss configuration
+   * Swift configuration
    */
-  private AccountConfig mAccountConfig;
+  private AccountConfiguration accountConfig;
   /*
    * Keystone region
    */
@@ -55,9 +63,9 @@ public class JossAccount {
    *          use public or internal url
    * @param scm Swift connection manager
    */
-  public JossAccount(AccountConfig config, String region, boolean usePublicURL,
+  public JossAccount(AccountConfiguration config, String region, boolean usePublicURL,
       SwiftConnectionManager scm) {
-    mAccountConfig = config;
+    accountConfig = config;
     mRegion = region;
     mUsePublicURL = usePublicURL;
     mAccess = null;
@@ -68,8 +76,8 @@ public class JossAccount {
    * Creates account model
    */
   public void createAccount() {
-    mAccount = new AccountFactory(mAccountConfig).setHttpClient(httpclient).createAccount();
-    mAccess = mAccount.getAccess();
+//    mAccount = new AccountFactory(accountConfig).setHttpClient(httpclient).createAccount();
+//    mAccess = mAccount.getAccess();
     if (mRegion != null) {
       mAccess.setPreferredRegion(mRegion);
     }
@@ -79,22 +87,54 @@ public class JossAccount {
    * Creates virtual account. Used for public containers
    */
   public void createDummyAccount() {
-    mAccount = new DummyAccountFactory(mAccountConfig).setHttpClient(httpclient).createAccount();
+    // mAccount = new DummyAccountFactory(accountConfig).setHttpClient(httpclient).createAccount();
   }
 
   /**
    * Authenticates and renew the token
    */
   public void authenticate() {
-    if (mAccount == null) {
-      // Create account also performs authentication.
-      createAccount();
-    } else {
-      mAccess = mAccount.authenticate();
-      if (mRegion != null) {
-        mAccess.setPreferredRegion(mRegion);
-      }
+    HttpPost authRequest = new HttpPost(accountConfig.getAuthUrl());
+
+    try {
+      JSONObject object = new JSONObject();
+      JSONObject auth = new JSONObject();
+      JSONObject identity = new JSONObject();
+      JSONArray method = new JSONArray();
+      JSONObject password = new JSONObject();
+      JSONObject user = new JSONObject();
+      JSONObject scope = new JSONObject();
+      JSONObject project = new JSONObject();
+
+      project.put("id", accountConfig.getProjectId());
+      scope.put("project", project);
+      user.put("id", accountConfig.getUsername());
+      user.put("password", accountConfig.getPassword());
+      password.put("user", user);
+      method.put("password");
+      identity.put("methods", method);
+      identity.put("password", password);
+      auth.put("identity", identity);
+      auth.put("scope", scope);
+      object.put("auth", auth);
+
+      System.out.println(object.toString());
+      StringEntity body = new StringEntity(object.toString());
+
+      authRequest.setEntity(body);
+      authRequest.setHeader("Content-type", "application/json");
+      ResponseHandler<String> responseHandler = new BasicResponseHandler();
+      String response = httpclient.execute(authRequest, responseHandler);
+      // TODO: handle the response
+
+    } catch (JSONException je) {
+      LOG.error("JSON error");
+
+    } catch (IOException e) {
+      LOG.error("Unable to authenticate. Please check credentials");
     }
+    // TODO: handle preferred region
+
   }
 
   /**

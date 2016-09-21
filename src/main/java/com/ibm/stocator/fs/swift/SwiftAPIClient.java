@@ -29,8 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.javaswift.joss.client.factory.AccountConfig;
-import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
@@ -51,9 +49,9 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
+import com.ibm.stocator.fs.swift.auth.AccountConfiguration;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
-import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
@@ -194,7 +192,7 @@ public class SwiftAPIClient implements IStoreClient {
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
     LOG.trace("{}", connectionConfiguration.toString());
 
-    AccountConfig config = new AccountConfig();
+    AccountConfiguration config = new AccountConfiguration();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
     blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
@@ -210,10 +208,10 @@ public class SwiftAPIClient implements IStoreClient {
       String accessURL = Utils.extractAccessURL(publicURL);
       LOG.debug("auth url {}", accessURL);
       config.setAuthUrl(accessURL);
-      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+      // config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
       container = Utils.extractDataRoot(publicURL, accessURL);
       DummyAccessProvider p = new DummyAccessProvider(accessURL);
-      config.setAccessProvider(p);
+//      config.setAccessProvider(p);
       mJossAccount = new JossAccount(config, null, true, swiftConnectionManager);
       mJossAccount.createDummyAccount();
     } else {
@@ -227,33 +225,35 @@ public class SwiftAPIClient implements IStoreClient {
       if (authMethod.equals("keystone")) {
         preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
         if (preferredRegion != null) {
-          config.setPreferredRegion(preferredRegion);
+          config.setRegion(preferredRegion);
         }
-        config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
+        config.setAuthMethod(authMethod);
         config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-        config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
+        config.setTenant(props.getProperty(SWIFT_TENANT_PROPERTY));
       } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
         preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
-        config.setPreferredRegion(preferredRegion);
-        config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+        config.setRegion(preferredRegion);
+        config.setAuthMethod(KEYSTONE_V3_AUTH);
         String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
         String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
-        PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
-        config.setAccessProvider(psap);
+        config.setUsername(userId);
+        config.setProjectId(projectId);
+//        PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
+//            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
+//        config.setAccessProvider(psap);
       } else {
-        config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
-        config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+        config.setAuthMethod("tempauth");
+        config.setTenant(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
         config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
       }
       LOG.trace("{}", config.toString());
       mJossAccount = new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
       try {
-        mJossAccount.createAccount();
+        mJossAccount.authenticate();
       } catch (Exception e) {
         throw new IOException("Failed to create an account model."
             + " Please check the provided access credentials."
-            + " Verify the validitiy of the auth url: " + config.getAuthUrl());
+            + " Verify the validity of the auth url: " + config.getAuthUrl());
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
