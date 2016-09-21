@@ -2,23 +2,17 @@ package com.ibm.stocator.fs.swift.auth;
 
 import java.io.IOException;
 
-import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
+import org.javaswift.joss.model.Access;
+
+import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
-
-import org.apache.http.client.ResponseHandler;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 
 /**
  *
@@ -94,46 +88,22 @@ public class JossAccount {
    * Authenticates and renew the token
    */
   public void authenticate() {
-    HttpPost authRequest = new HttpPost(accountConfig.getAuthUrl());
+    HttpPost authRequest = new AuthRequest(accountConfig);
 
     try {
-      JSONObject object = new JSONObject();
-      JSONObject auth = new JSONObject();
-      JSONObject identity = new JSONObject();
-      JSONArray method = new JSONArray();
-      JSONObject password = new JSONObject();
-      JSONObject user = new JSONObject();
-      JSONObject scope = new JSONObject();
-      JSONObject project = new JSONObject();
+      //ResponseHandler<String> responseHandler = new BasicResponseHandler();
+      HttpResponse response = httpclient.execute(authRequest);
 
-      project.put("id", accountConfig.getProjectId());
-      scope.put("project", project);
-      user.put("id", accountConfig.getUsername());
-      user.put("password", accountConfig.getPassword());
-      password.put("user", user);
-      method.put("password");
-      identity.put("methods", method);
-      identity.put("password", password);
-      auth.put("identity", identity);
-      auth.put("scope", scope);
-      object.put("auth", auth);
+      if (response.getStatusLine().getStatusCode() == 201) {
+        System.out.println("Auth success");
+      }
 
-      System.out.println(object.toString());
-      StringEntity body = new StringEntity(object.toString());
-
-      authRequest.setEntity(body);
-      authRequest.setHeader("Content-type", "application/json");
-      ResponseHandler<String> responseHandler = new BasicResponseHandler();
-      String response = httpclient.execute(authRequest, responseHandler);
-      // TODO: handle the response
-
-    } catch (JSONException je) {
-      LOG.error("JSON error");
+      // TODO(djalova): handle the response
 
     } catch (IOException e) {
       LOG.error("Unable to authenticate. Please check credentials");
     }
-    // TODO: handle preferred region
+    // TODO(djalova): handle preferred region
 
   }
 
