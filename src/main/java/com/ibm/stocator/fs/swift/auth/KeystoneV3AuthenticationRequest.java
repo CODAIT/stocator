@@ -9,20 +9,16 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-public class AuthRequest extends HttpPost {
-  private AccountConfiguration config;
+public class KeystoneV3AuthenticationRequest extends HttpPost implements AuthenticationRequest {
 
-  public AuthRequest(AccountConfiguration conf) {
+  private final AccountConfiguration config;
+
+  public KeystoneV3AuthenticationRequest(AccountConfiguration conf) {
     super(conf.getAuthUrl());
     config = conf;
-    String authMethod = config.getAuthMethod();
     String messageBody = "";
 
-    messageBody = createKeystoneV3Json();
-
-    // TODO(djalova) authenticate for keystone v1
-
-    // TODO(djalova) authenticate for tempauth
+    messageBody = createAuthenticationJson();
 
     try {
       StringEntity entity = new StringEntity(messageBody);
@@ -33,7 +29,32 @@ public class AuthRequest extends HttpPost {
     }
   }
 
-  private String createKeystoneV3Json() {
+
+  /**
+   * Creates a JSON format String to request authentication
+   * An example request taken from - http://developer.openstack.org/api-ref/identity/v3/
+    {
+        "auth": {
+          "identity": {
+            "methods": [
+              "password"
+            ],
+            "password": {
+              "user": {
+                "id": "ee4dfb6e5540447cb3741905149d9b6e",
+                "password": "devstacker"
+              }
+            }
+          },
+        "scope": {
+          "project": {
+            "id": "a6944d763bf64ee6a275f1263fae0352"
+          }
+        }
+      }
+    }
+   */
+  private String createAuthenticationJson() {
     JSONObject object = new JSONObject();
     try {
       JSONObject auth = new JSONObject();
@@ -60,5 +81,4 @@ public class AuthRequest extends HttpPost {
     }
     return object.toString();
   }
-
 }

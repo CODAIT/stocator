@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 /**
@@ -88,7 +87,17 @@ public class JossAccount {
    * Authenticates and renew the token
    */
   public void authenticate() {
-    HttpPost authRequest = new AuthRequest(accountConfig);
+    AuthenticationRequest authRequest;
+
+    String authMethod = accountConfig.getAuthMethod();
+
+    if (authMethod.equals("keystoneV3")) {
+      authRequest = new KeystoneV3AuthenticationRequest(accountConfig);
+    } else if (authMethod.equals("keystone")) {
+      authRequest = new KeystoneV2AuthenticationRequest(accountConfig);
+    } else {
+      authRequest = new SwiftAuthenticationRequest(accountConfig);
+    }
 
     try {
       //ResponseHandler<String> responseHandler = new BasicResponseHandler();
