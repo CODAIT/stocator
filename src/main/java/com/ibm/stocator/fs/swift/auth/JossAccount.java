@@ -42,6 +42,10 @@ public class JossAccount {
    * Cached Access object. Will be renewed when token expire
    */
   private Access mAccess;
+  /*
+   * Contains token information
+   */
+  private AuthenticationInfo authenticationInfo;
   private CloseableHttpClient httpclient = null;
   private static final Logger LOG = LoggerFactory.getLogger(JossAccount.class);
 
@@ -88,24 +92,22 @@ public class JossAccount {
    */
   public void authenticate() throws IOException {
     AuthenticationRequest authRequest;
-    AuthenticationInfo authInfo;
-
     String authMethod = accountConfig.getAuthMethod();
 
     if (authMethod.equals("keystoneV3")) {
       authRequest = new KeystoneV3AuthenticationRequest(accountConfig);
-      authInfo = new SwiftV3AuthInfo();
+      authenticationInfo = new SwiftV3AuthInfo();
     } else if (authMethod.equals("keystone")) {
       authRequest = new KeystoneV2AuthenticationRequest(accountConfig);
-      authInfo = new SwiftV2AuthInfo();
+      authenticationInfo = new SwiftV2AuthInfo();
     } else {
       authRequest = new SwiftAuthenticationRequest(accountConfig);
-      authInfo = new SwiftV1AuthInfo();
+      authenticationInfo = new SwiftV1AuthInfo();
     }
 
     try {
       HttpResponse response = httpclient.execute(authRequest);
-      authInfo.parseResponse(response);
+      authenticationInfo.parseResponse(response);
 
       if (response.getStatusLine().getStatusCode() == 201) {
         System.out.println("Auth success");
@@ -114,7 +116,7 @@ public class JossAccount {
     } catch (IOException e) {
       LOG.error("Unable to authenticate. Please check credentials");
     }
-    // TODO(djalova): handle preferred region
+    // TODO(djalova): handle preferred region & improve error message
 
   }
 
@@ -124,7 +126,7 @@ public class JossAccount {
    * @return cached token
    */
   public String getAuthToken() {
-    return mAccess.getToken();
+    return authenticationInfo.getToken();
   }
 
   /**

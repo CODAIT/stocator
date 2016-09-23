@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.http.HttpResponse;
 
 /**
- * Contains information returned when authenticating an account using Keystone V3
+ * Contains information returned when authenticating an account using V1 Auth
  */
 public class SwiftV1AuthInfo extends AuthenticationInfo {
 
