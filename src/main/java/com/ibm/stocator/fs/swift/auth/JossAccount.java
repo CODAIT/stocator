@@ -41,6 +41,10 @@ public class JossAccount {
    * Cached Access object. Will be renewed when token expire
    */
   private Access mAccess;
+  /*
+   * Manager used to handle Swift requests
+   */
+  private SwiftConnectionManager connectionManager;
   private CloseableHttpClient httpclient = null;
   private static final Logger LOG = LoggerFactory.getLogger(JossAccount.class);
 
@@ -61,6 +65,7 @@ public class JossAccount {
     mRegion = region;
     mUsePublicURL = usePublicURL;
     mAccess = null;
+    connectionManager = scm;
     httpclient = scm.createHttpConnection();
   }
 
@@ -131,4 +136,15 @@ public class JossAccount {
     }
     return mAccount;
   }
+
+  /**
+   * Get SwiftConnectionManager
+   *
+   * @return SwiftConnectionManager
+   */
+
+  public SwiftConnectionManager getConnectionManager() {
+    return connectionManager;
+  }
+
 }

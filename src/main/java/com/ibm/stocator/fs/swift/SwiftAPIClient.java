@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import com.ibm.stocator.fs.common.SwiftContainer;
 import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
@@ -154,6 +155,8 @@ public class SwiftAPIClient implements IStoreClient {
 
   private SwiftConnectionManager swiftConnectionManager;
 
+  private SwiftContainer swiftContainer;
+
   private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
 
   /**
@@ -257,6 +260,7 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
+    swiftContainer = new SwiftContainer(container, mJossAccount);
     if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();
     }
@@ -453,6 +457,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException {
+
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);

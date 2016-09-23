@@ -1,5 +1,6 @@
 package com.ibm.stocator.fs.common;
 
+import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -20,7 +21,7 @@ public interface Container {
   /**
    * Lists objects in container
    */
-  Collection<StoredObject> listContainer();
+  Collection<StoredObject> listContainer() throws IOException;
 
   /**
    * Creates container metadata
