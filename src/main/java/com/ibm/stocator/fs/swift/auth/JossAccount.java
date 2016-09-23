@@ -86,28 +86,30 @@ public class JossAccount {
   /**
    * Authenticates and renew the token
    */
-  public void authenticate() {
+  public void authenticate() throws IOException {
     AuthenticationRequest authRequest;
+    AuthenticationInfo authInfo;
 
     String authMethod = accountConfig.getAuthMethod();
 
     if (authMethod.equals("keystoneV3")) {
       authRequest = new KeystoneV3AuthenticationRequest(accountConfig);
+      authInfo = new SwiftV3AuthInfo();
     } else if (authMethod.equals("keystone")) {
       authRequest = new KeystoneV2AuthenticationRequest(accountConfig);
+      authInfo = new SwiftV2AuthInfo();
     } else {
       authRequest = new SwiftAuthenticationRequest(accountConfig);
+      authInfo = new SwiftV1AuthInfo();
     }
 
     try {
-      //ResponseHandler<String> responseHandler = new BasicResponseHandler();
       HttpResponse response = httpclient.execute(authRequest);
+      authInfo.parseResponse(response);
 
       if (response.getStatusLine().getStatusCode() == 201) {
         System.out.println("Auth success");
       }
-
-      // TODO(djalova): handle the response
 
     } catch (IOException e) {
       LOG.error("Unable to authenticate. Please check credentials");

@@ -29,7 +29,6 @@ public class KeystoneV3AuthenticationRequest extends HttpPost implements Authent
     }
   }
 
-
   /**
    * Creates a JSON format String to request authentication
    * An example request taken from - http://developer.openstack.org/api-ref/identity/v3/
