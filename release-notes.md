@@ -1,4 +1,11 @@
 ##Release notes
+### Version 1.0.6
+1. Continue improvements with container listing
+2. Object upload now based on the Apache HttpClient 4.5.2
+3. New configuration keys to tune connection properties
+4. Moving Hadoop to 2.7.2
+5. Adapting Stocator to work with Hadoop testDFSIO. This includes support for certain flows that required by Hadoop.
+6. Continue improvements to logging.
 
 ### Version 1.0.5
 
