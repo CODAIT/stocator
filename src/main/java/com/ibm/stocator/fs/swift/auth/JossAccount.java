@@ -2,21 +2,21 @@ package com.ibm.stocator.fs.swift.auth;
 
 import java.io.IOException;
 
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 import org.javaswift.joss.model.Account;
-import org.javaswift.joss.model.Access;
 
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.HttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
+
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -165,12 +165,10 @@ public class JossAccount {
         }
       }
 
-      if (swiftEndpoints == null) {
-        // Exception
-      }
+      // Throw exception is endpoints is still null
 
-      String isPublic = accountConfig.getPublic() ? "public" : "internal";
-      for (int i = 0;i < swiftEndpoints.length(); i++) {
+      String isPublic = mUsePublicURL ? "public" : "internal";
+      for (int i = 0; i < swiftEndpoints.length(); i++) {
         JSONObject endpoint = swiftEndpoints.getJSONObject(i);
         if (endpoint.get("interface").equals(isPublic)) {
           if (accountConfig.getRegion() != null) {
