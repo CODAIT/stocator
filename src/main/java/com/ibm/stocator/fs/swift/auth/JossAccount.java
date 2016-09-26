@@ -2,6 +2,11 @@ package com.ibm.stocator.fs.swift.auth;
 
 import java.io.IOException;
 
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONObject;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Access;
 
@@ -39,14 +44,11 @@ public class JossAccount {
    */
   boolean mUsePublicURL;
   /*
-   * Cached Access object. Will be renewed when token expire
-   */
-  private Access mAccess;
-  /*
    * Contains token information
    */
   private AuthenticationInfo authenticationInfo;
   private CloseableHttpClient httpclient = null;
+  private String accessUrl;
   private static final Logger LOG = LoggerFactory.getLogger(JossAccount.class);
 
   /**
@@ -65,7 +67,6 @@ public class JossAccount {
     accountConfig = config;
     mRegion = region;
     mUsePublicURL = usePublicURL;
-    mAccess = null;
     httpclient = scm.createHttpConnection();
   }
 
@@ -75,9 +76,7 @@ public class JossAccount {
   public void createAccount() {
 //    mAccount = new AccountFactory(accountConfig).setHttpClient(httpclient).createAccount();
 //    mAccess = mAccount.getAccess();
-    if (mRegion != null) {
-      mAccess.setPreferredRegion(mRegion);
-    }
+
   }
 
   /**
@@ -116,6 +115,7 @@ public class JossAccount {
     } catch (IOException e) {
       LOG.error("Unable to authenticate. Please check credentials");
     }
+    getAccessURL();
     // TODO(djalova): handle preferred region & improve error message
 
   }
@@ -135,12 +135,66 @@ public class JossAccount {
    * @return access URL, public or internal
    */
   public String getAccessURL() {
-    if (mUsePublicURL) {
-      LOG.trace("Using public URL: " + mAccess.getPublicURL());
-      return mAccess.getPublicURL();
+
+    if (accessUrl == null) {
+      try {
+        queryAccessUrl();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
-    LOG.trace("Using internal URL: " + mAccess.getInternalURL());
-    return mAccess.getInternalURL();
+    return accessUrl;
+  }
+
+  private String queryAccessUrl() throws IOException {
+
+    String url = accountConfig.getAuthUrl().substring(0,
+            accountConfig.getAuthUrl().lastIndexOf("/")) + "/catalog";
+    HttpGet getEndpoints = new HttpGet(url);
+    getEndpoints.addHeader("X-Auth-Token", getAuthToken());
+    try {
+      HttpResponse response = httpclient.execute(getEndpoints);
+      ResponseHandler handler = new BasicResponseHandler();
+      JSONObject jsonResponse = new JSONObject(handler.handleResponse(response).toString());
+      JSONArray catalog = jsonResponse.getJSONArray("catalog");
+      JSONArray swiftEndpoints = null;
+      for (int i = 0; i < catalog.length() && swiftEndpoints == null; i++) {
+        JSONObject service = catalog.getJSONObject(i);
+        if (service.getString("name").equals("swift")) {
+          swiftEndpoints = service.getJSONArray("endpoints");
+        }
+      }
+
+      if (swiftEndpoints == null) {
+        // Exception
+      }
+
+      String isPublic = accountConfig.getPublic() ? "public" : "internal";
+      for (int i = 0;i < swiftEndpoints.length(); i++) {
+        JSONObject endpoint = swiftEndpoints.getJSONObject(i);
+        if (endpoint.get("interface").equals(isPublic)) {
+          if (accountConfig.getRegion() != null) {
+            // Return URL that matches region and interface
+            if (accountConfig.getRegion().equals(endpoint.getString("region"))) {
+              accessUrl = endpoint.getString("url");
+              LOG.trace("Using {} {} URL: {}", isPublic, accountConfig.getRegion(), accessUrl);
+            }
+          } else {
+            // No region preference,return any URL
+            accessUrl = endpoint.getString("url");
+            LOG.trace("Using {} URL: {}", isPublic, accessUrl);
+          }
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
+    if (accessUrl == null) {
+      throw new IOException("Unable to get url with provided public and a region configs");
+    }
+
+    return accessUrl;
   }
 
   /**
