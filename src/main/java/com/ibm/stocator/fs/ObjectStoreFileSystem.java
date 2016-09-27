@@ -137,6 +137,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   }
 
   @Override
+  public boolean isFile(Path f) throws IOException {
+    LOG.debug("is file: {}", f.toString());
+    return true;
+  }
+
+  @Override
   public RemoteIterator<LocatedFileStatus> listLocatedStatus(Path f)
       throws FileNotFoundException, IOException {
     LOG.debug("listLocatedStatus: {} ", f.toString());
