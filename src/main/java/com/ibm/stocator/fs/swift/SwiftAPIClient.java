@@ -204,62 +204,72 @@ public class SwiftAPIClient implements IStoreClient {
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
 
     if (authMethod.equals(PUBLIC_ACCESS)) {
-      // we need to extract container name and path from the public URL
-      String publicURL = filesystemURI.toString().replace(schemaProvided, "https");
-      LOG.debug("publicURL: {}", publicURL);
-      String accessURL = Utils.extractAccessURL(publicURL);
-      LOG.debug("auth url {}", accessURL);
-      config.setAuthUrl(accessURL);
-      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
-      container = Utils.extractDataRoot(publicURL, accessURL);
-      DummyAccessProvider p = new DummyAccessProvider(accessURL);
-      config.setAccessProvider(p);
-      mJossAccount = new JossAccount(config, null, true, swiftConnectionManager);
+      mJossAccount = setUpPublicAccount(config);
       mJossAccount.createDummyAccount();
     } else {
-      container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
-      String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
-      usePublicURL = "true".equals(isPubProp);
-      LOG.trace("Use public key value is {}. Use public {}", isPubProp, usePublicURL);
-      config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
-      config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
-
-      if (authMethod.equals("keystone")) {
-        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
-        if (preferredRegion != null) {
-          config.setPreferredRegion(preferredRegion);
-        }
-        config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
-        config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-        config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
-      } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
-        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
-        config.setPreferredRegion(preferredRegion);
-        config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
-        String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
-        String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
-        PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
-        config.setAccessProvider(psap);
-      } else {
-        config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
-        config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-        config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
-      }
-      LOG.trace("{}", config.toString());
-      mJossAccount = new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
+      mJossAccount = setUpPrivateAccount(props, config, authMethod);
       try {
         mJossAccount.createAccount();
       } catch (Exception e) {
         throw new IOException("Failed to create an account model."
-            + " Please check the provided access credentials."
-            + " Verify the validitiy of the auth url: " + config.getAuthUrl());
+                + " Please check the provided access credentials."
+                + " Verify the validitiy of the auth url: " + config.getAuthUrl());
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
     if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();
     }
+  }
+
+  private JossAccount setUpPrivateAccount(Properties props, AccountConfig config, String authMethod)
+          throws IOException {
+    container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
+    String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
+    usePublicURL = "true".equals(isPubProp);
+    LOG.trace("Use public key value is {}. Use public {}", isPubProp, usePublicURL);
+    config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
+    config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
+
+    if (authMethod.equals("keystone")) {
+      preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
+      if (preferredRegion != null) {
+        config.setPreferredRegion(preferredRegion);
+      }
+      config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
+      config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+      config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
+    } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
+      preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
+      config.setPreferredRegion(preferredRegion);
+      config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+      String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
+      String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
+      PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
+          config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
+      config.setAccessProvider(psap);
+    } else {
+      config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
+      config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+      config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
+    }
+    LOG.trace("{}", config.toString());
+    return new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
+  }
+
+  private JossAccount setUpPublicAccount(AccountConfig config) throws IOException {
+    // we need to extract container name and path from the public URL
+    String publicURL = filesystemURI.toString().replace(schemaProvided, "https");
+    LOG.debug("publicURL: {}", publicURL);
+    String accessURL = Utils.extractAccessURL(publicURL);
+    LOG.debug("auth url {}", accessURL);
+    config.setAuthUrl(accessURL);
+    config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+    container = Utils.extractDataRoot(publicURL, accessURL);
+    DummyAccessProvider p = new DummyAccessProvider(accessURL);
+    config.setAccessProvider(p);
+    return new JossAccount(config, null, true, swiftConnectionManager);
+
   }
 
   @Override
