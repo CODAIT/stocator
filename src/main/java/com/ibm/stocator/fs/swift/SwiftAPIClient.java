@@ -50,7 +50,6 @@ import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.swift.auth.AccountConfiguration;
-import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
@@ -208,11 +207,9 @@ public class SwiftAPIClient implements IStoreClient {
       String accessURL = Utils.extractAccessURL(publicURL);
       LOG.debug("auth url {}", accessURL);
       config.setAuthUrl(accessURL);
-      // config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
       container = Utils.extractDataRoot(publicURL, accessURL);
-      DummyAccessProvider p = new DummyAccessProvider(accessURL);
-//      config.setAccessProvider(p);
-      mJossAccount = new JossAccount(config, null, true, swiftConnectionManager);
+      // DummyAccessProvider p = new DummyAccessProvider(accessURL);
+      mJossAccount = new JossAccount(config, true, swiftConnectionManager);
       mJossAccount.createDummyAccount();
     } else {
       container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
@@ -238,16 +235,13 @@ public class SwiftAPIClient implements IStoreClient {
         String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
         config.setUsername(userId);
         config.setProjectId(projectId);
-//        PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-//            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
-//        config.setAccessProvider(psap);
       } else {
         config.setAuthMethod("tempauth");
         config.setTenant(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
         config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
       }
       LOG.trace("{}", config.toString());
-      mJossAccount = new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
+      mJossAccount = new JossAccount(config, usePublicURL, swiftConnectionManager);
       try {
         mJossAccount.authenticate();
       } catch (Exception e) {

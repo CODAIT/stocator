@@ -36,10 +36,6 @@ public class JossAccount {
    */
   private AccountConfiguration accountConfig;
   /*
-   * Keystone region
-   */
-  private String mRegion;
-  /*
    * use public or internal URL for Swift API object store
    */
   boolean mUsePublicURL;
@@ -56,16 +52,14 @@ public class JossAccount {
    *
    * @param config
    *          Joss configuration
-   * @param region
-   *          Keystone region
    * @param usePublicURL
    *          use public or internal url
    * @param scm Swift connection manager
    */
-  public JossAccount(AccountConfiguration config, String region, boolean usePublicURL,
+  public JossAccount(AccountConfiguration config, boolean usePublicURL,
       SwiftConnectionManager scm) {
     accountConfig = config;
-    mRegion = region;
+
     mUsePublicURL = usePublicURL;
     httpclient = scm.createHttpConnection();
   }
@@ -115,8 +109,6 @@ public class JossAccount {
     } catch (IOException e) {
       LOG.error("Unable to authenticate. Please check credentials");
     }
-    getAccessURL();
-    // TODO(djalova): handle preferred region & improve error message
 
   }
 
@@ -165,7 +157,9 @@ public class JossAccount {
         }
       }
 
-      // Throw exception is endpoints is still null
+      if (swiftEndpoints == null) {
+        throw new IOException("No swift endpoints exist");
+      }
 
       String isPublic = mUsePublicURL ? "public" : "internal";
       for (int i = 0; i < swiftEndpoints.length(); i++) {
@@ -178,7 +172,7 @@ public class JossAccount {
               LOG.trace("Using {} {} URL: {}", isPublic, accountConfig.getRegion(), accessUrl);
             }
           } else {
-            // No region preference,return any URL
+            // No region preference, return any URL
             accessUrl = endpoint.getString("url");
             LOG.trace("Using {} URL: {}", isPublic, accessUrl);
           }
