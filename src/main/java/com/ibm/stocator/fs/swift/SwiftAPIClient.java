@@ -458,6 +458,9 @@ public class SwiftAPIClient implements IStoreClient {
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException {
 
+    System.out.println("Host name: " + hostName + " Path: " + path);
+    Collection<com.ibm.stocator.fs.common.StoredObject> swiftObjects = swiftContainer.listContainer();
+
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
@@ -471,6 +474,8 @@ public class SwiftAPIClient implements IStoreClient {
     } else {
       obj = path.toString();
     }
+
+    System.out.println("obj: " + obj);
 
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
@@ -492,6 +497,8 @@ public class SwiftAPIClient implements IStoreClient {
           continue;
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+        System.out.println("Tmp Name: " + tmp.getName());
+        System.out.println("Unified object name: " + unifiedObjectName);
         if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
             && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
           // JOSS returns all objects that start with the prefix of obj.

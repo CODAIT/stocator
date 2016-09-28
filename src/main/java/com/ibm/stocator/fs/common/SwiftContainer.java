@@ -44,11 +44,14 @@ public class SwiftContainer implements Container {
     Collection<StoredObject> list = new ArrayList<>();
     HttpGet getRequest = new HttpGet(requestURL);
     getRequest.addHeader("X-Auth-Token", account.getAuthToken());
+    //getRequest.addHeader("Accept", "application/json");
     HttpResponse response = client.execute(getRequest);
     ResponseHandler handler = new BasicResponseHandler();
     String[] objectNames = handler.handleResponse(response).toString().split("\n");
     for (String objName : objectNames) {
       SwiftObject obj = new SwiftObject(account, name, objName);
+      //System.out.println(objName);
+      obj.getMetadata();
       list.add(obj);
     }
     return list;

@@ -7,7 +7,7 @@ import java.io.InputStream;
 /**
  * Interface that contains operations that can be performed on objects.
  */
-interface StoredObject {
+public interface StoredObject {
 
   /**
    * Creates a container in the object store
@@ -49,4 +49,12 @@ interface StoredObject {
    */
   FileStatus getFileStatus();
 
+  /**
+   * Gets object name
+   */
+  String getName();
+
+  /**
+   *
+   */
 }
