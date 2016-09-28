@@ -209,12 +209,15 @@ public class SwiftAPIClient implements IStoreClient {
       config.setAuthUrl(accessURL);
       container = Utils.extractDataRoot(publicURL, accessURL);
       // DummyAccessProvider p = new DummyAccessProvider(accessURL);
-      mJossAccount = new JossAccount(config, true, swiftConnectionManager);
+      mJossAccount = new JossAccount(config, swiftConnectionManager);
       mJossAccount.createDummyAccount();
     } else {
       container = props.getProperty(SWIFT_CONTAINER_PROPERTY);
       String isPubProp = props.getProperty(SWIFT_PUBLIC_PROPERTY, "false");
       usePublicURL = "true".equals(isPubProp);
+      if (usePublicURL) {
+        config.setPublic();
+      }
       LOG.trace("Use public key value is {}. Use public {}", isPubProp, usePublicURL);
       config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
       config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
@@ -241,7 +244,7 @@ public class SwiftAPIClient implements IStoreClient {
         config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
       }
       LOG.trace("{}", config.toString());
-      mJossAccount = new JossAccount(config, usePublicURL, swiftConnectionManager);
+      mJossAccount = new JossAccount(config, swiftConnectionManager);
       try {
         mJossAccount.authenticate();
       } catch (Exception e) {

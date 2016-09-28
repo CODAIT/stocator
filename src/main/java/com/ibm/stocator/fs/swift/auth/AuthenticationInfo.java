@@ -12,9 +12,14 @@ abstract class AuthenticationInfo {
 
   protected String token;
   protected Date tokenExpiration;
+  protected String accessUrl;
 
   public AuthenticationInfo() {
   }
+
+  public AuthenticationInfo(AccountConfiguration config) {
+
+  };
 
   abstract void parseResponse(HttpResponse response) throws IOException;
 
@@ -26,4 +31,7 @@ abstract class AuthenticationInfo {
     return tokenExpiration;
   }
 
+  public String getAccessUrl(){
+    return accessUrl;
+  }
 }

@@ -20,6 +20,7 @@ public class SwiftV1AuthInfo extends AuthenticationInfo {
   @Override
   void parseResponse(HttpResponse response) throws IOException {
     token = response.getFirstHeader("X-Auth-Token").getValue();
+    accessUrl = response.getFirstHeader("X-Storage-Url").getValue();
   }
 
 }

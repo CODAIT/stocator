@@ -10,16 +10,14 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 /**
- * Contains information returned when authenticating an account using Keystone V3
+ * Contains information returned when authenticating an account using Keystone V2
  */
 public class SwiftV2AuthInfo extends AuthenticationInfo {
 
-  public SwiftV2AuthInfo() {
+  private AccountConfiguration accountConfig;
 
-  }
-
-  public SwiftV2AuthInfo(HttpResponse response) throws IOException {
-    parseResponse(response);
+  public SwiftV2AuthInfo(AccountConfiguration accountConfiguration) throws IOException {
+    accountConfig = accountConfiguration;
   }
 
   @Override

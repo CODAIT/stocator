@@ -6,14 +6,8 @@ import org.javaswift.joss.model.Account;
 
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.HttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,15 +30,10 @@ public class JossAccount {
    */
   private AccountConfiguration accountConfig;
   /*
-   * use public or internal URL for Swift API object store
-   */
-  boolean mUsePublicURL;
-  /*
    * Contains token information
    */
   private AuthenticationInfo authenticationInfo;
   private CloseableHttpClient httpclient = null;
-  private String accessUrl;
   private static final Logger LOG = LoggerFactory.getLogger(JossAccount.class);
 
   /**
@@ -56,11 +45,8 @@ public class JossAccount {
    *          use public or internal url
    * @param scm Swift connection manager
    */
-  public JossAccount(AccountConfiguration config, boolean usePublicURL,
-      SwiftConnectionManager scm) {
+  public JossAccount(AccountConfiguration config, SwiftConnectionManager scm) {
     accountConfig = config;
-
-    mUsePublicURL = usePublicURL;
     httpclient = scm.createHttpConnection();
   }
 
@@ -89,10 +75,10 @@ public class JossAccount {
 
     if (authMethod.equals("keystoneV3")) {
       authRequest = new KeystoneV3AuthenticationRequest(accountConfig);
-      authenticationInfo = new SwiftV3AuthInfo();
+      authenticationInfo = new SwiftV3AuthInfo(accountConfig);
     } else if (authMethod.equals("keystone")) {
       authRequest = new KeystoneV2AuthenticationRequest(accountConfig);
-      authenticationInfo = new SwiftV2AuthInfo();
+      authenticationInfo = new SwiftV2AuthInfo(accountConfig);
     } else {
       authRequest = new SwiftAuthenticationRequest(accountConfig);
       authenticationInfo = new SwiftV1AuthInfo();
@@ -100,16 +86,19 @@ public class JossAccount {
 
     try {
       HttpResponse response = httpclient.execute(authRequest);
-      authenticationInfo.parseResponse(response);
 
-      if (response.getStatusLine().getStatusCode() == 201) {
+      int statusCode = response.getStatusLine().getStatusCode();
+      if ( statusCode == 200 || statusCode == 201 ) {
         System.out.println("Auth success");
+        authenticationInfo.parseResponse(response);
+      } else {
+        LOG.error("Authentication request failed for reason: {}",
+                response.getStatusLine().getReasonPhrase());
       }
 
     } catch (IOException e) {
       LOG.error("Unable to authenticate. Please check credentials");
     }
-
   }
 
   /**
@@ -128,65 +117,8 @@ public class JossAccount {
    */
   public String getAccessURL() {
 
-    if (accessUrl == null) {
-      try {
-        queryAccessUrl();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-    return accessUrl;
-  }
+    return authenticationInfo.getAccessUrl();
 
-  private String queryAccessUrl() throws IOException {
-
-    String url = accountConfig.getAuthUrl().substring(0,
-            accountConfig.getAuthUrl().lastIndexOf("/")) + "/catalog";
-    HttpGet getEndpoints = new HttpGet(url);
-    getEndpoints.addHeader("X-Auth-Token", getAuthToken());
-    try {
-      HttpResponse response = httpclient.execute(getEndpoints);
-      ResponseHandler handler = new BasicResponseHandler();
-      JSONObject jsonResponse = new JSONObject(handler.handleResponse(response).toString());
-      JSONArray catalog = jsonResponse.getJSONArray("catalog");
-      JSONArray swiftEndpoints = null;
-      for (int i = 0; i < catalog.length() && swiftEndpoints == null; i++) {
-        JSONObject service = catalog.getJSONObject(i);
-        if (service.getString("name").equals("swift")) {
-          swiftEndpoints = service.getJSONArray("endpoints");
-        }
-      }
-
-      if (swiftEndpoints == null) {
-        throw new IOException("No swift endpoints exist");
-      }
-
-      String isPublic = mUsePublicURL ? "public" : "internal";
-      for (int i = 0; i < swiftEndpoints.length(); i++) {
-        JSONObject endpoint = swiftEndpoints.getJSONObject(i);
-        if (endpoint.get("interface").equals(isPublic)) {
-          if (accountConfig.getRegion() != null) {
-            // Return URL that matches region and interface
-            if (accountConfig.getRegion().equals(endpoint.getString("region"))) {
-              accessUrl = endpoint.getString("url");
-              LOG.trace("Using {} {} URL: {}", isPublic, accountConfig.getRegion(), accessUrl);
-            }
-          } else {
-            // No region preference, return any URL
-            accessUrl = endpoint.getString("url");
-            LOG.trace("Using {} URL: {}", isPublic, accessUrl);
-          }
-        }
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    if (accessUrl == null) {
-      throw new IOException("Unable to get url with provided public and a region configs");
-    }
-
-    return accessUrl;
   }
 
   /**
