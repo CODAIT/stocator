@@ -57,12 +57,10 @@ public class SwiftV3AuthInfo extends AuthenticationInfo {
             // Return URL that matches region and interface
             if (accountConfig.getRegion().equals(endpoint.getString("region"))) {
               accessUrl = endpoint.getString("url");
-              //LOG.trace("Using {} {} URL: {}", isPublic, accountConfig.getRegion(), accessUrl);
             }
           } else {
             // No region preference, return any URL
             accessUrl = endpoint.getString("url");
-            //LOG.trace("Using {} URL: {}", isPublic, accessUrl);
           }
         }
       }
