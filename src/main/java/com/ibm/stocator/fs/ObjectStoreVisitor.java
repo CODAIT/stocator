@@ -113,27 +113,12 @@ public class ObjectStoreVisitor {
           Class<?> aClass = classLoader.loadClass(implementation);
           storeClient = (IStoreClient) aClass.getConstructor(URI.class,
               Configuration.class).newInstance(fsuri, conf);
-        } catch (InstantiationException e) {
-          LOG.error("InstantiationException: {}", e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
-        } catch (IllegalAccessException e) {
-          LOG.error("IllegalAccessException: {}", e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
-        } catch (InvocationTargetException e) {
-          LOG.error("InvocationTargetException: {}", e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
-        } catch (NoSuchMethodException e) {
-          LOG.error("NoSuchMethodException: {}", e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
-        } catch (SecurityException e) {
-          LOG.error("SecurityException: {}", e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
-        } catch (ClassNotFoundException e) {
-          LOG.error("ClassNotFoundException: {}", e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
-        } catch (Exception e) {
-          LOG.error("Exception: {}", e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
+        } catch (InstantiationException | IllegalAccessException
+            | InvocationTargetException | NoSuchMethodException
+            | SecurityException | ClassNotFoundException e) {
+          LOG.error("Exception in load implementation class {}: {}", implementation,
+              e.getMessage());
+          throw new IOException("No object store for: " + fsSchema, e);
         }
         try {
           storeClient.initiate(supportedScheme);
