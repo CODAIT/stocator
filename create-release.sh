@@ -42,7 +42,7 @@ GPG_PASSPHRASE - Passphrase for GPG key used to sign release
 
 EXAMPLES
 
-create-release.sh --releaseVersion="1.0.4" --developmentVersion="1.0.5-SNAPSHOT" [--dryRun]
+create-release.sh --releaseVersion="1.0.6" --developmentVersion="1.0.7-SNAPSHOT" [--dryRun]
 
 EOF
   exit 1
@@ -134,6 +134,6 @@ echo "Preparing release $RELEASE_VERSION"
 
 # Build and prepare the release
 mvn -Pdistribution clean install
-mvn -Pdistribution -DaltDeploymentRepository=sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2 release:prepare release:perform gpg:sign $DRY_RUN -Dgpg.passphrase="$GPG_PASSPHRASE" -DskipTests -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
+mvn -Pdistribution -DaltDeploymentRepository=sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2 clean package release:prepare release:perform gpg:sign $DRY_RUN -Dgpg.passphrase="$GPG_PASSPHRASE" -DskipTests -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
 
 exit 0
