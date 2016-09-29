@@ -1,19 +1,16 @@
 package com.ibm.stocator.fs.common;
 
-import com.ibm.stocator.fs.swift.auth.JossAccount;
-import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 public class SwiftContainer implements Container {
 
@@ -41,18 +38,23 @@ public class SwiftContainer implements Container {
 
   @Override
   public Collection<StoredObject> listContainer() throws IOException {
+    return listContainer("");
+  }
+
+  @Override
+  public Collection<StoredObject> listContainer(String prefix) throws IOException {
     Collection<StoredObject> list = new ArrayList<>();
-    HttpGet getRequest = new HttpGet(requestURL);
+    HttpGet getRequest = new HttpGet(requestURL + "?prefix=" + prefix);
+    System.out.println("URL: " + getRequest.toString());
     getRequest.addHeader("X-Auth-Token", account.getAuthToken());
-    //getRequest.addHeader("Accept", "application/json");
     HttpResponse response = client.execute(getRequest);
-    ResponseHandler handler = new BasicResponseHandler();
-    String[] objectNames = handler.handleResponse(response).toString().split("\n");
-    for (String objName : objectNames) {
-      SwiftObject obj = new SwiftObject(account, name, objName);
-      //System.out.println(objName);
-      obj.getMetadata();
-      list.add(obj);
+    if (response.getStatusLine().getStatusCode() == 200) {
+      ResponseHandler handler = new BasicResponseHandler();
+      String[] objectNames = handler.handleResponse(response).toString().split("\n");
+      for (String objName : objectNames) {
+        SwiftObject obj = new SwiftObject(account, name, objName);
+        list.add(obj);
+      }
     }
     return list;
   }

@@ -1,7 +1,5 @@
 package com.ibm.stocator.fs.common;
 
-import org.apache.hadoop.fs.FileStatus;
-
 import java.io.InputStream;
 
 /**
@@ -20,34 +18,9 @@ public interface StoredObject {
   InputStream getObject();
 
   /**
-   * Creates object metadata
-   */
-  boolean createMetadata(String metadata);
-
-  /**
-   * Updates object metadata
-   */
-  boolean updateMetadata(String metadata);
-
-  /**
-   * Deletes object metadata
-   */
-  boolean deleteMetadata();
-
-  /**
-   * Shows object metadata
-   */
-  String getMetadata();
-
-  /**
    * Deletes object
    */
   boolean delete();
-
-  /**
-   * Gets FileStatus of object
-   */
-  FileStatus getFileStatus();
 
   /**
    * Gets object name
@@ -55,6 +28,10 @@ public interface StoredObject {
   String getName();
 
   /**
-   *
+   * Returns last modified
    */
+  String getLastModified();
+
+  int getContentLength();
+
 }

@@ -29,13 +29,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import com.ibm.stocator.fs.common.SwiftContainer;
 import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
-import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
 import org.slf4j.Logger;
@@ -47,6 +45,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -56,10 +56,8 @@ import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
+import com.ibm.stocator.fs.common.SwiftContainer;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
-
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
@@ -458,9 +456,6 @@ public class SwiftAPIClient implements IStoreClient {
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException {
 
-    System.out.println("Host name: " + hostName + " Path: " + path);
-    Collection<com.ibm.stocator.fs.common.StoredObject> swiftObjects = swiftContainer.listContainer();
-
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
@@ -476,73 +471,76 @@ public class SwiftAPIClient implements IStoreClient {
     }
 
     System.out.println("obj: " + obj);
+    Collection<com.ibm.stocator.fs.common.StoredObject> swiftObjects =
+            swiftContainer.listContainer(obj);
 
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
+    //PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
     FileStatus fs = null;
-    StoredObject previousElement = null;
-    for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      Collection<StoredObject> res = cObj.list(paginationMap, page);
-      if (page == 0 && (res == null || res.isEmpty())) {
-        FileStatus[] emptyRes = {};
-        LOG.debug("List {} in container {} is empty", obj, container);
-        return emptyRes;
+    com.ibm.stocator.fs.common.StoredObject previousElement = null;
+//    for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
+//      Collection<StoredObject> res = cObj.list(paginationMap, page);
+//      if (page == 0 && (res == null || res.isEmpty())) {
+//        FileStatus[] emptyRes = {};
+//        LOG.debug("List {} in container {} is empty", obj, container);
+//        return emptyRes;
+//      }
+    for (com.ibm.stocator.fs.common.StoredObject tmp : swiftObjects) {
+      System.out.println("Tmp name: " + tmp.getName());
+      if (previousElement == null) {
+        // first entry
+        // setCorrectSize(tmp, cObj);
+        previousElement = tmp;
+        continue;
       }
-      for (StoredObject tmp : res) {
-        if (previousElement == null) {
-          // first entry
-          setCorrectSize(tmp, cObj);
-          previousElement = tmp.getAsObject();
+      String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+//        System.out.println("Tmp Name: " + tmp.getName());
+//        System.out.println("Unified object name: " + unifiedObjectName);
+      if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
+          && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
+        // JOSS returns all objects that start with the prefix of obj.
+        // These may include other unrelated objects.
+        LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
+        continue;
+      }
+      if (isSparkOrigin(unifiedObjectName) && !fullListing) {
+        LOG.trace("{} created by Spark", unifiedObjectName);
+        if (!isJobSuccessful(unifiedObjectName)) {
+          LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
+          if (fModeAutomaticDelete) {
+            delete(hostName, new Path(tmp.getName()), true);
+          }
           continue;
-        }
-        String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
-        System.out.println("Tmp Name: " + tmp.getName());
-        System.out.println("Unified object name: " + unifiedObjectName);
-        if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
-            && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
-          // JOSS returns all objects that start with the prefix of obj.
-          // These may include other unrelated objects.
-          LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
-          continue;
-        }
-        if (isSparkOrigin(unifiedObjectName) && !fullListing) {
-          LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
-            if (fModeAutomaticDelete) {
-              delete(hostName, new Path(tmp.getName()), true);
+        } else {
+          // if we here - data created by spark and job completed successfully
+          // however there be might parts of failed tasks that were not aborted
+          // we need to make sure there are no failed attempts
+          if (nameWithoutTaskID(tmp.getName())
+              .equals(nameWithoutTaskID(previousElement.getName()))) {
+            // found failed that was not aborted.
+            LOG.trace("Colision identified between {} and {}", previousElement.getName(),
+                tmp.getName());
+            // setCorrectSize(tmp, cObj);
+            if (previousElement.getContentLength() < tmp.getContentLength()) {
+              LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
+                  previousElement.getName());
+              previousElement = tmp;
             }
             continue;
-          } else {
-            // if we here - data created by spark and job completed successfully
-            // however there be might parts of failed tasks that were not aborted
-            // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(tmp.getName())
-                .equals(nameWithoutTaskID(previousElement.getName()))) {
-              // found failed that was not aborted.
-              LOG.trace("Colision identified between {} and {}", previousElement.getName(),
-                  tmp.getName());
-              setCorrectSize(tmp, cObj);
-              if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
-                    previousElement.getName());
-                previousElement = tmp.getAsObject();
-              }
-              continue;
-            }
           }
         }
-        fs = null;
-        if (previousElement.getContentLength() > 0 || fullListing) {
-          fs = getFileStatus(previousElement, cObj, hostName, path);
-          tmpResult.add(fs);
-        }
-        previousElement = tmp.getAsObject();
       }
+      fs = null;
+      if (previousElement.getContentLength() > 0 || fullListing) {
+        fs = getFileStatus(previousElement, cObj, hostName, path);
+        tmpResult.add(fs);
+      }
+      previousElement = tmp;
     }
+
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
-      LOG.trace("Adding {} to the list", previousElement.getPath());
+      LOG.trace("Adding {} to the list", previousElement.getName());
       fs = getFileStatus(previousElement, cObj, hostName, path);
       tmpResult.add(fs);
     }
@@ -778,8 +776,9 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IllegalArgumentException if error
    * @throws IOException if error
    */
-  private FileStatus getFileStatus(StoredObject tmp, Container cObj,
-      String hostName, Path path) throws IllegalArgumentException, IOException {
+  private FileStatus getFileStatus(com.ibm.stocator.fs.common.StoredObject tmp, Container cObj,
+                                   String hostName, Path path) throws
+           IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
     return new FileStatus(tmp.getContentLength(), false, 1, blockSize,
         getLastModified(tmp.getLastModified()), 0, null,

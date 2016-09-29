@@ -23,6 +23,8 @@ public interface Container {
    */
   Collection<StoredObject> listContainer() throws IOException;
 
+  Collection<StoredObject> listContainer(String prefix) throws IOException;
+
   /**
    * Creates container metadata
    */
