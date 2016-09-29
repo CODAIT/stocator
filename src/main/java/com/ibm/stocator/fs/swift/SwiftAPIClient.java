@@ -23,11 +23,11 @@ import java.net.URI;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.Properties;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
@@ -128,6 +128,13 @@ public class SwiftAPIClient implements IStoreClient {
   private Map<String, Boolean> cachedSparkJobsStatus;
 
   /*
+  * Contains map of objects and their correct size.
+  * Maintained at container listing and read at file status check
+  * caching can be done since object size is immutable
+  */
+  private Map<String, Long> cachedStoredObjectSize;
+
+  /*
    * Page size for container listing
    */
   private final int pageListSize = 100;
@@ -173,6 +180,7 @@ public class SwiftAPIClient implements IStoreClient {
   public void initiate(String scheme) throws IOException, ConfigurationParseException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
+    cachedStoredObjectSize = new HashMap<String, Long>();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
@@ -304,24 +312,13 @@ public class SwiftAPIClient implements IStoreClient {
       1) a zero byte object with the name of the directory
       2) no zero byte object with the name of the directory
     */
-    String objectName = path.toString().substring(hostName.length());
-    String objectNameNoSlash = objectName;
-    if (objectName.endsWith("/")) {
-      /*
-        removing the trailing slash because it is not supported in Swift
-        an request on an object (not a container) that has a trailing slash will lead
-        to a 404 response message
-      */
-      objectNameNoSlash = objectName.substring(0, objectName.length() - 1);
-    }
-    StoredObject so = cont.getObject(objectNameNoSlash);
     boolean isDirectory = false;
-    if (so.exists()) {
-      // We need to check if the object size is equal to zero
+    String objectName = getObjName(hostName, path);
+    Long objContentLength = cachedStoredObjectSize.get(objectName);
+    if (objContentLength != null) {
+      // object exists, We need to check if the object size is equal to zero
       // If so, it might be a directory
-      long contentLength = so.getContentLength();
-      String lastModified = so.getLastModified();
-      if (contentLength == 0) {
+      if (objContentLength == 0) {
         Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
         if (directoryFiles != null && directoryFiles.size() != 0) {
           // The zero length object is a directory
@@ -329,9 +326,9 @@ public class SwiftAPIClient implements IStoreClient {
         }
       }
       LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
-          isDirectory, lastModified);
-      return new FileStatus(contentLength, isDirectory, 1, blockSize,
-              getLastModified(lastModified), path);
+          isDirectory, 0);
+      return new FileStatus(objContentLength, isDirectory, 1, blockSize,
+             0L, path);
     }
     // We need to check if it may be a directory with no zero byte file associated
     LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
@@ -386,7 +383,7 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.trace("Object exists: {}", path);
     String objName = path.toString();
     if (path.toString().startsWith(hostName)) {
-      objName = path.toString().substring(hostName.length());
+      objName = getObjName(hostName, path);
     }
     if (objName.contains(HADOOP_TEMPORARY)) {
       LOG.debug("Exists on temp object {}. Return false", objName);
@@ -403,7 +400,7 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.debug("Get object: {}", path);
     String objName = path.toString();
     if (path.toString().startsWith(hostName)) {
-      objName = path.toString().substring(hostName.length());
+      objName = getObjName(hostName, path);
     }
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
     FileStatus fs = getObjectMetadata(hostName, path);
@@ -529,6 +526,7 @@ public class SwiftAPIClient implements IStoreClient {
         fs = null;
         if (previousElement.getContentLength() > 0 || fullListing) {
           fs = getFileStatus(previousElement, cObj, hostName, path);
+          cachedStoredObjectSize.put(getObjName(hostName, fs.getPath()), fs.getLen());
           tmpResult.add(fs);
         }
         previousElement = tmp.getAsObject();
@@ -537,6 +535,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
+      cachedStoredObjectSize.put(getObjName(hostName, fs.getPath()), fs.getLen());
       tmpResult.add(fs);
     }
     LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
@@ -590,7 +589,7 @@ public class SwiftAPIClient implements IStoreClient {
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException {
     String obj = path.toString();
     if (path.toString().startsWith(hostName)) {
-      obj = path.toString().substring(hostName.length());
+      obj = getObjName(hostName, path);
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     StoredObject so = mJossAccount.getAccount().getContainer(container)
@@ -760,6 +759,14 @@ public class SwiftAPIClient implements IStoreClient {
     }
   }
 
+  private String getObjName(String hostName, Path path) {
+    return getObjName(hostName, path.toString());
+  }
+
+  private String getObjName(String hostName, String path) {
+    return path.substring(hostName.length());
+  }
+
   /**
    * Maps StoredObject of JOSS into Hadoop FileStatus
    *
@@ -784,11 +791,11 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.debug("Rename from {} to {}. hostname is {}", srcPath, dstPath, hostName);
     String objNameSrc = srcPath.toString();
     if (srcPath.toString().startsWith(hostName)) {
-      objNameSrc = srcPath.toString().substring(hostName.length());
+      objNameSrc = getObjName(hostName, srcPath);
     }
     String objNameDst = dstPath.toString();
     if (objNameDst.toString().startsWith(hostName)) {
-      objNameDst = dstPath.toString().substring(hostName.length());
+      objNameDst = getObjName(hostName, dstPath);
     }
 
     if (objNameSrc.contains(HADOOP_TEMPORARY)) {
