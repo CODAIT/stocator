@@ -33,7 +33,6 @@ import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
-import org.javaswift.joss.model.DirectoryOrObject;
 import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
@@ -46,6 +45,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.http.HttpResponse;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -313,39 +313,40 @@ public class SwiftAPIClient implements IStoreClient {
       */
       objectNameNoSlash = objectName.substring(0, objectName.length() - 1);
     }
-    StoredObject so = cont.getObject(objectNameNoSlash);
+
+    HttpResponse metadata = SwiftAPIDirect.getObjectMetadata(mJossAccount, container,
+            objectNameNoSlash, swiftConnectionManager);
+
     boolean isDirectory = false;
-    if (so.exists()) {
-      // We need to check if the object size is equal to zero
-      // If so, it might be a directory
-      long contentLength = so.getContentLength();
-      String lastModified = so.getLastModified();
-      if (contentLength == 0) {
-        Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
-        if (directoryFiles != null && directoryFiles.size() != 0) {
-          // The zero length object is a directory
+
+    if (metadata != null) {
+
+      int contentLength = new Integer(metadata.getFirstHeader("Content-Length").getValue());
+      String contentType = metadata.getFirstHeader("Content-Type").getValue();
+
+      long lastModified = 0L;
+      if (metadata.containsHeader("Last-Modified")) {
+        lastModified = getLastModified(metadata.getFirstHeader("Last-Modified").getValue());
+      }
+
+      if (contentLength == 0) { // Check if directory
+        if (contentType.equals("application/directory")) {
           isDirectory = true;
+        } else if (!contentType.equals("application/octet-stream")) {
+          return null;
         }
+
       }
       LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
-          isDirectory, lastModified);
+              isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
-              getLastModified(lastModified), path);
+              lastModified, path);
+    } else {
+      System.out.println("No metadata for " + objectNameNoSlash);
     }
-    // We need to check if it may be a directory with no zero byte file associated
-    LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
-    Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
-        "", 10);
-    if (directoryFiles != null) {
-      LOG.trace("{} got {} candidates", objectName + "/", directoryFiles.size());
-    }
-    if (directoryFiles != null && directoryFiles.size() != 0) {
-      // In this case there is no lastModified
-      isDirectory = true;
-      LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
-      return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
-    }
+
     LOG.debug("Not found {}", path.toString());
+
     return null;
   }
 
