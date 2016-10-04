@@ -71,7 +71,8 @@ public class SwiftOutputStream extends OutputStream {
   /*
    *  Executor service to handle threads
    */
-  private static final ExecutorService EXECUTOR_SERVICE =  Executors.newFixedThreadPool(10);
+  private static final ExecutorService EXECUTOR_SERVICE =  Executors.newFixedThreadPool(Runtime
+          .getRuntime().availableProcessors());
   private Future<Void> futureTask;
   private long totalWritten;
   private JossAccount mAccount;
@@ -172,7 +173,7 @@ public class SwiftOutputStream extends OutputStream {
     try {
       futureTask.get();
     } catch (Exception e) {
-      throw new IOException("Unable to complete write. Reason : " + e.getCause());
+      throw new IOException("Unable to complete write.", e);
     }
   }
 
