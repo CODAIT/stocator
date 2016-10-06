@@ -157,7 +157,7 @@ public class SwiftAPIDirect {
 
     String requestURL = account.getAccessURL() + "/" + container;
     if (!prefix.isEmpty()) {
-      requestURL = requestURL + "?prefix" + prefix;
+      requestURL = requestURL + "?prefix=" + prefix;
     }
 
     ArrayList<SwiftObject> listing = new ArrayList<>();
