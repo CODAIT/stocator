@@ -330,23 +330,42 @@ public class SwiftAPIClient implements IStoreClient {
       }
 
       if (contentLength == 0) { // Check if directory
-        if (contentType.equals("application/directory")) {
+        if (contentType.equals("application/directory")
+                || contentType.equals("application/octet-stream")) {
           isDirectory = true;
-        } else if (!contentType.equals("application/octet-stream")) {
+        /*} else if (contentType.equals("application/octet-stream")) {
+          FileStatus[] listing = list(hostName, path, false, true);
+          if (listing.length > 1) {
+            // If additional objects are returned then the object marks a directory
+            isDirectory = true;
+          }
+        }*/
+        } else {
           return null;
         }
-
       }
       LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
               isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
               lastModified, path);
     } else {
-      System.out.println("No metadata for " + objectNameNoSlash);
+      // If no metadata is found we need to check if it may
+      // be a directory with no zero byte file associated
+
+      LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
+      Path directory = new Path(path.toString() + "/");
+      FileStatus[] listing = list(hostName, directory, false, true);
+
+      if (listing.length > 0) {
+        // In this case there is no lastModified
+        LOG.trace("{} got {} candidates", objectName + "/", listing.length);
+        isDirectory = true;
+        LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
+        return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
+      }
     }
 
     LOG.debug("Not found {}", path.toString());
-
     return null;
   }
 
