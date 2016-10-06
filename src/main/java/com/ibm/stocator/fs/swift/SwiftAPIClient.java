@@ -34,7 +34,6 @@ import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
-import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
 import org.slf4j.Logger;
@@ -471,7 +470,6 @@ public class SwiftAPIClient implements IStoreClient {
 
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
     FileStatus fs = null;
     SwiftObject previousElement = null;
 
@@ -528,9 +526,9 @@ public class SwiftAPIClient implements IStoreClient {
       fs = null;
       if (previousElement.getContentLength() > 0 || fullListing) {
         // fs = getFileStatus(previousElement, cObj, hostName, path);
-        String newMergedPath = getMergedPath(hostName, path, object.getObjectName());
-        fs = new FileStatus(object.getContentLength(), false, 1, blockSize,
-                  object.getLastModified(), 0, null,
+        String newMergedPath = getMergedPath(hostName, path, previousElement.getObjectName());
+        fs = new FileStatus(previousElement.getContentLength(), false, 1, blockSize,
+                  previousElement.getLastModified(), 0, null,
                   null, null, new Path(newMergedPath));
         tmpResult.add(fs);
       }
