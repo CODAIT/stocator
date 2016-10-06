@@ -473,67 +473,77 @@ public class SwiftAPIClient implements IStoreClient {
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
     FileStatus fs = null;
-    StoredObject previousElement = null;
-    for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      Collection<StoredObject> res = cObj.list(paginationMap, page);
-      if (page == 0 && (res == null || res.isEmpty())) {
-        FileStatus[] emptyRes = {};
-        LOG.debug("List {} in container {} is empty", obj, container);
-        return emptyRes;
+    SwiftObject previousElement = null;
+
+    Collection<SwiftObject> listing = SwiftAPIDirect.listContainer(mJossAccount,
+            swiftConnectionManager, container, obj);
+
+    if (listing.isEmpty()) {
+      FileStatus[] emptyRes = {};
+      LOG.debug("List {} in container {} is empty", obj, container);
+      return emptyRes;
+    }
+    for (SwiftObject object : listing) {
+      if (previousElement == null) {
+        // first entry
+        //setCorrectSize(tmp, cObj);
+        previousElement = object;
+        continue;
       }
-      for (StoredObject tmp : res) {
-        if (previousElement == null) {
-          // first entry
-          setCorrectSize(tmp, cObj);
-          previousElement = tmp.getAsObject();
+      String unifiedObjectName = extractUnifiedObjectName(object.getObjectName());
+      if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
+          && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
+        // JOSS returns all objects that start with the prefix of obj.
+        // These may include other unrelated objects.
+        LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
+        continue;
+      }
+      if (isSparkOrigin(unifiedObjectName) && !fullListing) {
+        LOG.trace("{} created by Spark", unifiedObjectName);
+        if (!isJobSuccessful(unifiedObjectName)) {
+          LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
+          if (fModeAutomaticDelete) {
+            delete(hostName, new Path(object.getObjectName()), true);
+          }
           continue;
-        }
-        String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
-        if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
-            && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
-          // JOSS returns all objects that start with the prefix of obj.
-          // These may include other unrelated objects.
-          LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
-          continue;
-        }
-        if (isSparkOrigin(unifiedObjectName) && !fullListing) {
-          LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
-            if (fModeAutomaticDelete) {
-              delete(hostName, new Path(tmp.getName()), true);
+        } else {
+          // if we here - data created by spark and job completed successfully
+          // however there be might parts of failed tasks that were not aborted
+          // we need to make sure there are no failed attempts
+          if (nameWithoutTaskID(object.getObjectName())
+              .equals(nameWithoutTaskID(previousElement.getObjectName()))) {
+            // found failed that was not aborted.
+            LOG.trace("Collision identified between {} and {}", previousElement.getObjectName(),
+                object.getObjectName());
+//            setCorrectSize(tmp, cObj);
+            if (previousElement.getContentLength() < object.getContentLength()) {
+              LOG.trace("New candidate is {}. Removed {}", object.getObjectName(),
+                  previousElement.getContentLength());
+              previousElement = object;
             }
             continue;
-          } else {
-            // if we here - data created by spark and job completed successfully
-            // however there be might parts of failed tasks that were not aborted
-            // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(tmp.getName())
-                .equals(nameWithoutTaskID(previousElement.getName()))) {
-              // found failed that was not aborted.
-              LOG.trace("Colision identified between {} and {}", previousElement.getName(),
-                  tmp.getName());
-              setCorrectSize(tmp, cObj);
-              if (previousElement.getContentLength() < tmp.getContentLength()) {
-                LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
-                    previousElement.getName());
-                previousElement = tmp.getAsObject();
-              }
-              continue;
-            }
           }
         }
-        fs = null;
-        if (previousElement.getContentLength() > 0 || fullListing) {
-          fs = getFileStatus(previousElement, cObj, hostName, path);
-          tmpResult.add(fs);
-        }
-        previousElement = tmp.getAsObject();
       }
+      fs = null;
+      if (previousElement.getContentLength() > 0 || fullListing) {
+        // fs = getFileStatus(previousElement, cObj, hostName, path);
+        String newMergedPath = getMergedPath(hostName, path, object.getObjectName());
+        fs = new FileStatus(object.getContentLength(), false, 1, blockSize,
+                  object.getLastModified(), 0, null,
+                  null, null, new Path(newMergedPath));
+        tmpResult.add(fs);
+      }
+      previousElement = object;
     }
+
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
-      LOG.trace("Adding {} to the list", previousElement.getPath());
-      fs = getFileStatus(previousElement, cObj, hostName, path);
+      LOG.trace("Adding {} to the list", getMergedPath(hostName, path,
+              previousElement.getObjectName()));
+      String newMergedPath = getMergedPath(hostName, path, previousElement.getObjectName());
+      fs = new FileStatus(previousElement.getContentLength(), false, 1, blockSize,
+              previousElement.getLastModified(), 0, null,
+              null, null, new Path(newMergedPath));
       tmpResult.add(fs);
     }
     LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());

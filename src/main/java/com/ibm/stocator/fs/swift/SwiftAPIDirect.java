@@ -19,15 +19,25 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +99,7 @@ public class SwiftAPIDirect {
   }
 
   /**
+
    * Uses the Swift API to retrieve object metadata
    * @param account Account information
    * @param container Container name
@@ -114,6 +125,74 @@ public class SwiftAPIDirect {
               + responseCode);
     }
     return metadata;
+  }
+
+  /**
+   * Retrieves a list of all objects stored in the container
+   * @param account Account info
+   * @param manager Connection manager
+   * @param container Name of the container
+   * @return List of SwiftObjects in the container
+   * @throws IOException
+   */
+  public static Collection<SwiftObject> listContainer(JossAccount account,
+                                                      SwiftConnectionManager manager,
+                                                      String container) throws IOException {
+    return listContainer(account, manager, container, "");
+  }
+
+  /**
+   * Retrieves list of all objects stored in the container beginning with a prefix
+   * @param account Account info
+   * @param manager Connection manager
+   * @param container Name of the container
+   * @param prefix
+   * @return List of SwiftObjects in the container
+   * @throws IOException
+   */
+  public static Collection<SwiftObject> listContainer(JossAccount account,
+                                                      SwiftConnectionManager manager,
+                                                      String container, String prefix)
+                                                      throws IOException {
+
+    String requestURL = account.getAccessURL() + "/" + container;
+    if (!prefix.isEmpty()) {
+      requestURL = requestURL + "?prefix" + prefix;
+    }
+
+    ArrayList<SwiftObject> listing = new ArrayList<>();
+    HttpGet getRequest = new HttpGet(requestURL);
+    getRequest.addHeader("X-Auth-Token", account.getAuthToken());
+    getRequest.addHeader("Accept", "application/json");
+    try {
+      HttpResponse response = manager.createHttpConnection().execute(getRequest);
+      if (response.getStatusLine().getStatusCode() == 200) {
+        ResponseHandler handler = new BasicResponseHandler();
+        String json = handler.handleResponse(response).toString();
+        try {
+          JSONArray objectArray = new JSONArray(json);
+          for (int i = 0; i < objectArray.length(); i++) {
+            JSONObject jsonObject = objectArray.getJSONObject(i);
+            DateFormat df = new SimpleDateFormat("YYYY-MM-DD'T'hh:mm:ss");
+            long lastModified = df.parse(jsonObject.getString("last_modified")).getTime();
+            SwiftObject object = new SwiftObject(jsonObject.getString("name"),
+                                                 lastModified,
+                                                 jsonObject.getString("content_type"),
+                                                 jsonObject.getLong("bytes"));
+            listing.add(object);
+          }
+        } catch (JSONException e) {
+          throw new IOException("Response received is not in the expected JSON format.");
+        } catch (ParseException e) {
+          throw new IOException("Last Modified field is in unexpected format.");
+        }
+      }
+
+    } catch (IOException e) {
+      LOG.error("Unable to complete container listing request.");
+      throw new IOException("Unable to complete container listing request.", e);
+    }
+    return listing;
   }
 
   /**
