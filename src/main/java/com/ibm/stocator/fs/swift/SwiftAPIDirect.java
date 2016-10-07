@@ -26,6 +26,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
@@ -86,6 +87,19 @@ public class SwiftAPIDirect {
     SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
         resp.y.y.getEntity(), resp.y.x);
     return httpStream;
+  }
+
+  public static HttpResponse copyObject(JossAccount account, SwiftConnectionManager scm,
+                                         String container, String srcObj, String dstObj)
+                                        throws IOException {
+
+    String requestURL = account.getAccessURL() + "/" + container + "/" + dstObj;
+
+    HttpPut copyRequest = new HttpPut(requestURL);
+    copyRequest.addHeader("X-Auth-Token", account.getAuthToken());
+    copyRequest.addHeader("X-Copy-From", container + "/" + srcObj);
+    HttpResponse response = scm.createHttpConnection().execute(copyRequest);
+    return response;
   }
 
   /**

@@ -46,6 +46,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.http.HttpResponse;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -793,10 +794,14 @@ public class SwiftAPIClient implements IStoreClient {
       return true;
     }
     LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
-    Container cont = mJossAccount.getAccount().getContainer(container);
-    StoredObject so = cont.getObject(objNameSrc);
-    StoredObject soDst = cont.getObject(objNameDst);
-    so.copyObject(cont, soDst);
-    return true;
+
+    HttpResponse response = SwiftAPIDirect.copyObject(mJossAccount, swiftConnectionManager,
+                                                      container, objNameSrc, objNameDst);
+
+    if (response.getStatusLine().getStatusCode() == 201) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }
