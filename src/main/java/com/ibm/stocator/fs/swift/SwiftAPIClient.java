@@ -46,6 +46,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.http.HttpResponse;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -588,12 +589,18 @@ public class SwiftAPIClient implements IStoreClient {
       obj = path.toString().substring(hostName.length());
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
-    StoredObject so = mJossAccount.getAccount().getContainer(container)
-        .getObject(obj);
-    if (so.exists()) {
-      so.delete();
+
+    try {
+      HttpResponse result = SwiftAPIDirect.deleteObject(mJossAccount, swiftConnectionManager,
+              container, obj);
+      if (result.getStatusLine().getStatusCode() == 204) {
+        return true;
+      }
+    } catch (IOException e) {
+      LOG.error("Delete operation failed.");
+      throw e;
     }
-    return true;
+    return false;
   }
 
   @Override

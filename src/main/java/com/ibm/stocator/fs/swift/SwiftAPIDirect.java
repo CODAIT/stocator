@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -113,4 +114,21 @@ public class SwiftAPIDirect {
     return new Tuple<Integer, Tuple<HttpRequestBase,
         HttpResponse>>(Integer.valueOf(responseCode), respData);
   }
+
+  public static HttpResponse deleteObject(JossAccount account, SwiftConnectionManager manager,
+                                           String container, String object) throws IOException {
+
+    String requestURL = account.getAccessURL() + "/" + container + "/" + object;
+    HttpResponse response;
+    HttpDelete deleteRequest = new HttpDelete(requestURL);
+    deleteRequest.addHeader("X-Auth-Token", account.getAuthToken());
+    try {
+      response = manager.createHttpConnection().execute(deleteRequest);
+    } catch (IOException e) {
+      LOG.error("Delete request could not be completed.");
+      throw e;
+    }
+    return response;
+  }
+
 }
