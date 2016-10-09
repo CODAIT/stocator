@@ -18,12 +18,11 @@
 package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
+import java.io.InputStream;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpRequestBase;
 
 import com.ibm.stocator.fs.common.Utils;
-import org.apache.http.util.EntityUtils;
 
 public class SwiftInputStreamWrapper extends BaseInputStream {
 
@@ -37,15 +36,9 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
    */
   private boolean finish;
 
-  /*
-   * Http entity that contains the input stream
-   */
-  private HttpEntity httpEntity;
-
-  public SwiftInputStreamWrapper(HttpEntity entity, HttpRequestBase httpRequestT)
+  public SwiftInputStreamWrapper(InputStream in, HttpRequestBase httpRequestT)
           throws IOException {
-    super(entity.getContent());
-    httpEntity = entity;
+    super(in);
     httpRequest = httpRequestT;
   }
 
@@ -56,7 +49,6 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
 
   private void doAbort() {
     if (httpRequest != null) {
-      EntityUtils.consumeQuietly(httpEntity);
       httpRequest.abort();
     }
     Utils.closeWithoutException(in);
