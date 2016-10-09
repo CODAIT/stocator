@@ -241,6 +241,9 @@ public class SwiftAPIClient implements IStoreClient {
         PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
             config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
         config.setAccessProvider(psap);
+      } else if (authMethod.equals("basic")) {
+        config.setAuthenticationMethod(AuthenticationMethod.BASIC);
+        config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
       } else {
         config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
         config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));

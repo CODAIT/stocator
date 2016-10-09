@@ -80,7 +80,7 @@ public final class ConfigurationHandler {
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, USERNAME, props, SWIFT_USERNAME_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, PASSWORD, props, SWIFT_PASSWORD_PROPERTY, true);
-      Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, true);
+
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_METHOD, props, SWIFT_AUTH_METHOD_PROPERTY,
           false);
       Utils.updateProperty(conf, prefix2D, prefix, BLOCK_SIZE, props, SWIFT_BLOCK_SIZE_PROPERTY,
@@ -90,12 +90,17 @@ public final class ConfigurationHandler {
       Utils.updateProperty(conf, prefix2D, prefix, PUBLIC, props, SWIFT_PUBLIC_PROPERTY, false);
       String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY, KEYSTONE_V3_AUTH);
       props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, authMethod);
+
       if (authMethod.equals(KEYSTONE_V3_AUTH)) {
         Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
         props.setProperty(SWIFT_PROJECT_ID_PROPERTY, props.getProperty(SWIFT_TENANT_PROPERTY));
         props.setProperty(SWIFT_USER_ID_PROPERTY, props.getProperty(SWIFT_USERNAME_PROPERTY));
+      } else if (authMethod.equals("basic")) {
+        Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
+        Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, false);
       } else {
         Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
+        Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, true);
       }
     }
     return props;
