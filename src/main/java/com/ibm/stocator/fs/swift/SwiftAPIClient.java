@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.swift;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -314,12 +315,11 @@ public class SwiftAPIClient implements IStoreClient {
       objectNameNoSlash = objectName.substring(0, objectName.length() - 1);
     }
 
-    HttpResponse metadata = SwiftAPIDirect.getObjectMetadata(mJossAccount, container,
-            objectNameNoSlash, swiftConnectionManager);
-
     boolean isDirectory = false;
 
-    if (metadata != null) {
+    try {
+      HttpResponse metadata = SwiftAPIDirect.getObjectMetadata(mJossAccount, container,
+              objectNameNoSlash, swiftConnectionManager);
 
       int contentLength = new Integer(metadata.getFirstHeader("Content-Length").getValue());
       String contentType = metadata.getFirstHeader("Content-Type").getValue();
@@ -333,40 +333,50 @@ public class SwiftAPIClient implements IStoreClient {
         if (contentType.equals("application/directory")
                 || contentType.equals("application/octet-stream")) {
           isDirectory = true;
-        /*} else if (contentType.equals("application/octet-stream")) {
-          FileStatus[] listing = list(hostName, path, false, true);
-          if (listing.length > 1) {
+        } else if (contentType.equals("application/octet-stream")) {
+          if (checkDirectory(path, hostName)) {
             // If additional objects are returned then the object marks a directory
             isDirectory = true;
           }
-        }*/
         } else {
           return null;
         }
       }
       LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
-              isDirectory, lastModified);
+          isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
               lastModified, path);
-    } else {
+    } catch (FileNotFoundException e) {
       // If no metadata is found we need to check if it may
       // be a directory with no zero byte file associated
 
       LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
-      Path directory = new Path(path.toString() + "/");
-      FileStatus[] listing = list(hostName, directory, false, true);
 
-      if (listing.length > 0) {
+      if (checkDirectory(path, hostName)) {
         // In this case there is no lastModified
-        LOG.trace("{} got {} candidates", objectName + "/", listing.length);
         isDirectory = true;
         LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
         return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
       }
     }
-
     LOG.debug("Not found {}", path.toString());
     return null;
+  }
+
+  private boolean checkDirectory(Path path, String hostName) throws IOException {
+    try {
+      // Using URI instead of Path constructor because the constructor trims trailing slashes
+      URI temp = new URI(path.toString() + Path.SEPARATOR);
+      Path directory = new Path(temp);
+      FileStatus[] listing = list(hostName, directory, false, true);
+      if (listing.length > 0) {
+        LOG.trace("{} got {} candidates", path + "/", listing.length);
+        return true;
+      }
+    } catch (URISyntaxException e) {
+      e.printStackTrace();
+    }
+    return false;
   }
 
   /**
@@ -489,6 +499,7 @@ public class SwiftAPIClient implements IStoreClient {
       obj = path.toString();
     }
 
+    LOG.debug("List container for {} container {}", obj, container);
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
