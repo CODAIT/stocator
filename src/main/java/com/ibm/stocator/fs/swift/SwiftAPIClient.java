@@ -256,7 +256,7 @@ public class SwiftAPIClient implements IStoreClient {
       } catch (Exception e) {
         throw new IOException("Failed to create an account model."
             + " Please check the provided access credentials."
-            + " Verify the validitiy of the auth url: " + config.getAuthUrl());
+            + " Verify the validitiy of the auth url: " + config.getAuthUrl(), e);
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);

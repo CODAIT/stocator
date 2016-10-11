@@ -92,7 +92,8 @@ public final class ConfigurationHandler {
       props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, authMethod);
 
       if (authMethod.equals(KEYSTONE_V3_AUTH)) {
-        Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
+        Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, false);
+        Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, true);
         props.setProperty(SWIFT_PROJECT_ID_PROPERTY, props.getProperty(SWIFT_TENANT_PROPERTY));
         props.setProperty(SWIFT_USER_ID_PROPERTY, props.getProperty(SWIFT_USERNAME_PROPERTY));
       } else if (authMethod.equals("basic")) {
