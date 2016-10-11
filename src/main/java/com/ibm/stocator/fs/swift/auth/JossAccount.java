@@ -88,7 +88,7 @@ public class JossAccount {
       HttpResponse response = httpclient.execute(authRequest);
 
       int statusCode = response.getStatusLine().getStatusCode();
-      if ( statusCode == 200 || statusCode == 201 ) {
+      if (statusCode == 200 || statusCode == 201) {
         System.out.println("Auth success");
         authenticationInfo.parseResponse(response);
       } else {

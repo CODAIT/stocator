@@ -21,7 +21,6 @@ public class SwiftV3AuthInfo extends AuthenticationInfo {
     accountConfig = config;
   }
 
-
   @Override
   void parseResponse(HttpResponse response) throws IOException {
 
