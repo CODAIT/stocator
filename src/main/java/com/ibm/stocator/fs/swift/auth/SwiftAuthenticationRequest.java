@@ -6,8 +6,11 @@ public class SwiftAuthenticationRequest extends HttpGet implements Authenticatio
 
   public SwiftAuthenticationRequest(AccountConfiguration conf) {
     super(conf.getAuthUrl());
-
-    setHeader("X-Storage-User", conf.getUsername() + ":" + conf.getTenant());
+    String user =  conf.getUsername();
+    if (conf.getTenant() != null) {
+      user += conf.getTenant();
+    }
+    setHeader("X-Storage-User", user);
     setHeader("X-Storage-Pass", conf.getPassword());
   }
 }
