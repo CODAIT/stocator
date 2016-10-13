@@ -17,12 +17,15 @@
 
 package com.ibm.stocator.fs.swift;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
@@ -83,6 +86,34 @@ public class SwiftAPIDirect {
     SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
         resp.y.y.getEntity(), resp.y.x);
     return httpStream;
+  }
+
+  /**
+   * Uses the Swift API to retrieve object metadata
+   * @param account Account information
+   * @param container Container name
+   * @param object Object name
+   * @param scm Connection Manager
+   * @return Returns an HttpResponse containing the metadata as headers
+   * @throws IOException
+   */
+  public static HttpResponse getObjectMetadata(JossAccount account, String container, String object,
+                                               SwiftConnectionManager scm) throws IOException {
+    HttpHead headRequest = new HttpHead(account.getAccessURL() + "/" + container + "/" + object);
+    headRequest.addHeader("X-Auth-Token", account.getAuthToken());
+    HttpClient client = scm.createHttpConnection();
+    HttpResponse metadata;
+
+    metadata = client.execute(headRequest);
+    int responseCode = metadata.getStatusLine().getStatusCode();
+    if (responseCode == 404) {
+      throw new FileNotFoundException();
+    } else if (responseCode < 200 || responseCode >= 300) {
+      LOG.error("Get object metadata operation could not be completed.");
+      throw new IOException("Get object metadata operation could not be completed. Code: "
+              + responseCode);
+    }
+    return metadata;
   }
 
   /**
