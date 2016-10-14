@@ -103,19 +103,22 @@ public class ObjectStoreVisitor {
           Constants.SWIFT2D);
       String implementation = conf.get("fs.stocator." + scheme.trim() + ".impl",
           "com.ibm.stocator.fs.swift.SwiftAPIClient");
-      LOG.debug("Stocator schema space : {}, provided {}", fsSchema, supportedScheme);
+      LOG.debug("Stocator schema space : {}, provided {}. Implementation {}",
+          fsSchema, supportedScheme, implementation);
       if (fsSchema.equals(supportedScheme)) {
         LOG.info("Stocator registered as {} for {}", fsSchema, fsuri.toString());
         IStoreClient storeClient;
         try {
+          LOG.debug("Load implementation class {}", implementation);
           Class<?> aClass = classLoader.loadClass(implementation);
           storeClient = (IStoreClient) aClass.getConstructor(URI.class,
               Configuration.class).newInstance(fsuri, conf);
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-            | InvocationTargetException | NoSuchMethodException | SecurityException
-            | ClassNotFoundException e) {
-          LOG.error(e.getMessage());
-          throw new IOException("No object store for: " + fsSchema);
+        } catch (InstantiationException | IllegalAccessException
+            | InvocationTargetException | NoSuchMethodException
+            | SecurityException | ClassNotFoundException e) {
+          LOG.error("Exception in load implementation class {}: {}", implementation,
+              e.getMessage());
+          throw new IOException("No object store for: " + fsSchema, e);
         }
         try {
           storeClient.initiate(supportedScheme);

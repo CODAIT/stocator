@@ -199,7 +199,6 @@ public class SwiftAPIClient implements IStoreClient {
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
-
     if (authMethod.equals(PUBLIC_ACCESS)) {
       // we need to extract container name and path from the public URL
       String publicURL = filesystemURI.toString().replace(schemaProvided, "https");
@@ -236,8 +235,14 @@ public class SwiftAPIClient implements IStoreClient {
         config.setAuthMethod(KEYSTONE_V3_AUTH);
         String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
         String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
+
         config.setUsername(userId);
         config.setProjectId(projectId);
+
+      } else if (authMethod.equals("basic")) {
+        config.setAuthMethod("basic");
+        config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+
       } else {
         config.setAuthMethod("tempauth");
         config.setTenant(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));

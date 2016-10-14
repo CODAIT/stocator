@@ -6,6 +6,7 @@ import javax.xml.bind.DatatypeConverter;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.impl.client.BasicResponseHandler;
+
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -70,5 +71,6 @@ public class SwiftV2AuthInfo extends AuthenticationInfo {
     if (accessUrl == null) {
       throw new IOException("Unable to get url with provided public and a region configs");
     }
+
   }
 }

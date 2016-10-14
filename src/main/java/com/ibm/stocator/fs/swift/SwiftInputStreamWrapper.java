@@ -23,7 +23,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpRequestBase;
 
 import com.ibm.stocator.fs.common.Utils;
-import org.apache.http.util.EntityUtils;
 
 public class SwiftInputStreamWrapper extends BaseInputStream {
 
@@ -56,7 +55,6 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
 
   private void doAbort() {
     if (httpRequest != null) {
-      EntityUtils.consumeQuietly(httpEntity);
       httpRequest.abort();
     }
     Utils.closeWithoutException(in);

@@ -33,4 +33,5 @@ abstract class AuthenticationInfo {
   public String getAccessUrl() {
     return accessUrl;
   }
+
 }

@@ -6,7 +6,7 @@ Apache Spark needs only small set of object store functionalities. Specifically,
 
 Stocator is implicitly designed for the object stores, it has very a different architecture from the existing Hadoop driver. It doesn’t depends on the Hadoop modules and interacts directly with object stores.
 
-Stocator is a generic connector, that may contain various implementations for object stores. It initially provided with complete Swift driver, based on the JOSS package. Stocator can be very easily extended with more object store implementations, like support for Amazon S3.
+Stocator is a generic connector, that may contain various implementations for object stores. Stocator can be very easily extended with more object store implementations, like support for Amazon S3.
 
 ## Major features
 * Hadoop eco system compliant. Implements Hadoop FileSystem interface
