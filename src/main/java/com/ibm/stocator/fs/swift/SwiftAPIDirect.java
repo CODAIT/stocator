@@ -113,6 +113,7 @@ public class SwiftAPIDirect {
       throw new IOException("Get object metadata operation could not be completed. Code: "
               + responseCode);
     }
+
     return metadata;
   }
 
