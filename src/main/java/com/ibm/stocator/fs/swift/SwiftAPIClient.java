@@ -21,8 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.ArrayList;
@@ -89,10 +87,6 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private static final Logger LOG = LoggerFactory.getLogger(SwiftAPIClient.class);
   /*
-   * Time pattern
-   */
-  private static final String TIME_PATTERN = "EEE, d MMM yyyy hh:mm:ss zzz";
-  /*
    * root container
    */
   private String container;
@@ -128,11 +122,12 @@ public class SwiftAPIClient implements IStoreClient {
   private Map<String, Boolean> cachedSparkJobsStatus;
 
   /*
-  * Contains map of objects and their correct size.
-  * Maintained at container listing and read at file status check
-  * caching can be done since object size is immutable
+  * Contains map of objects and their metadata.
+  * Maintained at container listing and on-the-fly object requests,
+  * read at file status check.
+  * Caching can be done since objects are immutable.
   */
-  private Map<String, Long> cachedStoredObjectSize;
+  private SwiftObjectCache objectCache;
 
   /*
    * Page size for container listing
@@ -180,7 +175,6 @@ public class SwiftAPIClient implements IStoreClient {
   public void initiate(String scheme) throws IOException, ConfigurationParseException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
-    cachedStoredObjectSize = new HashMap<String, Long>();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
@@ -268,6 +262,8 @@ public class SwiftAPIClient implements IStoreClient {
     if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
       containerObj.create();
     }
+
+    objectCache = new SwiftObjectCache(mJossAccount.getAccount().getContainer(container));
   }
 
   @Override
@@ -311,11 +307,11 @@ public class SwiftAPIClient implements IStoreClient {
     */
     boolean isDirectory = false;
     String objectName = getObjName(hostName, path);
-    Long objContentLength = cachedStoredObjectSize.get(objectName);
-    if (objContentLength != null) {
+    SwiftCachedObject obj = objectCache.get(objectName);
+    if (obj != null) {
       // object exists, We need to check if the object size is equal to zero
       // If so, it might be a directory
-      if (objContentLength == 0) {
+      if (obj.getContentLength() == 0) {
         Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
         if (directoryFiles != null && directoryFiles.size() != 0) {
           // The zero length object is a directory
@@ -323,9 +319,9 @@ public class SwiftAPIClient implements IStoreClient {
         }
       }
       LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
-          isDirectory, 0);
-      return new FileStatus(objContentLength, isDirectory, 1, blockSize,
-             0L, path);
+          isDirectory, obj.getLastModified());
+      return new FileStatus(obj.getContentLength(), isDirectory, 1, blockSize,
+              obj.getLastModified(), path);
     }
     // We need to check if it may be a directory with no zero byte file associated
     LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
@@ -342,26 +338,6 @@ public class SwiftAPIClient implements IStoreClient {
     }
     LOG.debug("Not found {}", path.toString());
     return null;
-  }
-
-  /**
-   * Transforms last modified time stamp from String to the long format
-   *
-   * @param strTime time in string format as returned from Swift
-   * @return time in long format
-   * @throws IOException if failed to parse time stamp
-   */
-  private long getLastModified(String strTime) throws IOException {
-    final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIME_PATTERN);
-    try {
-      long lastModified = simpleDateFormat.parse(strTime).getTime();
-      if (lastModified == 0) {
-        lastModified = System.currentTimeMillis();
-      }
-      return lastModified;
-    } catch (ParseException e) {
-      throw new IOException("Failed to parse " + strTime, e);
-    }
   }
 
   /**
@@ -521,7 +497,8 @@ public class SwiftAPIClient implements IStoreClient {
         fs = null;
         if (previousElement.getContentLength() > 0 || fullListing) {
           fs = getFileStatus(previousElement, cObj, hostName, path);
-          cachedStoredObjectSize.put(getObjName(hostName, fs.getPath()), fs.getLen());
+          objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
+                  fs.getModificationTime());
           tmpResult.add(fs);
         }
         previousElement = tmp.getAsObject();
@@ -530,7 +507,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
-      cachedStoredObjectSize.put(getObjName(hostName, fs.getPath()), fs.getLen());
+      objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
       tmpResult.add(fs);
     }
     LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
@@ -777,7 +754,7 @@ public class SwiftAPIClient implements IStoreClient {
       String hostName, Path path) throws IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
     return new FileStatus(tmp.getContentLength(), false, 1, blockSize,
-        getLastModified(tmp.getLastModified()), 0, null,
+        Utils.lastModifiedAsLong(tmp.getLastModified()), 0, null,
         null, null, new Path(newMergedPath));
   }
 
