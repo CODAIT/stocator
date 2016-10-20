@@ -37,6 +37,7 @@ import com.ibm.stocator.fs.swift.SwiftAPIClient;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
+import static com.ibm.stocator.fs.common.Utils.lastModifiedAsLong;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(StoredObject.class)
@@ -163,7 +164,7 @@ public class SwiftAPIClientTest {
     String stringTime = "Fri, 06 May 2016 03:44:47 GMT";
     long longTime = 1462506287000L;
 
-    long result = Whitebox.invokeMethod(mSwiftAPIClient, "getLastModified", stringTime);
+    long result = lastModifiedAsLong(stringTime);
     Assert.assertEquals("getLastModified() shows incorrect time",
             longTime, result);
   }
