@@ -223,9 +223,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
-    LOG.debug("delete: {} recursive {}", f.toString(), recursive);
     String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
-    LOG.debug("Modified object name {} hostname {}", objNameModified, hostNameScheme);
+    LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
+        recursive, objNameModified, hostNameScheme);
     boolean result = false;
     if (objNameModified.contains(HADOOP_TEMPORARY)) {
       return true;
