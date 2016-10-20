@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.swift;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -33,7 +34,6 @@ import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
-import org.javaswift.joss.model.DirectoryOrObject;
 import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
@@ -46,6 +46,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.http.HttpResponse;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -280,7 +281,7 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public FileStatus getObjectMetadata(String hostName,
-      Path path) throws IOException, FileNotFoundException {
+                                      Path path) throws IOException, FileNotFoundException {
     LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
     /*
@@ -313,40 +314,69 @@ public class SwiftAPIClient implements IStoreClient {
       */
       objectNameNoSlash = objectName.substring(0, objectName.length() - 1);
     }
-    StoredObject so = cont.getObject(objectNameNoSlash);
+
     boolean isDirectory = false;
-    if (so.exists()) {
-      // We need to check if the object size is equal to zero
-      // If so, it might be a directory
-      long contentLength = so.getContentLength();
-      String lastModified = so.getLastModified();
-      if (contentLength == 0) {
-        Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
-        if (directoryFiles != null && directoryFiles.size() != 0) {
-          // The zero length object is a directory
+
+    try {
+      HttpResponse metadata = SwiftAPIDirect.getObjectMetadata(mJossAccount, container,
+              objectNameNoSlash, swiftConnectionManager);
+
+      int contentLength = new Integer(metadata.getFirstHeader("Content-Length").getValue());
+      String contentType = metadata.getFirstHeader("Content-Type").getValue();
+
+      long lastModified = 0L;
+      if (metadata.containsHeader("Last-Modified")) {
+        lastModified = getLastModified(metadata.getFirstHeader("Last-Modified").getValue());
+      }
+
+      if (contentLength == 0) { // Check if directory
+        if (contentType.equals("application/directory")
+                || contentType.equals("application/octet-stream")) {
           isDirectory = true;
+        } else if (contentType.equals("application/octet-stream")) {
+          if (checkDirectory(path, hostName)) {
+            // If additional objects are returned then the object marks a directory
+            isDirectory = true;
+          }
+        } else {
+          return null;
         }
       }
       LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
           isDirectory, lastModified);
       return new FileStatus(contentLength, isDirectory, 1, blockSize,
-              getLastModified(lastModified), path);
-    }
-    // We need to check if it may be a directory with no zero byte file associated
-    LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
-    Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
-        "", 10);
-    if (directoryFiles != null) {
-      LOG.trace("{} got {} candidates", objectName + "/", directoryFiles.size());
-    }
-    if (directoryFiles != null && directoryFiles.size() != 0) {
-      // In this case there is no lastModified
-      isDirectory = true;
-      LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
-      return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
+              lastModified, path);
+    } catch (FileNotFoundException e) {
+      // If no metadata is found we need to check if it may
+      // be a directory with no zero byte file associated
+
+      LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
+
+      if (checkDirectory(path, hostName)) {
+        // In this case there is no lastModified
+        isDirectory = true;
+        LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
+        return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
+      }
     }
     LOG.debug("Not found {}", path.toString());
     return null;
+  }
+
+  private boolean checkDirectory(Path path, String hostName) throws IOException {
+    try {
+      // Using URI instead of Path constructor because the constructor trims trailing slashes
+      URI temp = new URI(path.toString() + Path.SEPARATOR);
+      Path directory = new Path(temp);
+      FileStatus[] listing = list(hostName, directory, false, true);
+      if (listing.length > 0) {
+        LOG.trace("{} got {} candidates", path + "/", listing.length);
+        return true;
+      }
+    } catch (URISyntaxException e) {
+      e.printStackTrace();
+    }
+    return false;
   }
 
   /**
