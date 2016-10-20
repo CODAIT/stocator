@@ -70,6 +70,12 @@ public class SwiftObjectCache {
     cache.put(objName, internalObj);
   }
 
+  public void remove(String objName) {
+    if (cache.containsKey(objName)) {
+      cache.remove(objName);
+    }
+  }
+
   /**
    * removing the trailing slash because it is not supported in Swift
    * an request on an object (not a container) that has a trailing slash will lead

@@ -573,6 +573,7 @@ public class SwiftAPIClient implements IStoreClient {
         .getObject(obj);
     if (so.exists()) {
       so.delete();
+      objectCache.remove(obj);
     }
     return true;
   }
