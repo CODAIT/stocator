@@ -21,6 +21,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
@@ -40,6 +42,11 @@ public class Utils {
    * Logger
    */
   private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
+
+  /*
+  * Time pattern
+  */
+  private static final String TIME_PATTERN = "EEE, d MMM yyyy hh:mm:ss zzz";
 
   /**
    * IOException if the host name is not comply with container.service
@@ -267,4 +274,23 @@ public class Utils {
     return Thread.interrupted();
   }
 
+  /**
+   * Transforms last modified time stamp from String to the long format
+   *
+   * @param strTime time in string format as returned from Swift
+   * @return time in long format
+   * @throws IOException if failed to parse time stamp
+   */
+  public static long lastModifiedAsLong(String strTime) throws IOException {
+    final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIME_PATTERN);
+    try {
+      long lastModified = simpleDateFormat.parse(strTime).getTime();
+      if (lastModified == 0) {
+        lastModified = System.currentTimeMillis();
+      }
+      return lastModified;
+    } catch (ParseException e) {
+      throw new IOException("Failed to parse " + strTime, e);
+    }
+  }
 }
