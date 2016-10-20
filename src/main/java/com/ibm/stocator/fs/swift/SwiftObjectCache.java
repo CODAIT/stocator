@@ -51,10 +51,12 @@ public class SwiftObjectCache {
     SwiftCachedObject res = cache.get(objName);
     if (res == null) {
       StoredObject rawObj = container.getObject(removeTrailingSlash(objName));
-      if (rawObj != null) {
+      if (rawObj != null && rawObj.exists()) {
         res = new SwiftCachedObject(rawObj.getContentLength(),
           Utils.lastModifiedAsLong(rawObj.getLastModified()));
         put(objName, res);
+      } else {
+        return null;
       }
     }
     return res;
