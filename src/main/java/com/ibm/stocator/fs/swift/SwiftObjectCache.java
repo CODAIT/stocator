@@ -23,6 +23,9 @@ import java.util.HashMap;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.StoredObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ibm.stocator.fs.common.Utils;
 
 /**
@@ -32,6 +35,10 @@ import com.ibm.stocator.fs.common.Utils;
 public class SwiftObjectCache {
   private HashMap<String, SwiftCachedObject> cache;
   private Container container;
+  /**
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(SwiftObjectCache.class);
 
   public SwiftObjectCache(Container cont) {
     cache = new HashMap<>();
@@ -48,8 +55,10 @@ public class SwiftObjectCache {
    * @throws IOException if failed to parse time stamp
    */
   public SwiftCachedObject get(String objName) throws IOException {
+    LOG.trace("Get from cache  {} ", objName);
     SwiftCachedObject res = cache.get(objName);
     if (res == null) {
+      LOG.trace("Cache get:  {} is not in the cache. Access Swift to get content length", objName);
       StoredObject rawObj = container.getObject(removeTrailingSlash(objName));
       if (rawObj != null && rawObj.exists()) {
         res = new SwiftCachedObject(rawObj.getContentLength(),
@@ -63,6 +72,7 @@ public class SwiftObjectCache {
   }
 
   public void put(String objNameKey, long contentLength, long lastModified) {
+    LOG.trace("Add to cache  {} ", objNameKey);
     cache.put(objNameKey, new SwiftCachedObject(contentLength, lastModified));
   }
 
@@ -71,6 +81,7 @@ public class SwiftObjectCache {
   }
 
   public void remove(String objName) {
+    LOG.trace("Remove from cache  {} ", objName);
     if (cache.containsKey(objName)) {
       cache.remove(objName);
     }
