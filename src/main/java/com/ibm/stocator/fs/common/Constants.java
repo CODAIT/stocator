@@ -129,5 +129,9 @@ public class Constants {
    * a maximum period inactivity between two consecutive data packets).
    */
   public static final String REQUEST_SOCKET_TIMEOUT = "fs.stocator.ReqSocketTimeout";
+  /*
+   * JOSS synchronize with server time
+   */
+  public static final String JOSS_SYNC_SERVER_TIME = "fs.stocator.joss.synchronize.time";
 
 }

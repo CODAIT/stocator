@@ -204,6 +204,12 @@ public class SwiftAPIClient implements IStoreClient {
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
+    boolean syncWithServer = conf.getBoolean(Constants.JOSS_SYNC_SERVER_TIME,
+        false);
+    if (!syncWithServer) {
+      LOG.trace("JOSS: disable sync time with server");
+      config.setAllowSynchronizeWithServer(false);
+    }
 
     if (authMethod.equals(PUBLIC_ACCESS)) {
       // we need to extract container name and path from the public URL
