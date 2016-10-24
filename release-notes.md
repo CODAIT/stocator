@@ -1,4 +1,9 @@
 ##Release notes
+### Version 1.0.7
+1. Modified JOSS to disable HEAD on account when accessing containers. This caused issues when user doesn't has access on account level, but only on container level.
+2. Fixed regression caused by consumeQueitely. This fix improved read by 3 times
+3. Added cache to contain object length and last modified time stamp. This cache is filled during list and usefull for Spark flows.
+
 ### Version 1.0.6
 1. Continue improvements with container listing
 2. Object upload now based on the Apache HttpClient 4.5.2
