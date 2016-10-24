@@ -34,6 +34,7 @@ import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
+import org.javaswift.joss.model.DirectoryOrObject;
 import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
@@ -281,7 +282,7 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public FileStatus getObjectMetadata(String hostName,
-                                      Path path) throws IOException, FileNotFoundException {
+      Path path) throws IOException, FileNotFoundException {
     LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
     /*
@@ -334,7 +335,7 @@ public class SwiftAPIClient implements IStoreClient {
                 || contentType.equals("application/octet-stream")) {
           isDirectory = true;
         } else if (contentType.equals("application/octet-stream")) {
-          if (checkDirectory(path, hostName)) {
+          if (checkIfDirectory(path, hostName)) {
             // If additional objects are returned then the object marks a directory
             isDirectory = true;
           }
@@ -352,7 +353,7 @@ public class SwiftAPIClient implements IStoreClient {
 
       LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
 
-      if (checkDirectory(path, hostName)) {
+      if (checkIfDirectory(path, hostName)) {
         // In this case there is no lastModified
         isDirectory = true;
         LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
@@ -363,18 +364,21 @@ public class SwiftAPIClient implements IStoreClient {
     return null;
   }
 
-  private boolean checkDirectory(Path path, String hostName) throws IOException {
+  private boolean checkIfDirectory(Path path, String hostName) throws IOException {
     try {
       // Using URI instead of Path constructor because the constructor trims trailing slashes
       URI temp = new URI(path.toString() + Path.SEPARATOR);
       Path directory = new Path(temp);
+
+      // Limit this to 10
       FileStatus[] listing = list(hostName, directory, false, true);
       if (listing.length > 0) {
         LOG.trace("{} got {} candidates", path + "/", listing.length);
         return true;
       }
     } catch (URISyntaxException e) {
-      e.printStackTrace();
+      LOG.error(e.getMessage());
+      throw new IOException("Path cannot be parsed to an URI");
     }
     return false;
   }
