@@ -34,7 +34,6 @@ import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
-import org.javaswift.joss.model.DirectoryOrObject;
 import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
