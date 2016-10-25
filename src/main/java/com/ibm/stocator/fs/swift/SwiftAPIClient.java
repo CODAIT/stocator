@@ -291,8 +291,8 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public FileStatus getObjectMetadata(String hostName,
-      Path path) throws IOException, FileNotFoundException {
-    LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
+      Path path, String msg) throws IOException, FileNotFoundException {
+    LOG.trace("Get object metadata ({}): {}, hostname: {}", msg, path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
     /*
       The requested path is equal to hostName.
@@ -371,7 +371,7 @@ public class SwiftAPIClient implements IStoreClient {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
     }
-    FileStatus status = getObjectMetadata(hostName, path);
+    FileStatus status = getObjectMetadata(hostName, path, "exists");
     if (status == null) {
       return false;
     }
@@ -385,7 +385,7 @@ public class SwiftAPIClient implements IStoreClient {
       objName = getObjName(hostName, path);
     }
     URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
-    FileStatus fs = getObjectMetadata(hostName, path);
+    FileStatus fs = getObjectMetadata(hostName, path, "getObject");
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
     //stocator need to support this and identify relevant object
@@ -402,7 +402,7 @@ public class SwiftAPIClient implements IStoreClient {
           objName = res[0].getPath().toString().substring(hostName.length());
         }
         url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
-        fs = getObjectMetadata(hostName, res[0].getPath());
+        fs = getObjectMetadata(hostName, res[0].getPath(), "getObject");
       }
     }
     SwiftInputStream sis = new SwiftInputStream(url.toString(),
