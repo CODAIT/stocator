@@ -390,7 +390,8 @@ public class SwiftAPIClient implements IStoreClient {
     //stocator need to support this and identify relevant object
     //for this, we perform list to idenfify correct attempt_id
     if (objName.contains("part-")
-        && !objName.contains(Constants.HADOOP_TEMPORARY)) {
+        && !objName.contains(Constants.HADOOP_TEMPORARY)
+        && !objName.contains(Constants.HADOOP_ATTEMPT)) {
       LOG.debug("get object {} on the non existing. Trying listing", objName);
       FileStatus[] res = list(hostName, path, true, true);
       LOG.debug("Listing on {} returned {}", path.toString(), res.length);
