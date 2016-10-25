@@ -55,12 +55,13 @@ public interface IStoreClient {
    *
    * @param hostName URL to host
    * @param path path to the object
+   * @param msg identifier
    * @return FileStatus with the object info
    * @throws IOException if connection error
    * @throws FileNotFoundException if path not found
    */
   public FileStatus getObjectMetadata(String hostName,
-      Path path) throws IOException, FileNotFoundException;
+      Path path, String msg) throws IOException, FileNotFoundException;
 
   /**
    * Verify if object exists

@@ -372,7 +372,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     LOG.debug("get file status: {}", f.toString());
-    return storageClient.getObjectMetadata(hostNameScheme, f);
+    return storageClient.getObjectMetadata(hostNameScheme, f, "fileStatus");
   }
 
   @Override
