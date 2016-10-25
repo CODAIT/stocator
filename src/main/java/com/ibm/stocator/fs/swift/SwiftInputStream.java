@@ -52,10 +52,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    */
   private SwiftInputStreamWrapper wrappedStream;
   /**
-   * Overall content length
-   */
-  private final long contentLength;
-  /**
    * Data uri
    */
   private final String uri;
@@ -96,14 +92,12 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * Default constructor
    *
    * @param pathT data path
-   * @param contentLengthT object size
    * @param jossAccountT joss client
    * @param readStrategyT read strategy
    * @param scmT Swift connection manager
    */
-  public SwiftInputStream(String pathT, long contentLengthT, JossAccount jossAccountT,
+  public SwiftInputStream(String pathT, JossAccount jossAccountT,
       String readStrategyT, SwiftConnectionManager scmT) {
-    contentLength = contentLengthT;
     mJossAccount = jossAccountT;
     scm = scmT;
     uri = pathT;
@@ -125,7 +119,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       closeStream("reopen(" + msg + ")", contentRangeFinish);
     }
 
-    contentRangeFinish = getReadLimit(readStrategy, targetPos, length, contentLength,
+    contentRangeFinish = getReadLimit(readStrategy, targetPos, length,
         readahead);
     LOG.trace("reopen({}) for {} range[{}-{}], length={},"
         + " streamPosition={}, nextReadPosition={}", uri, msg,
@@ -155,10 +149,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     checkNotClosed();
     if (targetPos < 0) {
       throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK + " " + targetPos);
-    }
-
-    if (contentLength <= 0) {
-      return;
     }
     nextReadPos = targetPos;
   }
@@ -247,9 +237,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   @Override
   public synchronized int read() throws IOException {
     checkNotClosed();
-    if (contentLength == 0 || (nextReadPos >= contentLength)) {
-      return -1;
-    }
     int byteRead;
     try {
       lazySeek(nextReadPos, 1);
@@ -274,9 +261,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     checkNotClosed();
     if (len == 0) {
       return 0;
-    }
-    if (contentLength == 0 || (nextReadPos >= contentLength)) {
-      return -1;
     }
     try {
       lazySeek(nextReadPos, len);
@@ -352,23 +336,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   @Override
   public synchronized int available() throws IOException {
     checkNotClosed();
-
-    long remaining = remainingInFile();
-    if (remaining > Integer.MAX_VALUE) {
-      return Integer.MAX_VALUE;
-    }
-    return (int) remaining;
-  }
-
-  /**
-   * Bytes left in stream.
-   *
-   * @return how many bytes are left to read
-   */
-  @InterfaceAudience.Private
-  @InterfaceStability.Unstable
-  public synchronized long remainingInFile() {
-    return contentLength - pos;
+    return Integer.MAX_VALUE;
   }
 
   /**
@@ -442,25 +410,22 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * @param readStrategy read strategy
    * @param targetPos position
    * @param length length
-   * @param contentLength total size
    * @param readahead read ahead value
    * @return range limit
    */
   static long getReadLimit(String readStrategy, long targetPos, long length,
-      long contentLength, long readahead) {
+      long readahead) {
     long rangeLimit;
     switch (readStrategy) {
       case Constants.RANDOM_READ_STRATEGY:
-        rangeLimit = (length < 0) ? contentLength : targetPos + Math.max(readahead, length);
+        rangeLimit = (length < 0) ? Long.MAX_VALUE : targetPos + Math.max(readahead, length);
         break;
       case Constants.SEQ_READ_STRATEGY:
-        rangeLimit = contentLength;
-        break;
       case Constants.NORMAL_READ_STRATEGY:
       default:
-        rangeLimit = contentLength;
+        rangeLimit = Long.MAX_VALUE;
     }
-    rangeLimit = Math.min(contentLength, rangeLimit);
+    rangeLimit = Math.min(Long.MAX_VALUE, rangeLimit);
     return rangeLimit;
   }
 }
