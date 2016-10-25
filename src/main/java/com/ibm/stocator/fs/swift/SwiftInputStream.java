@@ -52,21 +52,15 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    */
   private SwiftInputStreamWrapper wrappedStream;
   /**
-   * Overall content length
-   */
-  private final long contentLength;
-  /**
    * Data uri
    */
   private final String uri;
+
+  private final String objName;
   /**
    * Logger
    */
   private static final Logger LOG = LoggerFactory.getLogger(SwiftInputStream.class);
-  /**
-   * Read strategy
-   */
-  private final String readStrategy;
   /**
    * Read ahead value
    */
@@ -92,23 +86,27 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private final SwiftConnectionManager scm;
 
+  private final SwiftObjectCache objectCache;
+
   /**
    * Default constructor
    *
    * @param pathT data path
-   * @param contentLengthT object size
    * @param jossAccountT joss client
-   * @param readStrategyT read strategy
    * @param scmT Swift connection manager
+   * @param readAheadT read strategy
+   * @param objectCacheT object cache manager
+   * @param objNameT object name without host
    */
-  public SwiftInputStream(String pathT, long contentLengthT, JossAccount jossAccountT,
-      String readStrategyT, SwiftConnectionManager scmT) {
-    contentLength = contentLengthT;
+  public SwiftInputStream(String pathT, JossAccount jossAccountT,
+      SwiftConnectionManager scmT, long readAheadT, SwiftObjectCache objectCacheT,
+      String objNameT) {
     mJossAccount = jossAccountT;
+    objectCache = objectCacheT;
     scm = scmT;
     uri = pathT;
-    readStrategy = readStrategyT;
-    readahead = Constants.DEFAULT_READAHEAD_RANGE;
+    objName = objNameT;
+    readahead = readAheadT;
     setReadahead(readahead);
   }
 
@@ -125,8 +123,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       closeStream("reopen(" + msg + ")", contentRangeFinish);
     }
 
-    contentRangeFinish = getReadLimit(readStrategy, targetPos, length, contentLength,
-        readahead);
+    contentRangeFinish = targetPos + Math.max(readahead, length);
     LOG.trace("reopen({}) for {} range[{}-{}], length={},"
         + " streamPosition={}, nextReadPosition={}", uri, msg,
         targetPos, contentRangeFinish, length, pos, nextReadPos);
@@ -157,9 +154,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK + " " + targetPos);
     }
 
-    if (contentLength <= 0) {
-      return;
-    }
     nextReadPos = targetPos;
   }
 
@@ -247,9 +241,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   @Override
   public synchronized int read() throws IOException {
     checkNotClosed();
-    if (contentLength == 0 || (nextReadPos >= contentLength)) {
-      return -1;
-    }
     int byteRead;
     try {
       lazySeek(nextReadPos, 1);
@@ -274,9 +265,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     checkNotClosed();
     if (len == 0) {
       return 0;
-    }
-    if (contentLength == 0 || (nextReadPos >= contentLength)) {
-      return -1;
     }
     try {
       lazySeek(nextReadPos, len);
@@ -364,11 +352,12 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * Bytes left in stream.
    *
    * @return how many bytes are left to read
+   * @throws IOException if error
    */
   @InterfaceAudience.Private
   @InterfaceStability.Unstable
-  public synchronized long remainingInFile() {
-    return contentLength - pos;
+  public synchronized long remainingInFile() throws IOException {
+    return objectCache.get(objName).getContentLength() - pos;
   }
 
   /**
@@ -436,31 +425,4 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     return readahead;
   }
 
-  /**
-   * Get read limit
-   *
-   * @param readStrategy read strategy
-   * @param targetPos position
-   * @param length length
-   * @param contentLength total size
-   * @param readahead read ahead value
-   * @return range limit
-   */
-  static long getReadLimit(String readStrategy, long targetPos, long length,
-      long contentLength, long readahead) {
-    long rangeLimit;
-    switch (readStrategy) {
-      case Constants.RANDOM_READ_STRATEGY:
-        rangeLimit = (length < 0) ? contentLength : targetPos + Math.max(readahead, length);
-        break;
-      case Constants.SEQ_READ_STRATEGY:
-        rangeLimit = contentLength;
-        break;
-      case Constants.NORMAL_READ_STRATEGY:
-      default:
-        rangeLimit = contentLength;
-    }
-    rangeLimit = Math.min(contentLength, rangeLimit);
-    return rangeLimit;
-  }
 }
