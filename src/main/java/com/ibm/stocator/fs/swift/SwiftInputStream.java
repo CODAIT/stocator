@@ -203,6 +203,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       }
     } else if (diff < 0) {
       // backwards seek
+      LOG.trace("seekInStream: {} backward seek {}", uri, diff);
     } else {
       // targetPos == pos
       if (remainingInCurrentRequest() > 0) {
