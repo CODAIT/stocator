@@ -262,7 +262,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   @Override
   public synchronized int read(byte[] buf, int off, int len) throws IOException {
-    LOG.trace("{} read off {} len {}", uri, off, len);
     checkNotClosed();
     if (len == 0) {
       return 0;
