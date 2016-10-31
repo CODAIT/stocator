@@ -128,8 +128,8 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     }
     contentRangeStart = targetPos;
     contentRangeFinish = targetPos + Math.max(readahead, length) + threasholdRead;
-    if (negativeSeek > 0) {
-      contentRangeFinish = targetPos + negativeSeek;
+    if (negativeSeek < 0) {
+      contentRangeFinish = targetPos + Math.abs(negativeSeek);
       negativeSeek = 0;
     }
     try {
