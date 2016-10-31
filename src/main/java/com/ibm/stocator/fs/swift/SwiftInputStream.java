@@ -90,7 +90,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private final long threasholdRead = 65536;
 
-  private long negativeSeek = 0;  
+  private long negativeSeek = 0;
 
   /**
    * Default constructor
