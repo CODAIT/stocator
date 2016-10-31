@@ -146,8 +146,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       LOG.error(e.getMessage());
       throw new IOException("Reopen at position " + targetPos + uri);
     }
-    //pos = targetPos;
-    pos = contentRangeStart;
+    pos = targetPos;
   }
 
   @Override
