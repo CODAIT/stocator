@@ -136,7 +136,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       LOG.trace("reopen({}) for {} range[{}-{}], length={},"
           + " streamPosition={}, nextReadPosition={}", uri, msg,
           contentRangeStart, contentRangeFinish, length, pos, nextReadPos);
-      
+
       wrappedStream = SwiftAPIDirect.getObject(new Path(uri),
           mJossAccount, contentRangeStart, contentRangeFinish, scm);
       if (wrappedStream == null) {
