@@ -90,6 +90,8 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private final long threasholdRead = 65536;
 
+  private long negativeSeek = 0;  
+
   /**
    * Default constructor
    *
@@ -126,6 +128,10 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     }
     contentRangeStart = targetPos;
     contentRangeFinish = targetPos + Math.max(readahead, length) + threasholdRead;
+    if (negativeSeek > 0) {
+      contentRangeFinish = targetPos + negativeSeek;
+      negativeSeek = 0;
+    }
     try {
       LOG.trace("reopen({}) for {} range[{}-{}], length={},"
           + " streamPosition={}, nextReadPosition={}", uri, msg,
@@ -207,6 +213,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     } else if (diff < 0) {
       // backwards seek
       LOG.trace("seekInStream: {} backward seek {}", uri, diff);
+      negativeSeek = diff;
     } else {
       // targetPos == pos
       if (remainingInCurrentRequest() > 0) {
