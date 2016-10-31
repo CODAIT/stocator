@@ -124,14 +124,13 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     if (wrappedStream != null) {
       closeStream("reopen(" + msg + ")", contentRangeFinish);
     }
-
-    contentRangeFinish = targetPos + Math.max(readahead, length);
     contentRangeStart = targetPos;
     if ((targetPos - threasholdRead) < 0) {
       contentRangeStart = 0;
     } else {
       contentRangeStart = targetPos - threasholdRead;
     }
+    contentRangeFinish = targetPos + Math.max(readahead, length) + threasholdRead;
     try {
       LOG.trace("reopen({}) for {} range[{}-{}], length={},"
           + " streamPosition={}, nextReadPosition={}", uri, msg,
