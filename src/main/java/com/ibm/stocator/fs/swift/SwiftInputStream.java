@@ -88,6 +88,8 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private final SwiftObjectCache objectCache;
 
+  private final long threasholdRead = 65536;
+
   /**
    * Default constructor
    *
@@ -123,15 +125,20 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       closeStream("reopen(" + msg + ")", contentRangeFinish);
     }
 
-    contentRangeFinish = targetPos + Math.max(readahead, length);
-    LOG.trace("reopen({}) for {} range[{}-{}], length={},"
-        + " streamPosition={}, nextReadPosition={}", uri, msg,
-        targetPos, contentRangeFinish, length, pos, nextReadPos);
-
+    contentRangeFinish = targetPos + Math.max(readahead, length) + threasholdRead;
+    contentRangeStart = targetPos;
+    if ((targetPos - threasholdRead) < 0) {
+      contentRangeStart = 0;
+    } else {
+      contentRangeStart = targetPos - threasholdRead;
+    }
     try {
+      LOG.trace("reopen({}) for {} range[{}-{}], length={},"
+          + " streamPosition={}, nextReadPosition={}", uri, msg,
+          contentRangeStart, contentRangeFinish, length, pos, nextReadPos);
+      
       wrappedStream = SwiftAPIDirect.getObject(new Path(uri),
-          mJossAccount, targetPos, contentRangeFinish, scm);
-      contentRangeStart = targetPos;
+          mJossAccount, contentRangeStart, contentRangeFinish, scm);
       if (wrappedStream == null) {
         throw new IOException("Null IO stream from reopen of (" + msg + ") " + uri);
       }
@@ -139,7 +146,8 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       LOG.error(e.getMessage());
       throw new IOException("Reopen at position " + targetPos + uri);
     }
-    pos = targetPos;
+    //pos = targetPos;
+    pos = contentRangeStart;
   }
 
   @Override
