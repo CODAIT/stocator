@@ -149,6 +149,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   @Override
   public synchronized void seek(long targetPos) throws IOException {
+    LOG.trace("seek {} to {}", uri, targetPos);
     checkNotClosed();
     if (targetPos < 0) {
       throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK + " " + targetPos);
@@ -173,6 +174,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     // compute how much more to skip
     long diff = targetPos - pos;
     if (diff > 0) {
+      LOG.trace("seekInStream: {}, forward seek to {}", uri, diff);
       // forward seek -this is where data can be skipped
 
       int available = wrappedStream.available();
