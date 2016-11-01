@@ -88,6 +88,10 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private final SwiftObjectCache objectCache;
 
+  private final long threasholdRead = 65536;
+
+  private long negativeSeek = 0;
+
   /**
    * Default constructor
    *
@@ -122,16 +126,19 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     if (wrappedStream != null) {
       closeStream("reopen(" + msg + ")", contentRangeFinish);
     }
-
-    contentRangeFinish = targetPos + Math.max(readahead, length);
-    LOG.trace("reopen({}) for {} range[{}-{}], length={},"
-        + " streamPosition={}, nextReadPosition={}", uri, msg,
-        targetPos, contentRangeFinish, length, pos, nextReadPos);
-
+    contentRangeStart = targetPos;
+    contentRangeFinish = targetPos + Math.max(readahead, length) + threasholdRead;
+    if (negativeSeek < 0) {
+      contentRangeFinish = targetPos + Math.abs(negativeSeek);
+      negativeSeek = 0;
+    }
     try {
+      LOG.trace("reopen({}) for {} range[{}-{}], length={},"
+          + " streamPosition={}, nextReadPosition={}", uri, msg,
+          contentRangeStart, contentRangeFinish, length, pos, nextReadPos);
+
       wrappedStream = SwiftAPIDirect.getObject(new Path(uri),
-          mJossAccount, targetPos, contentRangeFinish, scm);
-      contentRangeStart = targetPos;
+          mJossAccount, contentRangeStart, contentRangeFinish, scm);
       if (wrappedStream == null) {
         throw new IOException("Null IO stream from reopen of (" + msg + ") " + uri);
       }
@@ -206,6 +213,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     } else if (diff < 0) {
       // backwards seek
       LOG.trace("seekInStream: {} backward seek {}", uri, diff);
+      negativeSeek = diff;
     } else {
       // targetPos == pos
       if (remainingInCurrentRequest() > 0) {
@@ -427,5 +435,4 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   public synchronized long getReadahead() {
     return readahead;
   }
-
 }
