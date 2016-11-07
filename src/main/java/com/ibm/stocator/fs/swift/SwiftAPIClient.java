@@ -346,7 +346,7 @@ public class SwiftAPIClient implements IStoreClient {
       return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
     }
     LOG.debug("Not found {}", path.toString());
-    return null;
+    throw new FileNotFoundException("No such object exists " + path.toString());
   }
 
   /**
