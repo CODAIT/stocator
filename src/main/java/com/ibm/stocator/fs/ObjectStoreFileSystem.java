@@ -100,12 +100,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public URI getUri() {
-    try {
-      return storageClient.getAccessURI();
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-      return uri;
-    }
+    return uri;
   }
 
   /**
