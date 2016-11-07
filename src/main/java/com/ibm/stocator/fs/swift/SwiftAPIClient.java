@@ -371,8 +371,9 @@ public class SwiftAPIClient implements IStoreClient {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
     }
-    FileStatus status = getObjectMetadata(hostName, path, "exists");
-    if (status == null) {
+    try {
+      FileStatus status = getObjectMetadata(hostName, path, "exists");
+    } catch (FileNotFoundException e) {
       return false;
     }
     return true;
