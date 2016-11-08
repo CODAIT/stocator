@@ -282,17 +282,17 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased)
       throws FileNotFoundException, IOException {
-    if (filter != null) {
-      LOG.debug("list status: {}, filter: {}",f.toString(), filter.toString());
-    } else {
-      LOG.debug("list status: {}", f.toString());
-    }
+    LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
     FileStatus[] result = {};
-
     if (f.toString().contains(HADOOP_TEMPORARY)) {
       return result;
     }
-    final FileStatus fileStatus =  getFileStatus(f);
+    FileStatus fileStatus = null;
+    try {
+      fileStatus = getFileStatus(f);
+    } catch (FileNotFoundException e) {
+      LOG.trace("{} not found. Try to list", f.toString());
+    }
 
     if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
       LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
