@@ -741,8 +741,9 @@ public class SwiftAPIClient implements IStoreClient {
       // container listing reports 0 for large objects.
       StoredObject soDirect = cObj
           .getObject(tmp.getName());
-      if (soDirect.getContentLength() > 0) {
-        tmp.setContentLength(soDirect.getContentLength());
+      long contentLength = soDirect.getContentLength();
+      if (contentLength > 0) {
+        tmp.setContentLength(contentLength);
       }
     }
   }
