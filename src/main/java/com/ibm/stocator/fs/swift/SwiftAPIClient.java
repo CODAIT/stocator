@@ -316,6 +316,10 @@ public class SwiftAPIClient implements IStoreClient {
     */
     boolean isDirectory = false;
     String objectName = getObjName(hostName, path);
+    if (objectName.contains(HADOOP_TEMPORARY)) {
+      LOG.debug("getObjectMetadata on temp object {}. Return not found", objectName);
+      throw new FileNotFoundException("Not found " + path.toString());
+    }
     SwiftCachedObject obj = objectCache.get(objectName);
     if (obj != null) {
       // object exists, We need to check if the object size is equal to zero
