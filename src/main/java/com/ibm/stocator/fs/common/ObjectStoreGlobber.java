@@ -161,7 +161,7 @@ public class ObjectStoreGlobber {
           pathPattern.toString());
       FileStatus[] candidates = listStatus(new Path(pathPattern.toString()));
       if (candidates == null) {
-        return null;
+        return new FileStatus[0];
       }
       for (FileStatus candidate : candidates) {
         LOG.trace("No globber pattern. Candidate {}", candidate.getPath().toString());
@@ -174,7 +174,7 @@ public class ObjectStoreGlobber {
       }
     }
     if (results.isEmpty()) {
-      return null;
+      return new FileStatus[0];
     }
 
     return results.toArray(new FileStatus[0]);
