@@ -144,6 +144,11 @@ public class ObjectStoreGlobber {
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
 
+    if (pathPatternString.contains("?temp_url")) {
+      FileStatus[] fs = {getFileStatus(pathPattern)};
+      return fs;
+    }
+
     if (globFilter.hasPattern()) {
       // Get a list of FileStatuses and filter
       String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
