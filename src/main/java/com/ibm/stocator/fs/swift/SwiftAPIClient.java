@@ -294,6 +294,16 @@ public class SwiftAPIClient implements IStoreClient {
       Path path, String msg) throws IOException, FileNotFoundException {
     LOG.trace("Get object metadata ({}): {}, hostname: {}", msg, path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
+
+    /*
+     * Check if the path is a temporary URL
+     */
+    if (path.toString().contains("temp_url")) {
+      long length = SwiftAPIDirect.getTempUrlObjectLength(path, mJossAccount, container,
+              swiftConnectionManager);
+      return new FileStatus(length, false, 1, blockSize, 0L, path);
+    }
+
     /*
       The requested path is equal to hostName.
       HostName is equal to hostNameScheme, thus the container.

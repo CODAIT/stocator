@@ -144,6 +144,11 @@ public class ObjectStoreGlobber {
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
 
+    if (pathPatternString.contains("?temp_url")) {
+      FileStatus[] fs = {getFileStatus(pathPattern)};
+      return fs;
+    }
+
     if (globFilter.hasPattern()) {
       // Get a list of FileStatuses and filter
       String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
@@ -161,7 +166,7 @@ public class ObjectStoreGlobber {
           pathPattern.toString());
       FileStatus[] candidates = listStatus(new Path(pathPattern.toString()));
       if (candidates == null) {
-        return null;
+        return new FileStatus[0];
       }
       for (FileStatus candidate : candidates) {
         LOG.trace("No globber pattern. Candidate {}", candidate.getPath().toString());
@@ -174,7 +179,7 @@ public class ObjectStoreGlobber {
       }
     }
     if (results.isEmpty()) {
-      return null;
+      return new FileStatus[0];
     }
 
     return results.toArray(new FileStatus[0]);
