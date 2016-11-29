@@ -80,6 +80,7 @@ public class JossAccount {
    */
   public void createDummyAccount() {
     mAccount = new DummyAccountFactory(mAccountConfig).setHttpClient(httpclient).createAccount();
+    mAccess = mAccount.getAccess();
   }
 
   /**

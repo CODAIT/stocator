@@ -118,11 +118,10 @@ public class SwiftAPIDirect {
   /*
    * Sends a HEAD request to get an object's length
    */
-  public static long getTempUrlObjectLength(Path path, JossAccount account, String container,
-                                            SwiftConnectionManager scm)
+  public static long getTempUrlObjectLength(Path path, SwiftConnectionManager scm)
       throws IOException {
-    String tempurl = account.getAccessURL() + "/" + container + path.toUri().getPath();
-    HttpHead head = new HttpHead(tempurl);
+
+    HttpHead head = new HttpHead(path.toString().replace("swift2d", "https"));
     CloseableHttpResponse response = scm.createHttpConnection().execute(head);
     return Long.parseLong(response.getFirstHeader("Content-Length").getValue());
   }

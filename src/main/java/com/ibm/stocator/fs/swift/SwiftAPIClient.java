@@ -268,7 +268,7 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
-    if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
+    if (!authMethod.equals(PUBLIC_ACCESS) && !containerObj.exists()) {
       containerObj.create();
     }
 
@@ -299,8 +299,7 @@ public class SwiftAPIClient implements IStoreClient {
      * Check if the path is a temporary URL
      */
     if (path.toString().contains("temp_url")) {
-      long length = SwiftAPIDirect.getTempUrlObjectLength(path, mJossAccount, container,
-              swiftConnectionManager);
+      long length = SwiftAPIDirect.getTempUrlObjectLength(path, swiftConnectionManager);
       return new FileStatus(length, false, 1, blockSize, 0L, path);
     }
 
