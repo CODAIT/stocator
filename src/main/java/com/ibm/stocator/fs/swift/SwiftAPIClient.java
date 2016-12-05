@@ -572,6 +572,13 @@ public class SwiftAPIClient implements IStoreClient {
       Map<String, String> metadata, Statistics statistics) throws IOException {
     URL url = new URL(mJossAccount.getAccessURL() + "/" + objName);
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
+
+    // When overwriting an object, cached metadata will be outdated
+    String cachedName = getObjName(container + "/", objName);
+    if (objectCache.get(cachedName) != null) {
+      objectCache.remove(cachedName);
+    }
+
     try {
       return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType,
               metadata, swiftConnectionManager), statistics);
