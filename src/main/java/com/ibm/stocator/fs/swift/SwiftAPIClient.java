@@ -272,7 +272,7 @@ public class SwiftAPIClient implements IStoreClient {
       containerObj.create();
     }
 
-    objectCache = new SwiftObjectCache(mJossAccount.getAccount().getContainer(container));
+    objectCache = new SwiftObjectCache(containerObj);
   }
 
   @Override
