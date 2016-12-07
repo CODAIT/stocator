@@ -154,8 +154,14 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final Configuration conf;
 
+  /*
+   * Swift connection manager. Manages all the connections used by Stocator
+   */
   private SwiftConnectionManager swiftConnectionManager;
 
+  /*
+   * HTTP Client Connection configuration
+   */
   private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
 
   /**
