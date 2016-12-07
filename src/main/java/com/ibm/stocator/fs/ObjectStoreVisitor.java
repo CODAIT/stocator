@@ -20,6 +20,8 @@ package com.ibm.stocator.fs;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
@@ -27,6 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
+
+import static com.ibm.stocator.fs.common.Utils.getHost;
+import static com.ibm.stocator.fs.common.Utils.getServiceName;
 
 /**
  * Pickup the correct object store implementation
@@ -38,6 +43,8 @@ public class ObjectStoreVisitor {
    * Logger
    */
   private static final Logger LOG = LoggerFactory.getLogger(ObjectStoreVisitor.class);
+
+  private static Map<String, IStoreClient> sClientMap = new HashMap<>();
 
   /**
    * fs.stocator.scheme.list contains comma separated list of the provided
@@ -94,8 +101,15 @@ public class ObjectStoreVisitor {
    * @return IStoreClient implementation
    * @throws IOException if error
    */
-  public static IStoreClient getStoreClient(URI fsuri, Configuration conf) throws IOException {
+  public static synchronized IStoreClient getStoreClient(URI fsuri, Configuration conf)
+          throws IOException {
     String fsSchema = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
+    String service = getServiceName(getHost(fsuri));
+
+    if (sClientMap.containsKey(service)) {
+      return sClientMap.get(service);
+    }
+
     ClassLoader classLoader = ObjectStoreVisitor.class.getClassLoader();
     String[] supportedSchemas = conf.get("fs.stocator.scheme.list", Constants.SWIFT).split(",");
     for (String scheme: supportedSchemas) {
@@ -122,6 +136,7 @@ public class ObjectStoreVisitor {
         }
         try {
           storeClient.initiate(supportedScheme);
+          sClientMap.put(service, storeClient);
           return storeClient;
         } catch (IOException e) {
           LOG.error(e.getMessage());
