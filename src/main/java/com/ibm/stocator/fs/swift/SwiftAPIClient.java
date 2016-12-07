@@ -154,8 +154,14 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private final Configuration conf;
 
+  /*
+   * Swift connection manager. Manages all the connections used by Stocator
+   */
   private SwiftConnectionManager swiftConnectionManager;
 
+  /*
+   * HTTP Client Connection configuration
+   */
   private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
 
   /**
@@ -268,11 +274,11 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
-    if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
+    if (!authMethod.equals(PUBLIC_ACCESS) && !containerObj.exists()) {
       containerObj.create();
     }
 
-    objectCache = new SwiftObjectCache(mJossAccount.getAccount().getContainer(container));
+    objectCache = new SwiftObjectCache(containerObj);
   }
 
   @Override
@@ -294,6 +300,15 @@ public class SwiftAPIClient implements IStoreClient {
       Path path, String msg) throws IOException, FileNotFoundException {
     LOG.trace("Get object metadata ({}): {}, hostname: {}", msg, path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
+
+    /*
+     * Check if the path is a temporary URL
+     */
+    if (path.toString().contains("temp_url")) {
+      long length = SwiftAPIDirect.getTempUrlObjectLength(path, swiftConnectionManager);
+      return new FileStatus(length, false, 1, blockSize, 0L, path);
+    }
+
     /*
       The requested path is equal to hostName.
       HostName is equal to hostNameScheme, thus the container.
@@ -316,6 +331,10 @@ public class SwiftAPIClient implements IStoreClient {
     */
     boolean isDirectory = false;
     String objectName = getObjName(hostName, path);
+    if (objectName.contains(HADOOP_TEMPORARY)) {
+      LOG.debug("getObjectMetadata on temp object {}. Return not found", objectName);
+      throw new FileNotFoundException("Not found " + path.toString());
+    }
     SwiftCachedObject obj = objectCache.get(objectName);
     if (obj != null) {
       // object exists, We need to check if the object size is equal to zero
@@ -559,6 +578,13 @@ public class SwiftAPIClient implements IStoreClient {
       Map<String, String> metadata, Statistics statistics) throws IOException {
     URL url = new URL(mJossAccount.getAccessURL() + "/" + objName);
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
+
+    // When overwriting an object, cached metadata will be outdated
+    String cachedName = getObjName(container + "/", objName);
+    if (objectCache.get(cachedName) != null) {
+      objectCache.remove(cachedName);
+    }
+
     try {
       return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType,
               metadata, swiftConnectionManager), statistics);
@@ -737,8 +763,9 @@ public class SwiftAPIClient implements IStoreClient {
       // container listing reports 0 for large objects.
       StoredObject soDirect = cObj
           .getObject(tmp.getName());
-      if (soDirect.getContentLength() > 0) {
-        tmp.setContentLength(soDirect.getContentLength());
+      long contentLength = soDirect.getContentLength();
+      if (contentLength > 0) {
+        tmp.setContentLength(contentLength);
       }
     }
   }

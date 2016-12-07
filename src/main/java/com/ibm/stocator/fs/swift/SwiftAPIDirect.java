@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
@@ -113,4 +114,16 @@ public class SwiftAPIDirect {
     return new Tuple<Integer, Tuple<HttpRequestBase,
         HttpResponse>>(Integer.valueOf(responseCode), respData);
   }
+
+  /*
+   * Sends a HEAD request to get an object's length
+   */
+  public static long getTempUrlObjectLength(Path path, SwiftConnectionManager scm)
+      throws IOException {
+
+    HttpHead head = new HttpHead(path.toString().replace("swift2d", "https"));
+    CloseableHttpResponse response = scm.createHttpConnection().execute(head);
+    return Long.parseLong(response.getFirstHeader("Content-Length").getValue());
+  }
+
 }
