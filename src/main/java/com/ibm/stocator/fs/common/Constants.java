@@ -133,5 +133,9 @@ public class Constants {
    * JOSS synchronize with server time
    */
   public static final String JOSS_SYNC_SERVER_TIME = "fs.stocator.joss.synchronize.time";
-
+  /*
+   * Set stocator metrics on or off
+   */
+  public static final String METRICS_TOGGLE = "fs.stocator.metrics.toggle";
+  public static final String METRICS_TOGGLE_ON = "ON";
 }

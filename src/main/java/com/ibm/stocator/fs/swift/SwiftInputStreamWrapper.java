@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.swift;
 import java.io.IOException;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 
 import com.ibm.stocator.fs.common.Utils;
@@ -31,6 +32,8 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
    */
   private final HttpRequestBase httpRequest;
 
+  private final HttpResponse httpResponse;
+
   /*
    * no more left to read
    */
@@ -41,11 +44,13 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
    */
   private HttpEntity httpEntity;
 
-  public SwiftInputStreamWrapper(HttpEntity entity, HttpRequestBase httpRequestT)
+  public SwiftInputStreamWrapper(HttpEntity entity, HttpRequestBase httpRequestT,
+      HttpResponse httpResponseT)
           throws IOException {
     super(entity.getContent());
     httpEntity = entity;
     httpRequest = httpRequestT;
+    httpResponse = httpResponseT;
   }
 
   @Override
@@ -62,6 +67,10 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
 
   public HttpRequestBase getHttpRequest() {
     return httpRequest;
+  }
+
+  public HttpResponse getHttpResponse() {
+    return httpResponse;
   }
 
   @Override

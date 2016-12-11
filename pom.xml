@@ -69,6 +69,7 @@
         <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
+	<spark.version>[1.6.1,)</spark.version>
     </properties>
 
     <dependencies>
@@ -179,6 +180,15 @@
             <artifactId>httpcore</artifactId>
             <version>${httpcomponents.httpcore.version}</version>
         </dependency>
+        
+ 
+        <dependency>
+                  <groupId>org.apache.spark</groupId>
+                  <artifactId>spark-core_2.11</artifactId>
+                  <version>${spark.version}</version>
+                  <scope>provided</scope>
+        </dependency>
+        
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>

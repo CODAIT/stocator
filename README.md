@@ -177,6 +177,7 @@ Below is the optional configuration that can be provided to Stocator and used in
 | fs.stocator.ReqConnectionRequestTimeout | 5000 | Request level connection timeout. Returns the timeout in milliseconds used when requesting a connection from the connection manager
 | fs.stocator.ReqSocketTimeout | 5000 | Defines the socket timeout (SO_TIMEOUT) in milliseconds, which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets).
 | fs.stocator.joss.synchronize.time | false | Will disable JOSS to synchronize time with the server. Setting this value to 'false' will badly impact on temp url. However this will reduce HEAD on account which might be problematic if the user doesn't has access rights to HEAD an account |
+| fs.stocator.metrics.toggle | OFF | If set to ON will start metrics collection for blocked time analysis |
 
 ## Providing configuration keys in run time
 It's possible to provide configuration keys in run time, without keeping them in core-sites.xml. Just use SparkContext variable with
@@ -274,6 +275,40 @@ Copy
  
 Edit `src/test/resources/core-site.xml` and configure Swift access details. 
 Functional tests will use container from `fs.swift2d.test.uri`. To use different container, change `drivertest` to different name. Container need not to be exists in advance and will be created automatically. 
+
+### Metrics collection
+Follow the two steps below in order to turn metric collection ON in stocator.
+Step 1: 
+
+	Edit `conf/core-site.xml` and set fs.stocator.metrics.toggle to ON
+
+	   <property>
+	   	<name>fs.stocator.metrics.toggle</name>
+	   	<value>ON</value>
+	   </property>
+
+Step 2:
+
+        Edit Spark logging configuration file `conf/log4j.properties` and enable metrics logging: 
+
+		# Set metrics log file
+		log4j.appender.MFILE=org.apache.log4j.RollingFileAppender
+		log4j.appender.MFILE.File=stocator.log
+		# Set the maximum file size before rollover
+		log4j.appender.MFILE.MaxFileSize=10MB
+		# Set the the backup index
+		log4j.appender.MFILE.MaxBackupIndex=5
+		# Define the layout for file appender
+		log4j.appender.MFILE.layout=org.apache.log4j.PatternLayout
+		log4j.appender.MFILE.layout.ConversionPattern={"level":"%p","timestamp":"%d{yy/MM/dd HH:mm:ss}","thread":"%t","class":"%c{1}", "message":"%m"}%n
+		log4j.appender.MFILE.Append=true
+
+		log4j.additivity.com.ibm.stocator.metrics.DataMetricUtilities=false
+		log4j.logger.com.ibm.stocator.metrics.DataMetricUtilities=TRACE, MFILE
+
+A metrics file called 'stocator.log' will be created per executor and driver. These metrics can be used for blocked time analysis. 
+
+In order to turn the metrics OFF, change the value of fs.stocator.metrics.toggle to OFF, or remove its section entirely from `conf/core-site.xml`.
 
 ## How to develop code
 If you like to work on code, you can easily setup Eclipse project via
