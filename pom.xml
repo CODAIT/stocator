@@ -179,6 +179,15 @@
             <artifactId>httpcore</artifactId>
             <version>${httpcomponents.httpcore.version}</version>
         </dependency>
+        
+ 
+        <dependency>
+                  <groupId>org.apache.spark</groupId>
+                  <artifactId>spark-core_2.11</artifactId>
+                  <version>[1.6.1,)</version>
+                  <scope>provided</scope>
+        </dependency>
+        
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>

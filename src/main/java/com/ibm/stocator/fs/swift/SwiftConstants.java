@@ -60,5 +60,4 @@ public class SwiftConstants {
   public static final String FMODE_DELETE_TEMP_DATA = ".failure.mode.delete";
   public static final String FMODE_AUTOMATIC_DELETE_PROPERTY = Constants.FS_SWIFT2D
       + FMODE_DELETE_TEMP_DATA;
-
 }

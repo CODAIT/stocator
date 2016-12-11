@@ -54,6 +54,7 @@ import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
+import com.ibm.stocator.metrics.DataMetricUtilities;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
@@ -158,6 +159,8 @@ public class SwiftAPIClient implements IStoreClient {
 
   private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
 
+  private static final Logger METRICS_LOG = LoggerFactory.getLogger(DataMetricUtilities.class);
+
   /**
    * Constructor method
    *
@@ -177,6 +180,9 @@ public class SwiftAPIClient implements IStoreClient {
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
+    if (Constants.METRICS_TOGGLE_ON.equals(conf.get(Constants.METRICS_TOGGLE))) {
+      DataMetricUtilities.enableMetricsLogging();
+    }
     connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
         ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
     connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
@@ -268,11 +274,14 @@ public class SwiftAPIClient implements IStoreClient {
       }
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
-    if (!containerObj.exists() && !authMethod.equals(PUBLIC_ACCESS)) {
-      containerObj.create();
+    if (!containerExists(containerObj) && !authMethod.equals(PUBLIC_ACCESS)) {
+      containerCreate(containerObj);
     }
 
     objectCache = new SwiftObjectCache(mJossAccount.getAccount().getContainer(container));
+    if (Constants.METRICS_TOGGLE_ON.equals(conf.get(Constants.METRICS_TOGGLE))) {
+      DataMetricUtilities.enableMetricsLogging();
+    }
   }
 
   @Override
@@ -325,7 +334,7 @@ public class SwiftAPIClient implements IStoreClient {
       // object exists, We need to check if the object size is equal to zero
       // If so, it might be a directory
       if (obj.getContentLength() == 0) {
-        Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
+        Collection<DirectoryOrObject> directoryFiles = listDirectory(cont, objectName);
         if (directoryFiles != null && directoryFiles.size() != 0) {
           // The zero length object is a directory
           isDirectory = true;
@@ -338,8 +347,7 @@ public class SwiftAPIClient implements IStoreClient {
     }
     // We need to check if it may be a directory with no zero byte file associated
     LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
-    Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
-        "", 10);
+    Collection<DirectoryOrObject> directoryFiles = listDirectory(cont, objectName + "/");
     if (directoryFiles != null) {
       LOG.trace("{} got {} candidates", objectName + "/", directoryFiles.size());
     }
@@ -459,7 +467,7 @@ public class SwiftAPIClient implements IStoreClient {
     FileStatus fs = null;
     StoredObject previousElement = null;
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      Collection<StoredObject> res = cObj.list(paginationMap, page);
+      Collection<StoredObject> res = listContainer(cObj, paginationMap, page);
       if (page == 0 && (res == null || res.isEmpty())) {
         FileStatus[] emptyRes = {};
         LOG.debug("List {} in container {} is empty", obj, container);
@@ -565,7 +573,7 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
     try {
       return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType,
-              metadata, swiftConnectionManager), statistics);
+          metadata, swiftConnectionManager, objName), statistics);
     } catch (IOException e) {
       LOG.error(e.getMessage());
       throw e;
@@ -581,8 +589,8 @@ public class SwiftAPIClient implements IStoreClient {
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     StoredObject so = mJossAccount.getAccount().getContainer(container)
         .getObject(obj);
-    if (so.exists()) {
-      so.delete();
+    if (storedObjectExists(so)) {
+      storedObjectDelete(so);
       objectCache.remove(obj);
     }
     return true;
@@ -628,7 +636,7 @@ public class SwiftAPIClient implements IStoreClient {
     String obj = objectName;
     Boolean sparkOriginated = Boolean.FALSE;
     StoredObject so = mJossAccount.getAccount().getContainer(container).getObject(obj);
-    if (so != null && so.exists()) {
+    if (so != null && storedObjectExists(so)) {
       Object sparkOrigin = so.getMetadata("Data-Origin");
       if (sparkOrigin != null) {
         String tmp = (String) sparkOrigin;
@@ -658,10 +666,11 @@ public class SwiftAPIClient implements IStoreClient {
     String obj = objectName;
     Account account = mJossAccount.getAccount();
     LOG.trace("HEAD {}", obj + "/" + HADOOP_SUCCESS);
-    StoredObject so = account.getContainer(container).getObject(obj
+    Container cont = account.getContainer(container);
+    StoredObject so = containerGetObject(cont, obj
         + "/" + HADOOP_SUCCESS);
     Boolean isJobOK = Boolean.FALSE;
-    if (so.exists()) {
+    if (storedObjectExists(so)) {
       LOG.debug("{} exists", obj + "/" + HADOOP_SUCCESS);
       isJobOK = Boolean.TRUE;
     }
@@ -793,9 +802,111 @@ public class SwiftAPIClient implements IStoreClient {
     }
     LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
     Container cont = mJossAccount.getAccount().getContainer(container);
-    StoredObject so = cont.getObject(objNameSrc);
-    StoredObject soDst = cont.getObject(objNameDst);
-    so.copyObject(cont, soDst);
+    StoredObject so = containerGetObject(cont, objNameSrc);
+    StoredObject soDst = containerGetObject(cont, objNameDst);
+    storedObjectCopy(cont, so, soDst);
     return true;
   }
+
+  static void containerCreate(Container containerObj) {
+    String objectName = containerObj.getName();
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "Create Container");
+
+    containerObj.create();
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG.trace(DataMetricUtilities.closeMetric(objectName, "CREATE", true/* isContainer */,
+          requestStartTime));
+    }
+  }
+
+  static boolean containerExists(Container containerObj) {
+    String objectName = containerObj.getName();
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "HEAD Container");
+
+    boolean containerExists = containerObj.exists();
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG.trace(DataMetricUtilities.closeMetric(objectName, "HEAD", true/* isContainer */,
+          requestStartTime));
+    }
+    return containerExists;
+  }
+
+  static Collection<DirectoryOrObject> listDirectory(Container cont, String objectName) {
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "LIST DIRECTORY");
+
+    Collection<DirectoryOrObject> directoryListing = cont.listDirectory(objectName, '/', "", 10);
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG.trace(DataMetricUtilities.closeMetric(objectName, "GET", true/* isContainer */,
+          requestStartTime));
+    }
+    return directoryListing;
+  }
+
+  static Collection<StoredObject> listContainer(Container cObj, PaginationMap paginationMap,
+      Integer page) {
+    String objectName = cObj.getName();
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "LIST CONTAINER");
+
+    Collection<StoredObject> containerListing = cObj.list(paginationMap, page);
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG.trace(DataMetricUtilities.closeMetric(objectName, "GET", true/* isContainer */,
+          requestStartTime));
+    }
+    return containerListing;
+  }
+
+  static boolean storedObjectExists(StoredObject so) {
+    String objectName = so.getName();
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "HEAD OBJECT");
+
+    boolean storedObjectExists = so.exists();
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG.trace(DataMetricUtilities.closeMetric(objectName, "HEAD", false/* isContainer */,
+          requestStartTime));
+    }
+    return storedObjectExists;
+  }
+
+  static StoredObject containerGetObject(Container cont, String objectName) {
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "GET OBJECT");
+
+    StoredObject obj = cont.getObject(objectName);
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG.trace(DataMetricUtilities.closeMetric(objectName, "GET", false/* isContainer */,
+          requestStartTime));
+    }
+    return obj;
+  }
+
+  static void storedObjectCopy(Container cont, StoredObject so, StoredObject soDst) {
+    String objectName = soDst.getName();
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "COPY OBJECT");
+
+    so.copyObject(cont, soDst);
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG.trace(DataMetricUtilities.closeMetric(objectName, "COPY", false/* isContainer */,
+          requestStartTime));
+    }
+  }
+
+  static void storedObjectDelete(StoredObject so) {
+    String objectName = so.getName();
+    long requestStartTime = DataMetricUtilities.initMetric(objectName, "DELETE OBJECT");
+
+    so.delete();
+
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      METRICS_LOG
+          .trace(DataMetricUtilities.closeMetric(objectName, "DELETE", false/* isContainer */,
+              requestStartTime));
+    }
+  }
+
 }
