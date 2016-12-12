@@ -132,7 +132,7 @@ public class SwiftAPIClient implements IStoreClient {
   /*
    * Page size for container listing
    */
-  private final int pageListSize = 500;
+  private final int pageListSize = 1000;
 
   /*
    * support for different schema models
