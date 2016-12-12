@@ -35,6 +35,9 @@ import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ibm.stocator.metrics.DataMetricCounter;
+import com.ibm.stocator.metrics.DataMetricUtilities;
+
 @InterfaceAudience.Private
 @InterfaceStability.Evolving
 public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
@@ -92,6 +95,9 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private long negativeSeek = 0;
 
+  private DataMetricCounter dataMetricCounter;
+  private static final Logger METRICSS_LOG = LoggerFactory.getLogger(DataMetricUtilities.class);
+
   /**
    * Default constructor
    *
@@ -105,6 +111,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   public SwiftInputStream(String pathT, JossAccount jossAccountT,
       SwiftConnectionManager scmT, long readAheadT, SwiftObjectCache objectCacheT,
       String objNameT) {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
     mJossAccount = jossAccountT;
     objectCache = objectCacheT;
     scm = scmT;
@@ -112,6 +119,9 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     objName = objNameT;
     readahead = readAheadT;
     setReadahead(readahead);
+    dataMetricCounter = DataMetricUtilities.buildDataMetricCounter(requestStartTime, objName,
+        "GET");
+
   }
 
   /**
@@ -136,12 +146,21 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       LOG.trace("reopen({}) for {} range[{}-{}], length={},"
           + " streamPosition={}, nextReadPosition={}", uri, msg,
           contentRangeStart, contentRangeFinish, length, pos, nextReadPos);
-
+      if (null != wrappedStream) {
+        String summary = DataMetricUtilities.getCounterSummary(dataMetricCounter);
+        METRICSS_LOG.trace(summary);
+        long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
+        dataMetricCounter = DataMetricUtilities.buildDataMetricCounter(requestStartTime, objName,
+            "GET");
+      }
       wrappedStream = SwiftAPIDirect.getObject(new Path(uri),
           mJossAccount, contentRangeStart, contentRangeFinish, scm);
+
       if (wrappedStream == null) {
         throw new IOException("Null IO stream from reopen of (" + msg + ") " + uri);
       }
+      DataMetricUtilities.updateDataMetricCounter(dataMetricCounter,
+          wrappedStream.getHttpResponse());
     } catch (ClientException e) {
       LOG.error(e.getMessage());
       throw new IOException("Reopen at position " + targetPos + uri);
@@ -251,6 +270,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   @Override
   public synchronized int read() throws IOException {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
     checkNotClosed();
     int byteRead;
     try {
@@ -267,12 +287,13 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       pos++;
       nextReadPos++;
     }
-
+    DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, 1L, requestStartTime);
     return byteRead;
   }
 
   @Override
   public synchronized int read(byte[] buf, int off, int len) throws IOException {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
     checkNotClosed();
     if (len == 0) {
       return 0;
@@ -298,6 +319,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
       pos += bytesRead;
       nextReadPos += bytesRead;
     }
+    DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, bytesRead, requestStartTime);
     return bytesRead;
   }
 
@@ -309,11 +331,17 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   @Override
   public synchronized void close() throws IOException {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
     if (!closed) {
       closed = true;
       try {
         closeStream("close() operation", contentRangeFinish);
         super.close();
+        DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, 0, requestStartTime);
+        if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+          String summary = DataMetricUtilities.getCounterSummary(dataMetricCounter);
+          METRICSS_LOG.trace(summary);
+        }
       } finally {
         LOG.trace("{}. Stream closed", uri);
       }
@@ -435,4 +463,5 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   public synchronized long getReadahead() {
     return readahead;
   }
+
 }

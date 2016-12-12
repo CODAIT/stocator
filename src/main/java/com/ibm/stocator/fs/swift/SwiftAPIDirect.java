@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.swift;
 import java.io.IOException;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -33,6 +34,8 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.Tuple;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
+import com.ibm.stocator.metrics.DataMetricCounter;
+import com.ibm.stocator.metrics.DataMetricUtilities;
 
 /**
  * Direct client to the object store implementing Swift API
@@ -82,7 +85,7 @@ public class SwiftAPIDirect {
     }
 
     SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
-        resp.y.y.getEntity(), resp.y.x);
+        resp.y.y.getEntity(), resp.y.x, resp.y.y);
     return httpStream;
   }
 
@@ -98,6 +101,7 @@ public class SwiftAPIDirect {
       long bytesFrom, long bytesTo, JossAccount account, SwiftConnectionManager scm)
           throws IOException {
     LOG.debug("HTTP GET {} request. From {}, To {}", path, bytesFrom, bytesTo);
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
     HttpGet httpGet = new HttpGet(path);
     httpGet.addHeader("X-Auth-Token", account.getAuthToken());
     if (bytesTo > 0) {
@@ -111,6 +115,15 @@ public class SwiftAPIDirect {
     LOG.debug("HTTP GET {} response. Status code {}", path, responseCode);
     Tuple<HttpRequestBase, HttpResponse> respData = new Tuple<HttpRequestBase,
         HttpResponse>(httpGet, response);
+    DataMetricCounter dataMetricCounter = DataMetricUtilities
+        .buildDataMetricCounter(requestStartTime, path, "GET");
+    DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, bytesTo - bytesFrom + 1,
+        requestStartTime);
+    Header clvRequestIdHeader = response
+        .getFirstHeader(DataMetricUtilities.DSNET_REQUEST_ID_HEADER);
+    String summary = DataMetricUtilities.getCounterSummary(dataMetricCounter, clvRequestIdHeader);
+    LOG.debug(summary);
+
     return new Tuple<Integer, Tuple<HttpRequestBase,
         HttpResponse>>(Integer.valueOf(responseCode), respData);
   }

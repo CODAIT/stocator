@@ -59,8 +59,9 @@ public class SwiftObjectCache {
     SwiftCachedObject res = cache.get(objName);
     if (res == null) {
       LOG.trace("Cache get:  {} is not in the cache. Access Swift to get content length", objName);
-      StoredObject rawObj = container.getObject(removeTrailingSlash(objName));
-      if (rawObj != null && rawObj.exists()) {
+      StoredObject rawObj = SwiftAPIClient.containerGetObject(container,
+          removeTrailingSlash(objName));
+      if (rawObj != null && SwiftAPIClient.storedObjectExists(rawObj)) {
         res = new SwiftCachedObject(rawObj.getContentLength(),
           Utils.lastModifiedAsLong(rawObj.getLastModified()));
         put(objName, res);

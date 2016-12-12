@@ -24,6 +24,7 @@ import java.io.PipedOutputStream;
 import java.net.URL;
 import java.util.Map;
 
+import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPut;
@@ -33,6 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
+
+import com.ibm.stocator.metrics.DataMetricCounter;
+import com.ibm.stocator.metrics.DataMetricUtilities;
 
 /**
  *
@@ -64,6 +68,11 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpPut request;
 
+  private String objName;
+  private DataMetricCounter dataMetricCounter;
+  private volatile Header clvRequestIdHeader;
+  private static final Logger METRICSS_LOG = LoggerFactory.getLogger(DataMetricUtilities.class);
+
   private Thread writeThread;
   private long totalWritten;
   private JossAccount mAccount;
@@ -76,14 +85,17 @@ public class SwiftOutputStream extends OutputStream {
    * @param contentType content type
    * @param metadata input metadata
    * @param connectionManager SwiftConnectionManager
+   * @param objectName the name of the object to write
    * @throws IOException if error
    */
   public SwiftOutputStream(JossAccount account, URL url, final String contentType,
-                           Map<String, String> metadata, SwiftConnectionManager connectionManager)
+      Map<String, String> metadata, SwiftConnectionManager connectionManager, String objectName)
           throws IOException {
+    long streamStartTime = DataMetricUtilities.getCurrentTimestamp();
     mUrl = url;
     totalWritten = 0;
     mAccount = account;
+    objName = objectName;
     client = connectionManager.createHttpConnection();
     request = new HttpPut(mUrl.toString());
     request.addHeader("X-Auth-Token", account.getAuthToken());
@@ -92,6 +104,7 @@ public class SwiftOutputStream extends OutputStream {
         request.addHeader("X-Object-Meta-" + entry.getKey(), entry.getValue());
       }
     }
+    dataMetricCounter = DataMetricUtilities.buildDataMetricCounter(streamStartTime, objName, "PUT");
 
     PipedOutputStream out = new PipedOutputStream();
     final PipedInputStream in = new PipedInputStream();
@@ -117,9 +130,11 @@ public class SwiftOutputStream extends OutputStream {
             response = client.execute(request);
             responseCode = response.getStatusLine().getStatusCode();
           }
+          clvRequestIdHeader = response
+              .getFirstHeader(DataMetricUtilities.DSNET_REQUEST_ID_HEADER);
           if (responseCode >= 400) { // Code may have changed from retrying
-            throw new IOException("HTTP Error: " + responseCode
-                    + " Reason: " + response.getStatusLine().getReasonPhrase());
+            throw new IOException("HTTP Error: " + responseCode + " Reason: "
+                + response.getStatusLine().getReasonPhrase());
           }
         } catch (IOException e) {
           LOG.error(e.getMessage());
@@ -127,6 +142,7 @@ public class SwiftOutputStream extends OutputStream {
         }
       }
     };
+
   }
 
   private void checkThreadState() throws IOException {
@@ -147,44 +163,62 @@ public class SwiftOutputStream extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
+
     if (LOG.isTraceEnabled()) {
       totalWritten = totalWritten + 1;
       LOG.trace("Write {} one byte. Total written {}", mUrl.toString(), totalWritten);
     }
     checkThreadState();
     mOutputStream.write(b);
+
+    DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, 1L, requestStartTime);
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
+
     if (LOG.isTraceEnabled()) {
       totalWritten = totalWritten + len;
       LOG.trace("Write {} off {} len {}. Total {}", mUrl.toString(), off, len, totalWritten);
     }
     checkThreadState();
     mOutputStream.write(b, off, len);
+    DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, len, requestStartTime);
   }
 
   @Override
   public void write(byte[] b) throws IOException {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
+
     if (LOG.isTraceEnabled()) {
       totalWritten = totalWritten + b.length;
       LOG.trace("Write {} len {}. Total {}", mUrl.toString(), b.length, totalWritten);
     }
     checkThreadState();
     mOutputStream.write(b);
+    DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, b.length, requestStartTime);
   }
 
   @Override
   public void close() throws IOException {
+    long requestStartTime = DataMetricUtilities.getCurrentTimestamp();
+
     checkThreadState();
     LOG.debug("HTTP PUT close {}", mUrl.toString());
     flush();
     mOutputStream.close();
+
     try {
       writeThread.join();
     } catch (InterruptedException ie) {
       LOG.error(ie.getMessage());
+    }
+    DataMetricUtilities.updateDataMetricCounter(dataMetricCounter, 0, requestStartTime);
+    if (DataMetricUtilities.isMetricsLoggingEnabled()) {
+      String summary = DataMetricUtilities.getCounterSummary(dataMetricCounter, clvRequestIdHeader);
+      METRICSS_LOG.trace(summary);
     }
   }
 
@@ -193,4 +227,5 @@ public class SwiftOutputStream extends OutputStream {
     LOG.trace("{} flush method", mUrl.toString());
     mOutputStream.flush();
   }
+
 }
