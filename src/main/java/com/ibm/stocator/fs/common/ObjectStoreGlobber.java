@@ -64,11 +64,11 @@ public class ObjectStoreGlobber {
     }
   }
 
-  private FileStatus[] listStatus(Path path) throws IOException {
+  private FileStatus[] listStatus(Path path, boolean prefixBased) throws IOException {
     try {
       if (fs != null) {
         //return fs.listStatus(new Path(path.toString() + "*"));
-        return fs.listStatus(path, null, true);
+        return fs.listStatus(path, null, prefixBased);
       } else {
         return fc.util().listStatus(path);
       }
@@ -154,7 +154,7 @@ public class ObjectStoreGlobber {
       String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
-      FileStatus[] candidates = listStatus(rootPlaceholder.getPath());
+      FileStatus[] candidates = listStatus(rootPlaceholder.getPath(), true);
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
           LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
@@ -164,7 +164,7 @@ public class ObjectStoreGlobber {
     } else {
       LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
           pathPattern.toString());
-      FileStatus[] candidates = listStatus(new Path(pathPattern.toString()));
+      FileStatus[] candidates = listStatus(new Path(pathPattern.toString()), false);
       if (candidates == null) {
         return new FileStatus[0];
       }
