@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AuthenticationMethod;
+import org.javaswift.joss.exception.AlreadyExistsException;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
@@ -275,9 +276,12 @@ public class SwiftAPIClient implements IStoreClient {
     }
     Container containerObj = mJossAccount.getAccount().getContainer(container);
     if (!authMethod.equals(PUBLIC_ACCESS) && !containerObj.exists()) {
-      containerObj.create();
+      try {
+        containerObj.create();
+      } catch (AlreadyExistsException e) {
+        LOG.debug("Create container failed. {} was already exists. ", container);
+      }
     }
-
     objectCache = new SwiftObjectCache(containerObj);
   }
 
