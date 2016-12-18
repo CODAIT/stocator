@@ -24,11 +24,11 @@ public class ConnectionConfiguration {
 
   public static final int DEFAULT_MAX_PER_ROUTE = 25;
   public static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 50;
-  public static final int DEFAULT_SOCKET_TIMEOUT = 1000;
+  public static final int DEFAULT_SOCKET_TIMEOUT = 10000;
   public static final int DEFAULT_EXECUTION_RETRY = 100;
   public static final int DEFAULT_REQUEST_CONNECT_TIMEOUT = 5000;
   public static final int DEFAULT_REQUEST_CONNECTION_TIMEOUT = 5000;
-  public static final int DEFAULT_REQUEST_SOCKET_TIMEOUT = 5000;
+  public static final int DEFAULT_REQUEST_SOCKET_TIMEOUT = 50000;
 
   /*
    * maximal connections per IP route
