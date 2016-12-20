@@ -104,7 +104,7 @@ public class ObjectStoreVisitor {
   public static synchronized IStoreClient getStoreClient(URI fsuri, Configuration conf)
           throws IOException {
     String fsSchema = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
-    String service = getServiceName(getHost(fsuri));
+    String service = getHost(fsuri);
 
     if (sClientMap.containsKey(service)) {
       return sClientMap.get(service);
