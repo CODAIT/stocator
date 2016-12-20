@@ -133,5 +133,7 @@ public class Constants {
    * JOSS synchronize with server time
    */
   public static final String JOSS_SYNC_SERVER_TIME = "fs.stocator.joss.synchronize.time";
+  public static final String OUTPUT_COMMITTER_TYPE = "fs.stocator.committer.type";
+  public static final String DEFAULT_FOUTPUTCOMMITTER_V1 = "defaultFOutputV1";
 
 }

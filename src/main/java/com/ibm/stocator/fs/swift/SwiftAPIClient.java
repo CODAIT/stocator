@@ -48,6 +48,7 @@ import org.apache.hadoop.fs.FileSystem.Statistics;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
+import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
@@ -73,8 +74,9 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
+import static com.ibm.stocator.fs.common.Constants.OUTPUT_COMMITTER_TYPE;
+import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
-import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 
 /**
@@ -164,6 +166,7 @@ public class SwiftAPIClient implements IStoreClient {
    * HTTP Client Connection configuration
    */
   private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
+  private StocatorPath stocatorPath;
 
   /**
    * Constructor method
@@ -184,6 +187,8 @@ public class SwiftAPIClient implements IStoreClient {
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
+    String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
+    stocatorPath = new StocatorPath(committerType);
     connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
         ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
     connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
@@ -335,7 +340,7 @@ public class SwiftAPIClient implements IStoreClient {
     */
     boolean isDirectory = false;
     String objectName = getObjName(hostName, path);
-    if (objectName.contains(HADOOP_TEMPORARY)) {
+    if (stocatorPath.isTemporaryPathContain(objectName)) {
       LOG.debug("getObjectMetadata on temp object {}. Return not found", objectName);
       throw new FileNotFoundException("Not found " + path.toString());
     }
@@ -390,7 +395,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    if (objName.contains(HADOOP_TEMPORARY)) {
+    if (stocatorPath.isTemporaryPathContain(objName)) {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
     }
@@ -812,8 +817,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (objNameDst.toString().startsWith(hostName)) {
       objNameDst = getObjName(hostName, dstPath);
     }
-
-    if (objNameSrc.contains(HADOOP_TEMPORARY)) {
+    if (stocatorPath.isTemporaryPathContain(objNameSrc)) {
       LOG.debug("Rename on the temp object {}. Return true", objNameSrc);
       return true;
     }
