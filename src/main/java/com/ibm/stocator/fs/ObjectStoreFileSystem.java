@@ -371,7 +371,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           Constants.APPLICATION_DIRECTORY, metadata, statistics);
       outStream.close();
     } else {
-      String objName = getObjectNameRoot(f, HADOOP_TEMPORARY, false);
+      String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
+          hostNameScheme);
       LOG.trace("mkdirs to create directory {}", objName);
       FSDataOutputStream outStream = storageClient.createObject(objName,
           Constants.APPLICATION_DIRECTORY, null, statistics);
