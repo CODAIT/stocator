@@ -23,6 +23,10 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URL;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -64,7 +68,12 @@ public class SwiftOutputStream extends OutputStream {
    */
   private HttpPut request;
 
-  private Thread writeThread;
+  /*
+   *  Executor service to handle threads
+   */
+  private static final ExecutorService EXECUTOR_SERVICE =  Executors.newFixedThreadPool(Runtime
+          .getRuntime().availableProcessors());
+  private Future<Void> futureTask;
   private long totalWritten;
   private JossAccount mAccount;
 
@@ -97,52 +106,36 @@ public class SwiftOutputStream extends OutputStream {
     final PipedInputStream in = new PipedInputStream();
     out.connect(in);
     mOutputStream = out;
-    writeThread = new Thread() {
-      public void run() {
+    Callable<Void> task = new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
         InputStreamEntity entity = new InputStreamEntity(in, -1);
         entity.setChunked(true);
         entity.setContentType(contentType);
         request.setEntity(entity);
-        try {
-          LOG.debug("HTTP PUT request {}", mUrl.toString());
-          HttpResponse response = client.execute(request);
-          int responseCode = response.getStatusLine().getStatusCode();
-          LOG.debug("HTTP PUT response {}. Response code {}",
-              mUrl.toString(), responseCode);
-          if (responseCode == 401) { // Unauthorized error
-            mAccount.authenticate();
-            request.removeHeaders("X-Auth-Token");
-            request.addHeader("X-Auth-Token", mAccount.getAuthToken());
-            LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
-            response = client.execute(request);
-            responseCode = response.getStatusLine().getStatusCode();
-          }
-          if (responseCode >= 400) { // Code may have changed from retrying
-            throw new IOException("HTTP Error: " + responseCode
-                    + " Reason: " + response.getStatusLine().getReasonPhrase());
-          }
-        } catch (IOException e) {
-          LOG.error(e.getMessage());
-          interrupt();
+
+        LOG.debug("HTTP PUT request {}", mUrl.toString());
+        HttpResponse response = client.execute(request);
+        int responseCode = response.getStatusLine().getStatusCode();
+        LOG.debug("HTTP PUT response {}. Response code {}",
+                mUrl.toString(), responseCode);
+        if (responseCode == 401) { // Unauthorized error
+          mAccount.authenticate();
+          request.removeHeaders("X-Auth-Token");
+          request.addHeader("X-Auth-Token", mAccount.getAuthToken());
+          LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
+          response = client.execute(request);
+          responseCode = response.getStatusLine().getStatusCode();
         }
+        if (responseCode >= 400) { // Code may have changed from retrying
+          throw new IOException("HTTP Error: " + responseCode
+                  + " Reason: " + response.getStatusLine().getReasonPhrase());
+        }
+
+        return null;
       }
     };
-  }
-
-  private void checkThreadState() throws IOException {
-    if (writeThread.getState().equals(Thread.State.NEW)) {
-      Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
-        @Override
-        public void uncaughtException(Thread t, Throwable e) {
-          LOG.error(t.getName() + e);
-          t.interrupt();
-        }
-      };
-      writeThread.setUncaughtExceptionHandler(handler);
-      writeThread.start();
-    } else if (writeThread.isInterrupted()) {
-      throw new IOException("Thread was interrupted, write was not completed.");
-    }
+    futureTask = EXECUTOR_SERVICE.submit(task);
   }
 
   @Override
@@ -151,7 +144,6 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + 1;
       LOG.trace("Write {} one byte. Total written {}", mUrl.toString(), totalWritten);
     }
-    checkThreadState();
     mOutputStream.write(b);
   }
 
@@ -161,7 +153,6 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + len;
       LOG.trace("Write {} off {} len {}. Total {}", mUrl.toString(), off, len, totalWritten);
     }
-    checkThreadState();
     mOutputStream.write(b, off, len);
   }
 
@@ -171,20 +162,18 @@ public class SwiftOutputStream extends OutputStream {
       totalWritten = totalWritten + b.length;
       LOG.trace("Write {} len {}. Total {}", mUrl.toString(), b.length, totalWritten);
     }
-    checkThreadState();
     mOutputStream.write(b);
   }
 
   @Override
   public void close() throws IOException {
-    checkThreadState();
     LOG.debug("HTTP PUT close {}", mUrl.toString());
     flush();
     mOutputStream.close();
     try {
-      writeThread.join();
-    } catch (InterruptedException ie) {
-      LOG.error(ie.getMessage());
+      futureTask.get();
+    } catch (Exception e) {
+      throw new IOException("Unable to complete write.", e);
     }
   }
 
