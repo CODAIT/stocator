@@ -41,10 +41,12 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
-import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
+import static com.ibm.stocator.fs.common.Constants.OUTPUT_COMMITTER_TYPE;
+import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 
 /**
  * Object store driver implementation
@@ -71,6 +73,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    * full URL to the data path
    */
   private URI uri;
+  private StocatorPath stocatorPath;
 
   @Override
   public String getScheme() {
@@ -86,6 +89,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     }
     uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
+    String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
+    stocatorPath = new StocatorPath(committerType);
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(fsuri, conf);
       if (Utils.validSchema(fsuri.toString())) {
@@ -182,9 +187,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     String objNameModified = "";
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
-      objNameModified =  getObjectNameRoot(f, HADOOP_TEMPORARY, false);
+      objNameModified =  stocatorPath.getObjectNameRoot(f, false,
+          storageClient.getDataRoot(), hostNameScheme);
     } else {
-      objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
+      objNameModified = stocatorPath.getObjectNameRoot(f, true,
+          storageClient.getDataRoot(), hostNameScheme);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "application/octet-stream", null, statistics);
@@ -204,9 +211,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
     LOG.debug("rename from {} to {}", src.toString(), dst.toString());
-    String objNameModified = getObjectNameRoot(src, HADOOP_TEMPORARY, true);
+    String objNameModified = stocatorPath.getObjectNameRoot(src, true,
+        storageClient.getDataRoot(), hostNameScheme);
     LOG.debug("Modified object name {}", objNameModified);
-    if (objNameModified.contains(HADOOP_TEMPORARY)) {
+    if (stocatorPath.isTemporaryPathContain(objNameModified)) {
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
@@ -218,11 +226,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
-    String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
+    String objNameModified = stocatorPath.getObjectNameRoot(f, true,
+        storageClient.getDataRoot(), hostNameScheme);
     LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
         recursive, objNameModified, hostNameScheme);
     boolean result = false;
-    if (objNameModified.contains(HADOOP_TEMPORARY)) {
+    if (stocatorPath.isTemporaryPathContain(objNameModified)) {
       return true;
     }
     Path pathToObj = new Path(objNameModified);
@@ -284,7 +293,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       throws FileNotFoundException, IOException {
     LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
     FileStatus[] result = {};
-    if (f.toString().contains(HADOOP_TEMPORARY)) {
+    if (stocatorPath.isTemporaryPathContain(f)) {
       return result;
     }
     FileStatus fileStatus = null;
@@ -350,8 +359,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean mkdirs(Path f) throws IOException {
     LOG.debug("mkdirs: {}", f.toString());
-    if (f.getParent().toString().endsWith(HADOOP_TEMPORARY)) {
-      String objNameModified = getObjectNameRoot(f, HADOOP_TEMPORARY, true);
+    if (stocatorPath.isTemporaryPathTaget(f.getParent())) {
+      String objNameModified = stocatorPath.getObjectNameRoot(f,true,
+          storageClient.getDataRoot(), hostNameScheme);
       Path pathToObj = new Path(objNameModified);
       String plainObjName = pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
@@ -393,63 +403,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     long defaultBlockSize = super.getDefaultBlockSize(f);
     LOG.trace("Default block size for: {} is {}", f.toString(), defaultBlockSize);
     return defaultBlockSize;
-  }
-
-  /**
-   * Extract object name from path. If addTaskIdCompositeName=true then
-   * schema://tone1.lvm/aa/bb/cc/one3.txt/_temporary/0/_temporary/
-   * attempt_201610052038_0001_m_000007_15/part-00007 will extract get
-   * aa/bb/cc/201610052038_0001_m_000007_15-one3.txt
-   * otherwise object name will be aa/bb/cc/one3.txt
-   *
-   * @param path path to extract from
-   * @param boundary boundary to search in a path
-   * @param addTaskIdCompositeName if true will add task-id to the object name
-   * @return new object name
-   * @throws IOException if object name is missing
-   */
-  private String getObjectName(Path fullPath, String boundary,
-      boolean addTaskIdCompositeName) throws IOException {
-    String path = fullPath.toString();
-    String noPrefix = path.substring(hostNameScheme.length());
-    int npIdx = noPrefix.indexOf(boundary);
-    String objectName = "";
-    if (npIdx >= 0) {
-      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
-        //no object name present
-        //schema://tone1.lvm/_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
-        //schema://tone1.lvm_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
-        throw new IOException("Object name is missing");
-      } else {
-        //path matches pattern in javadoc
-        objectName = noPrefix.substring(0, npIdx - 1);
-        if (addTaskIdCompositeName) {
-          String taskAttempt = Utils.extractTaskID(path);
-          String objName = fullPath.getName();
-          if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
-            objName = fullPath.getName() + "-" + taskAttempt;
-          }
-          objectName = objectName + "/" + objName;
-        }
-      }
-      return objectName;
-    }
-    return noPrefix;
-  }
-
-  /**
-   * Get object name with data root
-   *
-   * @param fullPath
-   * @param boundary
-   * @param addTaskIdCompositeName
-   * @return composite of data root and object name
-   * @throws IOException if object name is missing
-   */
-  private String getObjectNameRoot(Path fullPath, String boundary,
-      boolean addTaskIdCompositeName) throws IOException {
-    return storageClient.getDataRoot() + "/" + getObjectName(fullPath,
-        boundary, addTaskIdCompositeName);
   }
 
   @Override
