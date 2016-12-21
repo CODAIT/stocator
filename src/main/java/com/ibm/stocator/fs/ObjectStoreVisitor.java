@@ -31,7 +31,6 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 
 import static com.ibm.stocator.fs.common.Utils.getHost;
-import static com.ibm.stocator.fs.common.Utils.getServiceName;
 
 /**
  * Pickup the correct object store implementation
