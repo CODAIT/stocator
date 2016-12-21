@@ -1,6 +1,8 @@
 package com.ibm.stocator.metrics;
 
-import org.apache.spark.TaskContext;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,12 +32,27 @@ public class DataMetricCounter {
   @Expose
   private final WorkingThread workingThread;
 
-  private static Gson sGSON;
+  private static Method sTaskContextStaticGetMethod;
+  private static Method sTaskAttemptIdMethod;
+  private static final Gson GSON;
 
-  {
+  static {
     GsonBuilder builder = new GsonBuilder();
     builder.excludeFieldsWithoutExposeAnnotation();
-    sGSON = builder.create();
+    GSON = builder.create();
+
+    Class<?> taskContextClass;
+    try {
+      taskContextClass = Class.forName("org.apache.spark.TaskContext");
+      LOG.debug("Found TaskContext class " + taskContextClass);
+      sTaskContextStaticGetMethod = taskContextClass.getDeclaredMethod("get");
+      LOG.debug("Found TaskContext.get() " + sTaskContextStaticGetMethod);
+      sTaskAttemptIdMethod = taskContextClass.getDeclaredMethod("taskAttemptId");
+      LOG.debug("Found threadLocalTaskContext.taskAttemptId() " + sTaskAttemptIdMethod);
+    } catch (ClassNotFoundException | NoSuchMethodException | SecurityException e) {
+      LOG.error("Spark TaskContext is not available", e);
+    }
+
   }
 
   public DataMetricCounter(String objName, String methodName, long requestStartTime) {
@@ -43,8 +60,36 @@ public class DataMetricCounter {
     operation = methodName;
     startTime = requestStartTime;
     workingThread = new WorkingThread();
-    TaskContext taskContext = TaskContext.get();
-    taskId = (null == taskContext ? -1 : taskContext.taskAttemptId());
+
+    taskId = fetchTaskId();
+  }
+
+  private static long fetchTaskId() {
+    Object taskIdResult = null;
+    try {
+      if ((null != sTaskContextStaticGetMethod) && (null != sTaskAttemptIdMethod)) {
+        // Invoke static method
+        // TaskContext taskContext = TaskContext.get();
+        Object threadLocalTaskContext = sTaskContextStaticGetMethod.invoke(null);
+        if (null != threadLocalTaskContext) {
+          LOG.debug("Invoked TaskContext.get() with result " + threadLocalTaskContext);
+          // taskIdResult = taskContext.taskAttemptId();
+          taskIdResult = sTaskAttemptIdMethod.invoke(threadLocalTaskContext);
+          LOG.debug("Invoked threadLocalTaskContext.taskAttemptId() with result " + taskIdResult);
+        }
+      }
+    } catch (IllegalAccessException | SecurityException | IllegalArgumentException
+        | InvocationTargetException e) {
+      LOG.error("Failed to invoke TaskContext.taskAttemptId()", e);
+      return -1L;
+    }
+    Long taskId;
+    if ((null != taskIdResult) && (taskIdResult instanceof Long)) {
+      taskId = ((Long) taskIdResult).longValue();
+    } else {
+      taskId = -1L;
+    }
+    return taskId;
   }
 
   public DataMetricCounter(String objName, String methodName, long requestStartTime,
@@ -113,7 +158,7 @@ public class DataMetricCounter {
 
   public String finalizeAndGetCounterSummary() {
     updateCommonTimes();
-    String counterSummaryJson = sGSON.toJson(this);
+    String counterSummaryJson = GSON.toJson(this);
     StringBuilder sb = new StringBuilder("\", \"metrics\":");
     sb.append(counterSummaryJson);
     sb.append(",\"e\":\"");
