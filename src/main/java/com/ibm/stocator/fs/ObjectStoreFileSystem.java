@@ -44,7 +44,8 @@ import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
-import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+//import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+
 import static com.ibm.stocator.fs.common.Constants.OUTPUT_COMMITTER_TYPE;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 
@@ -231,6 +232,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
         recursive, objNameModified, hostNameScheme);
     boolean result = false;
+    return true;
+    /*
     if (stocatorPath.isTemporaryPathContain(objNameModified)) {
       return true;
     }
@@ -263,6 +266,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       }
     }
     return true;
+    */
   }
 
   @Override
@@ -371,12 +375,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           Constants.APPLICATION_DIRECTORY, metadata, statistics);
       outStream.close();
     } else {
-      String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
-          hostNameScheme);
-      LOG.trace("mkdirs to create directory {}", objName);
-      FSDataOutputStream outStream = storageClient.createObject(objName,
-          Constants.APPLICATION_DIRECTORY, null, statistics);
-      outStream.close();
+      /*
+      if (stocatorPath.isTemporaryPathContain(f)) {
+        String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
+            hostNameScheme);
+        LOG.trace("mkdirs to create directory {}", objName);
+        FSDataOutputStream outStream = storageClient.createObject(objName,
+            Constants.APPLICATION_DIRECTORY, null, statistics);
+        outStream.close();
+        }
+        */
     }
     return true;
   }

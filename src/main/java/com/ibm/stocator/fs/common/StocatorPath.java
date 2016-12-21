@@ -24,6 +24,9 @@ import org.apache.hadoop.fs.Path;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
+import static com.ibm.stocator.fs.common.Constants.HIVE_TMP1;
+import static com.ibm.stocator.fs.common.Constants.HIVE_OUTPUT_V1;
+import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_TEMPORARY;
 
 public class StocatorPath {
   private String tempFileOriginator;
@@ -33,6 +36,8 @@ public class StocatorPath {
     tempFileOriginator = fileOriginator;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
       tempIdentifier = HADOOP_TEMPORARY;
+    } else if (tempFileOriginator.equals(HIVE_OUTPUT_V1)) {
+      tempIdentifier = HIVE_STAGING_TEMPORARY;
     }
   }
 
@@ -72,6 +77,8 @@ public class StocatorPath {
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
       return dataRoot + "/" + parseHadoopFOutputCommitterV1(fullPath,
           addTaskIdCompositeName, hostNameScheme);
+    } else if (tempFileOriginator.equals(HIVE_OUTPUT_V1)) {
+      return dataRoot + "/" + parseHiveV1(fullPath, hostNameScheme);
     }
     return fullPath.toString();
   }
@@ -115,6 +122,45 @@ public class StocatorPath {
         }
       }
       return objectName;
+    }
+    return noPrefix;
+  }
+
+  /**
+   * We need to handle
+   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
+   *    _tmp.-ext-10002/color=Yellow
+   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
+   *    _tmp.-ext-10002/color=Yellow/000000_0
+   * @param fullPath the path
+   * @param hostNameScheme scheme
+   * @return
+   */
+  private String parseHiveV1(Path fullPath, String hostNameScheme) throws IOException {
+    String boundary = HIVE_STAGING_TEMPORARY;
+    String path = fullPath.toString();
+    String noPrefix = path.substring(hostNameScheme.length());
+    int npIdx = noPrefix.indexOf(boundary);
+    String objectName = "";
+    if (npIdx >= 0) {
+      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
+        throw new IOException("Object name is missing");
+      } else {
+        //path matches pattern in javadoc
+        objectName = noPrefix.substring(0, npIdx - 1);
+        String objName = fullPath.getName();
+        int ind = noPrefix.indexOf("/", noPrefix.indexOf(boundary));
+        if (ind > 0) {
+          String obj1 = noPrefix.substring(ind);
+          if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_TMP1)) {
+            int ind1 = obj1.indexOf("/", obj1.indexOf(HIVE_TMP1));
+            String obj2 = obj1.substring(ind1);
+            return objectName + obj2;
+          }
+          return objectName + obj1;
+        }
+        return objectName;
+      }
     }
     return noPrefix;
   }
