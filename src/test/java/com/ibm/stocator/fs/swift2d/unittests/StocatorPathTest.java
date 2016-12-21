@@ -54,6 +54,14 @@ public class StocatorPathTest {
     String result = Whitebox.invokeMethod(mStocatorPath, "parseHiveV1", new Path(input), hostname);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
+
+    input =  "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_11-07-53_413_8347422774094227881-1/"
+        + "_task_tmp.-ext-10002/color=Yellow/_tmp.000000_0";
+    expectedResult = "fruit_hive_dyn/color=Yellow/000000_0";
+    result = Whitebox.invokeMethod(mStocatorPath, "parseHiveV1", new Path(input), hostname);
+    Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
+            expectedResult, result);
   }
 
   @Test
@@ -67,11 +75,20 @@ public class StocatorPathTest {
         Boolean.FALSE, "a", hostname);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
+    /*
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_15-47-16_446_6259667711086462684-1/_task_tmp.-ext-10002";
+    expectedResult = "fruit_hive_dyn/color=Yellow/000000_0";
+    result = stocPath.getObjectNameRoot(new Path(input),
+        Boolean.FALSE, "a", hostname);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult, result);
+    */
     boolean res = stocPath.isTemporaryPathContain(new Path(input));
     Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
         true, res);
     res = stocPath.isTemporaryPathTaget(new Path(input).getParent());
     Assert.assertEquals("isTemporaryPathTaget() shows incorrect name",
-        true, res);
+        false, res);
   }
 }
