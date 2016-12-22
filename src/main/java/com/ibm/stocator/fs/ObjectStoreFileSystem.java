@@ -364,11 +364,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean mkdirs(Path f) throws IOException {
     LOG.debug("mkdirs: {}", f.toString());
-    if (stocatorPath.isTemporaryPathTaget(f.getParent())) {
+    if (stocatorPath.isTemporaryPathTarget(f)) {
       String objNameModified = stocatorPath.getObjectNameRoot(f,true,
           storageClient.getDataRoot(), hostNameScheme);
       Path pathToObj = new Path(objNameModified);
-      String plainObjName = pathToObj.getParent().toString();
+      String plainObjName = objNameModified;//pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
       Map<String, String> metadata = new HashMap<String, String>();
       metadata.put("Data-Origin", "stocator");
@@ -377,14 +377,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       outStream.close();
     } else {
       /*
-      if (stocatorPath.isTemporaryPathContain(f)) {
         String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
             hostNameScheme);
         LOG.trace("mkdirs to create directory {}", objName);
         FSDataOutputStream outStream = storageClient.createObject(objName,
             Constants.APPLICATION_DIRECTORY, null, statistics);
         outStream.close();
-        }
         */
     }
     return true;

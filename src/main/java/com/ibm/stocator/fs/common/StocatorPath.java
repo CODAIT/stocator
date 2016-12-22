@@ -25,6 +25,7 @@ import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_TMP1;
+import static com.ibm.stocator.fs.common.Constants.HIVE_EXT1;
 import static com.ibm.stocator.fs.common.Constants.TASK_HIVE_TMP1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_OUTPUT_V1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_TEMPORARY;
@@ -56,8 +57,14 @@ public class StocatorPath {
     return false;
   }
 
-  public boolean isTemporaryPathTaget(Path path) {
-    if (path.toString().endsWith(tempIdentifier)) {
+  public boolean isTemporaryPathTarget(Path path) {
+    String name = path.getName();
+    if (path.getParent().toString().endsWith(tempIdentifier)
+        || name.startsWith(HIVE_STAGING_TEMPORARY)
+        || (!name.startsWith(HIVE_STAGING_TEMPORARY)
+            && !name.startsWith(HIVE_TMP1)
+            && !name.startsWith(TASK_HIVE_TMP1)
+            && !name.startsWith(HIVE_EXT1))) {
       return true;
     }
     return false;

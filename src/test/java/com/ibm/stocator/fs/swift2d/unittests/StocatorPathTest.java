@@ -75,20 +75,56 @@ public class StocatorPathTest {
         Boolean.FALSE, "a", hostname);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
-    /*
-    input = "swift2d://a.service/fruit_hive_dyn/"
-        + ".hive-staging_hive_2016-12-21_15-47-16_446_6259667711086462684-1/_task_tmp.-ext-10002";
-    expectedResult = "fruit_hive_dyn/color=Yellow/000000_0";
+    boolean res = stocPath.isTemporaryPathContain(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
+    res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathTaget() shows incorrect name",
+        true, res);
+
+    input = "swift2d://a.service/fruit_hive_dyn";
+    expectedResult = "a/fruit_hive_dyn";
     result = stocPath.getObjectNameRoot(new Path(input),
         Boolean.FALSE, "a", hostname);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
-    */
-    boolean res = stocPath.isTemporaryPathContain(new Path(input));
-    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
-        true, res);
-    res = stocPath.isTemporaryPathTaget(new Path(input).getParent());
-    Assert.assertEquals("isTemporaryPathTaget() shows incorrect name",
-        false, res);
   }
+
+  @Test
+  public void isTempPathTest2() throws Exception {
+    String hostname = "swift2d://a.service/";
+    String input1 = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1";
+    String expectedResult1 = "a/fruit_hive_dyn";
+    String input2 = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1/-ext-10001";
+    String input3 = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1/_tmp.-ext-10002";
+    String input4 = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1/"
+        + "_tmp.-ext-10002/color=Red";
+    String expectedResult4 = "a/fruit_hive_dyn/color=Red";
+
+    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1);
+    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
+        true, stocPath.isTemporaryPathTarget(new Path(input1)));
+    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
+        false, stocPath.isTemporaryPathTarget(new Path(input2)));
+    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
+        false, stocPath.isTemporaryPathTarget(new Path(input3)));
+    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
+        true, stocPath.isTemporaryPathTarget(new Path(input4)));
+
+    String result = stocPath.getObjectNameRoot(new Path(input1),
+        Boolean.FALSE, "a", hostname);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult1, result);
+    result = stocPath.getObjectNameRoot(new Path(input2),
+        Boolean.FALSE, "a", hostname);
+    result = stocPath.getObjectNameRoot(new Path(input4),
+        Boolean.FALSE, "a", hostname);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult4, result);
+  }
+
 }
