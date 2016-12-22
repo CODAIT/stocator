@@ -59,12 +59,16 @@ public class StocatorPath {
 
   public boolean isTemporaryPathTarget(Path path) {
     String name = path.getName();
-    if (path.getParent().toString().endsWith(tempIdentifier)
-        || name.startsWith(HIVE_STAGING_TEMPORARY)
-        || (!name.startsWith(HIVE_STAGING_TEMPORARY)
+    if (path.getParent().toString().endsWith(tempIdentifier)) {
+      return true;
+    }
+    if (name.startsWith(tempIdentifier)) {
+      return true;
+    }
+    if (!name.startsWith(tempIdentifier)
             && !name.startsWith(HIVE_TMP1)
             && !name.startsWith(TASK_HIVE_TMP1)
-            && !name.startsWith(HIVE_EXT1))) {
+            && !name.startsWith(HIVE_EXT1)) {
       return true;
     }
     return false;
