@@ -43,6 +43,10 @@ public class StocatorPath {
     }
   }
 
+  public boolean isHive() {
+    return tempFileOriginator.equals(HIVE_OUTPUT_V1);
+  }
+
   public boolean isTemporaryPathContain(Path path) {
     if (path.toString().contains(tempIdentifier)) {
       return true;
@@ -81,20 +85,36 @@ public class StocatorPath {
    * @param addTaskIdCompositeName add task id composite
    * @param dataRoot the data root
    * @param hostNameScheme hostname
+   * @param addRoot add or not the data root to the path
    * @return composite of data root and object name
    * @throws IOException if object name is missing
    */
   public String getObjectNameRoot(Path fullPath, boolean addTaskIdCompositeName,
-      String dataRoot, String hostNameScheme) throws IOException {
+      String dataRoot, String hostNameScheme, boolean addRoot) throws IOException {
+    String res = "";
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
-      return dataRoot + "/" + parseHadoopFOutputCommitterV1(fullPath,
+      res =  parseHadoopFOutputCommitterV1(fullPath,
           addTaskIdCompositeName, hostNameScheme);
     } else if (tempFileOriginator.equals(HIVE_OUTPUT_V1)) {
-      return dataRoot + "/" + parseHiveV1(fullPath, hostNameScheme);
+      res =  parseHiveV1(fullPath, hostNameScheme);
+    }
+    if (!res.equals("")) {
+      if (addRoot) {
+        return dataRoot + "/" + res;
+      }
+      return res;
     }
     return fullPath.toString();
   }
 
+  public String getActualPath(Path fullPath, boolean addTaskIdCompositeName,
+      String dataRoot, String hostNameScheme) throws IOException {
+    if (isTemporaryPathContain(fullPath)) {
+      return hostNameScheme + getObjectNameRoot(fullPath, addTaskIdCompositeName,
+          dataRoot, hostNameScheme, false);
+    }
+    return fullPath.toString();
+  }
   /**
    * Extract object name from path. If addTaskIdCompositeName=true then
    * schema://tone1.lvm/aa/bb/cc/one3.txt/_temporary/0/_temporary/
