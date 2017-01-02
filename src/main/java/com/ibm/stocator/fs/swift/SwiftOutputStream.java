@@ -117,6 +117,9 @@ public class SwiftOutputStream extends OutputStream {
             response = client.execute(request);
             responseCode = response.getStatusLine().getStatusCode();
           }
+          if (responseCode == 403) { // Unauthorized error
+            throw new RuntimeException("403 Access Forbidden");
+          }
           if (responseCode >= 400) { // Code may have changed from retrying
             throw new IOException("HTTP Error: " + responseCode
                     + " Reason: " + response.getStatusLine().getReasonPhrase());
@@ -127,6 +130,7 @@ public class SwiftOutputStream extends OutputStream {
         }
       }
     };
+    checkThreadState();
   }
 
   private void checkThreadState() throws IOException {
@@ -135,6 +139,9 @@ public class SwiftOutputStream extends OutputStream {
         @Override
         public void uncaughtException(Thread t, Throwable e) {
           LOG.error(t.getName() + e);
+          if (e.getMessage().startsWith("403")) {
+            throw new RuntimeException(e.getMessage(), e);
+          }
           t.interrupt();
         }
       };
