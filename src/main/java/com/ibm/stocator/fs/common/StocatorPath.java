@@ -19,7 +19,10 @@ package com.ibm.stocator.fs.common;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
@@ -28,18 +31,28 @@ import static com.ibm.stocator.fs.common.Constants.HIVE_TMP1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_EXT1;
 import static com.ibm.stocator.fs.common.Constants.TASK_HIVE_TMP1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_OUTPUT_V1;
-import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_TEMPORARY;
+import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_DEFAULT;
 
 public class StocatorPath {
+  /*
+   * Logger
+   */
+  private static final Logger LOG = LoggerFactory.getLogger(StocatorPath.class);
+
   private String tempFileOriginator;
   private String tempIdentifier;
 
-  public StocatorPath(String fileOriginator) {
+  public StocatorPath(String fileOriginator, Configuration conf) {
     tempFileOriginator = fileOriginator;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
       tempIdentifier = HADOOP_TEMPORARY;
     } else if (tempFileOriginator.equals(HIVE_OUTPUT_V1)) {
-      tempIdentifier = HIVE_STAGING_TEMPORARY;
+      String stagingDir = HIVE_STAGING_DEFAULT;
+      if (conf != null) {
+        stagingDir = conf.get("hive.exec.stagingdir",HIVE_STAGING_DEFAULT);
+      }
+      tempIdentifier = stagingDir + "_hive_";
+      LOG.debug("Hive identified {}, staging {}", HIVE_OUTPUT_V1, tempIdentifier);
     }
   }
 
@@ -169,10 +182,9 @@ public class StocatorPath {
    * @return
    */
   private String parseHiveV1(Path fullPath, String hostNameScheme) throws IOException {
-    String boundary = HIVE_STAGING_TEMPORARY;
     String path = fullPath.toString();
     String noPrefix = path.substring(hostNameScheme.length());
-    int npIdx = noPrefix.indexOf(boundary);
+    int npIdx = noPrefix.indexOf(tempIdentifier);
     String objectName = "";
     if (npIdx >= 0) {
       if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
@@ -181,7 +193,7 @@ public class StocatorPath {
         //path matches pattern in javadoc
         objectName = noPrefix.substring(0, npIdx - 1);
         String objName = fullPath.getName();
-        int ind = noPrefix.indexOf("/", noPrefix.indexOf(boundary));
+        int ind = noPrefix.indexOf("/", noPrefix.indexOf(tempIdentifier));
         if (ind > 0) {
           String obj1 = noPrefix.substring(ind);
           if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_TMP1)) {

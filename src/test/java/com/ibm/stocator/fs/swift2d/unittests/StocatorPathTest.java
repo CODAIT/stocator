@@ -29,7 +29,7 @@ import org.apache.hadoop.fs.Path;
 import com.ibm.stocator.fs.common.StocatorPath;
 
 import static com.ibm.stocator.fs.common.Constants.HIVE_OUTPUT_V1;
-import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_TEMPORARY;
+import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_DEFAULT;
 
 @RunWith(PowerMockRunner.class)
 public class StocatorPathTest {
@@ -40,7 +40,7 @@ public class StocatorPathTest {
   public final void before() {
     mStocatorPath = PowerMockito.mock(StocatorPath.class);
     Whitebox.setInternalState(mStocatorPath, "tempFileOriginator", HIVE_OUTPUT_V1);
-    Whitebox.setInternalState(mStocatorPath, "tempIdentifier", HIVE_STAGING_TEMPORARY);
+    Whitebox.setInternalState(mStocatorPath, "tempIdentifier", HIVE_STAGING_DEFAULT + "_hive_");
   }
 
   @Test
@@ -70,7 +70,7 @@ public class StocatorPathTest {
     String input = "swift2d://a.service/fruit_hive_dyn/"
         + ".hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1";
     String expectedResult = "a/fruit_hive_dyn";
-    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1);
+    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1, null);
     String result = stocPath.getObjectNameRoot(new Path(input),
         Boolean.FALSE, "a", hostname, true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
@@ -105,7 +105,7 @@ public class StocatorPathTest {
         + "_tmp.-ext-10002/color=Red";
     String expectedResult4 = "a/fruit_hive_dyn/color=Red";
 
-    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1);
+    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1, null);
     Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
         true, stocPath.isTemporaryPathTarget(new Path(input1)));
     Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
@@ -135,7 +135,7 @@ public class StocatorPathTest {
         + "color=Green/000000_0";
     String expectedResult = "swift2d://a.service/fruit_hive_dyn/"
         + "color=Green/000000_0";
-    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1);
+    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1, null);
     String result = stocPath.getActualPath(new Path(input),
         Boolean.FALSE, "a", hostname);
     Assert.assertEquals("getActualPath() shows incorrect name",

@@ -139,6 +139,6 @@ public class Constants {
   public static final String HIVE_TMP1 = "_tmp.";
   public static final String HIVE_EXT1 = "-ext-";
   public static final String TASK_HIVE_TMP1 = "_task_tmp.";
-  public static final String HIVE_STAGING_TEMPORARY = ".hive-staging_hive_";
+  public static final String HIVE_STAGING_DEFAULT = ".hive-staging";
 
 }

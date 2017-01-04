@@ -188,7 +188,7 @@ public class SwiftAPIClient implements IStoreClient {
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
     String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
-    stocatorPath = new StocatorPath(committerType);
+    stocatorPath = new StocatorPath(committerType, conf);
     connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
         ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
     connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
