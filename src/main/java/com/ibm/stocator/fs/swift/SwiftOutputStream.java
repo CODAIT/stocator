@@ -71,8 +71,7 @@ public class SwiftOutputStream extends OutputStream {
   /*
    *  Executor service to handle threads
    */
-  private static final ExecutorService EXECUTOR_SERVICE =  Executors.newFixedThreadPool(Runtime
-          .getRuntime().availableProcessors());
+  private ExecutorService execService;
   private Future<Void> futureTask;
   private long totalWritten;
   private JossAccount mAccount;
@@ -105,6 +104,7 @@ public class SwiftOutputStream extends OutputStream {
     PipedOutputStream out = new PipedOutputStream();
     final PipedInputStream in = new PipedInputStream();
     out.connect(in);
+    execService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     mOutputStream = out;
     Callable<Void> task = new Callable<Void>() {
       @Override
@@ -135,7 +135,7 @@ public class SwiftOutputStream extends OutputStream {
         return null;
       }
     };
-    futureTask = EXECUTOR_SERVICE.submit(task);
+    futureTask = execService.submit(task);
   }
 
   @Override
@@ -172,8 +172,10 @@ public class SwiftOutputStream extends OutputStream {
     mOutputStream.close();
     try {
       futureTask.get();
+      futureTask.cancel(true);
+      execService.shutdown();
     } catch (Exception e) {
-      EXECUTOR_SERVICE.shutdown();
+      execService.shutdown();
       throw new IOException("Unable to complete write.", e);
     }
   }
