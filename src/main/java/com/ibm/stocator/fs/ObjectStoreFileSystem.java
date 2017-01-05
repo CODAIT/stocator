@@ -218,10 +218,24 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
+
     if (exists(src)) {
-      LOG.debug("Source {} exists", src);
+      boolean result = storageClient.rename(hostNameScheme, src.toString(), dst.toString());
+
+      // Check if path was a directory
+      FileStatus[] files = storageClient.list(hostNameScheme, src, true, true);
+      String subDir = src.toString() + "/";
+      for (FileStatus fs : files) {
+        if (fs.getPath().toString().startsWith(subDir)) {
+          String newName = fs.getPath().toString().replace(src.toString(), dst.toString());
+          storageClient.rename(hostNameScheme, fs.getPath().toString(), newName);
+        }
+      }
+      return result;
+    } else {
+      LOG.debug("Source {} does not exist", src);
+      return false;
     }
-    return storageClient.rename(hostNameScheme, src.toString(), dst.toString());
   }
 
   @Override
