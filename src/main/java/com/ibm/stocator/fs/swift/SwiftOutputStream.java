@@ -173,6 +173,7 @@ public class SwiftOutputStream extends OutputStream {
     try {
       futureTask.get();
     } catch (Exception e) {
+      EXECUTOR_SERVICE.shutdown();
       throw new IOException("Unable to complete write.", e);
     }
   }
