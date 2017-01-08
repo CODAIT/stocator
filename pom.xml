@@ -59,7 +59,7 @@
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
         <findbugs.path>build/findbugs</findbugs.path>
-        <slf4j.version>1.7.2</slf4j.version>
+        <slf4j.version>1.7.10</slf4j.version>
         <java.version>1.7</java.version>
         <joss.version>0.9.14</joss.version>
         <hadoop.version>2.7.2</hadoop.version>
@@ -148,11 +148,13 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
+            <scope>provided</scope>
         </dependency>
 		<dependency>
 		    <groupId>commons-lang</groupId>
