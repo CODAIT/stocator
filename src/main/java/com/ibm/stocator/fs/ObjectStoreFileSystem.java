@@ -252,11 +252,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         storageClient.getDataRoot(), hostNameScheme, true);
     LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
         recursive, objNameModified, hostNameScheme);
-    boolean result = false;
-    return true;
-    /*
     Path pathToObj = new Path(objNameModified);
-    if (f.getName().startsWith(HADOOP_ATTEMPT)) {
+    if (stocatorPath.isTemporaryPathContain(f.getName())) {
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
@@ -284,7 +281,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       }
     }
     return true;
-    */
   }
 
   @Override
