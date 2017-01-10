@@ -413,7 +413,8 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
+            + objName.replace(" ", "%20"));
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
     //stocator need to support this and identify relevant object
@@ -585,7 +586,7 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata, Statistics statistics) throws IOException {
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + objName);
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + objName.replace(" ", "%20"));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
 
     // When overwriting an object, cached metadata will be outdated

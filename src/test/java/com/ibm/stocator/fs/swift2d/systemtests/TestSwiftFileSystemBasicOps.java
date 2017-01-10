@@ -138,6 +138,20 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     }
   }
 
+  @Test
+  public void testObjectNamesWithSpaces() throws Throwable {
+    Path path = new Path(getBaseURI() + "/test/object name");
+    try {
+      String text = "Testing PUT and GET on object name with spaces "
+              + System.currentTimeMillis();
+      writeTextFile(sFileSystem, path, text, false);
+      String result = readBytesToString(sFileSystem, path, text.length());
+      assertEquals(text, result);
+    } finally {
+      delete(sFileSystem, path);
+    }
+  }
+
   @Ignore("Unexpected")
   public void testLongObjectNamesForbidden() throws Throwable {
     StringBuilder buffer = new StringBuilder(1200);
