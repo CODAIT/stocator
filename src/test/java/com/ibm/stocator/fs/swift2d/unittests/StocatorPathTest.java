@@ -30,6 +30,8 @@ import com.ibm.stocator.fs.common.StocatorPath;
 
 import static com.ibm.stocator.fs.common.Constants.HIVE_OUTPUT_V1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_DEFAULT;
+import static com.ibm.stocator.fs.common.Constants.HCATALOG_V1;
+import static com.ibm.stocator.fs.common.Constants.HCATALOG_STAGING_DEFAULT;
 
 @RunWith(PowerMockRunner.class)
 public class StocatorPathTest {
@@ -140,6 +142,27 @@ public class StocatorPathTest {
         Boolean.FALSE, "a", hostname);
     Assert.assertEquals("getActualPath() shows incorrect name",
             expectedResult, result);
+  }
+
+  @Test
+  public void parseHcatalogV1Test() throws Exception {
+    Whitebox.setInternalState(mStocatorPath, "tempFileOriginator", HCATALOG_V1);
+    Whitebox.setInternalState(mStocatorPath, "tempIdentifier", HCATALOG_STAGING_DEFAULT);
+
+    String hostname = "swift2d://a.service/";
+    String input = "swift2d://a.service/fruit_hive_dyn/"
+        + "_DYN0.600389881457611886943120206775524854029/color=Green/"
+        + "_temporary/1/_temporary/attempt_1484176830822_0004_r_000003_0";
+    String expectedResult = "fruit_hive_dyn/color=Green/attempt_1484176830822_0004_r_000003_0";
+
+    String result = Whitebox.invokeMethod(mStocatorPath, "parseHcatalogV1",
+        new Path(input), hostname);
+    Whitebox.setInternalState(mStocatorPath, "tempFileOriginator", HIVE_OUTPUT_V1);
+    Whitebox.setInternalState(mStocatorPath, "tempIdentifier", HIVE_STAGING_DEFAULT + "_hive_");
+
+    Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
+            expectedResult, result);
+
   }
 
 }

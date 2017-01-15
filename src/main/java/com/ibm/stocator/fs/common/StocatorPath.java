@@ -31,6 +31,8 @@ import static com.ibm.stocator.fs.common.Constants.HIVE_TMP1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_EXT1;
 import static com.ibm.stocator.fs.common.Constants.TASK_HIVE_TMP1;
 import static com.ibm.stocator.fs.common.Constants.HIVE_OUTPUT_V1;
+import static com.ibm.stocator.fs.common.Constants.HCATALOG_V1;
+import static com.ibm.stocator.fs.common.Constants.HCATALOG_STAGING_DEFAULT;
 import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_DEFAULT;
 
 public class StocatorPath {
@@ -53,6 +55,8 @@ public class StocatorPath {
       }
       tempIdentifier = stagingDir + "_hive_";
       LOG.debug("Hive identified {}, staging {}", HIVE_OUTPUT_V1, tempIdentifier);
+    } else if (tempFileOriginator.equals(HCATALOG_V1)) {
+      tempIdentifier = HCATALOG_STAGING_DEFAULT;
     }
   }
 
@@ -110,6 +114,8 @@ public class StocatorPath {
           addTaskIdCompositeName, hostNameScheme);
     } else if (tempFileOriginator.equals(HIVE_OUTPUT_V1)) {
       res =  parseHiveV1(fullPath, hostNameScheme);
+    } else if (tempFileOriginator.equals(HCATALOG_V1)) {
+      res = parseHcatalogV1(fullPath, hostNameScheme);
     }
     if (!res.equals("")) {
       if (addRoot) {
@@ -207,6 +213,49 @@ public class StocatorPath {
 
           }
           return objectName + obj1;
+        }
+        return objectName;
+      }
+    }
+    return noPrefix;
+  }
+
+  /**
+   * We need to handle
+   * /fruit_gil1/_DYN0.600389881457611886943120206775524854029/color=Green/
+   *    _temporary/1/_temporary/attempt_1484176830822_0004_r_000003_0
+   * @param fullPath the path
+   * @param hostNameScheme scheme
+   * @return
+   */
+  private String parseHcatalogV1(Path fullPath, String hostNameScheme) throws IOException {
+    String path = fullPath.toString();
+    String noPrefix = path.substring(hostNameScheme.length());
+    int npIdx = noPrefix.indexOf(tempIdentifier);
+    String objectName = "";
+    if (npIdx >= 0) {
+      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
+        throw new IOException("Object name is missing");
+      } else {
+        //path matches pattern in javadoc
+        objectName = noPrefix.substring(0, npIdx - 1);
+        String objName = fullPath.getName();
+        int ind = noPrefix.indexOf("/", noPrefix.indexOf(tempIdentifier));
+        if (ind > 0) {
+          String obj1 = noPrefix.substring(ind);
+          if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_TMP1)) {
+            int ind1 = obj1.indexOf("/", obj1.indexOf(HIVE_TMP1));
+            String obj2 = obj1.substring(ind1);
+            return objectName + obj2.replace(HIVE_TMP1, "");
+          } else if (obj1.startsWith("/") && obj1.startsWith("/" + TASK_HIVE_TMP1)) {
+            int ind1 = obj1.indexOf("/", obj1.indexOf(TASK_HIVE_TMP1));
+            String obj2 = obj1.substring(ind1);
+            return objectName + obj2.replace(HIVE_TMP1, "");
+
+          }
+          String obj2 = parseHadoopFOutputCommitterV1(new Path(hostNameScheme + obj1),
+              true, hostNameScheme);
+          return objectName + "/" + obj2;
         }
         return objectName;
       }

@@ -136,9 +136,11 @@ public class Constants {
   public static final String OUTPUT_COMMITTER_TYPE = "fs.stocator.committer.type";
   public static final String DEFAULT_FOUTPUTCOMMITTER_V1 = "defaultFOutputV1";
   public static final String HIVE_OUTPUT_V1 = "hiveOutputV1";
+  public static final String HCATALOG_V1 = "hcatalogOutputV1";
   public static final String HIVE_TMP1 = "_tmp.";
   public static final String HIVE_EXT1 = "-ext-";
   public static final String TASK_HIVE_TMP1 = "_task_tmp.";
   public static final String HIVE_STAGING_DEFAULT = ".hive-staging";
+  public static final String HCATALOG_STAGING_DEFAULT = "_DYN";
 
 }
