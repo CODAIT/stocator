@@ -19,8 +19,10 @@ package com.ibm.stocator.fs.swift;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.ArrayList;
@@ -413,7 +415,8 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
+            + getURLEncodedObjName(objName));
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
     //stocator need to support this and identify relevant object
@@ -430,7 +433,8 @@ public class SwiftAPIClient implements IStoreClient {
         if (res[0].getPath().toString().startsWith(hostName)) {
           objName = res[0].getPath().toString().substring(hostName.length());
         }
-        url = new URL(mJossAccount.getAccessURL() + "/" + container + "/" + objName);
+        url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
+                + getURLEncodedObjName(objName));
       }
     }
     SwiftInputStream sis = new SwiftInputStream(url.toString(), mJossAccount,
@@ -576,6 +580,13 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   /**
+   * Encodes special characters to UTF-8
+   */
+  private String getURLEncodedObjName(String objName) throws UnsupportedEncodingException {
+    return URLEncoder.encode(objName, "UTF-8").replace("+", "%20");
+  }
+
+  /**
    * Direct HTTP PUT request without JOSS package
    *
    * @param objName name of the object
@@ -585,7 +596,7 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata, Statistics statistics) throws IOException {
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + objName);
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
 
     // When overwriting an object, cached metadata will be outdated
