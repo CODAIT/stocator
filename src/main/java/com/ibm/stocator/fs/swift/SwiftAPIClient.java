@@ -393,14 +393,6 @@ public class SwiftAPIClient implements IStoreClient {
    */
   public boolean exists(String hostName, Path path) throws IOException, FileNotFoundException {
     LOG.trace("Object exists: {}", path);
-    String objName = path.toString();
-    if (path.toString().startsWith(hostName)) {
-      objName = getObjName(hostName, path);
-    }
-    if (stocatorPath.isTemporaryPathContain(objName)) {
-      LOG.debug("Exists on temp object {}. Return false", objName);
-      return false;
-    }
     try {
       FileStatus status = getObjectMetadata(hostName, path, "exists");
     } catch (FileNotFoundException e) {
@@ -827,10 +819,6 @@ public class SwiftAPIClient implements IStoreClient {
     String objNameDst = dstPath.toString();
     if (objNameDst.toString().startsWith(hostName)) {
       objNameDst = getObjName(hostName, dstPath);
-    }
-    if (stocatorPath.isTemporaryPathContain(objNameSrc)) {
-      LOG.debug("Rename on the temp object {}. Return true", objNameSrc);
-      return true;
     }
     LOG.debug("Rename modified from {} to {}", objNameSrc, objNameDst);
     Container cont = mJossAccount.getAccount().getContainer(container);

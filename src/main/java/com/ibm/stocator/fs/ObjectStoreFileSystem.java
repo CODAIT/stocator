@@ -123,7 +123,18 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean exists(Path f) throws IOException {
     LOG.debug("exists {}", f.toString());
-    return storageClient.exists(hostNameScheme, f);
+    /*
+    if (stocatorPath.isTemporaryPathContain(f)) {
+      LOG.debug("Exists on temp object {}. Return false", f.toString());
+      return false;
+    }
+    */
+    String realPath = stocatorPath.getActualPath(f, false,
+        storageClient.getDataRoot(), hostNameScheme);
+    LOG.debug("exists(start) {}, transformed {}", f.toString(), realPath);
+    boolean res =  storageClient.exists(hostNameScheme, new Path(realPath));
+    LOG.debug("exists(finish) found: {}: on {}, transformed {}", res, f.toString(), realPath);
+    return res;
   }
 
   /**
@@ -233,6 +244,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         storageClient.getDataRoot(), hostNameScheme, true);
     LOG.debug("Modified object name {}", objNameModified);
     if (stocatorPath.isTemporaryPathContain(objNameModified)) {
+      LOG.debug("Rename on the temp object {}. Return true", src);
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
