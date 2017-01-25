@@ -300,6 +300,7 @@ Use `stocator@googlegroups.com` to post questions.
 Please follow our [wiki](https://github.com/SparkTC/stocator/wiki) for more details.
 More information about Stocator can be find at
 
+* [Stocator on developerWorks Open](https://developer.ibm.com/open/openprojects/stocator/)
 * [Fast Lane for Connecting Object Stores to Apache Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
 * [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
 
