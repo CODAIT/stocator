@@ -234,10 +234,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
     LOG.debug("rename from {} to {}", src.toString(), dst.toString());
-    String objNameModified = stocatorPath.getObjectNameRoot(src, true,
-        storageClient.getDataRoot(), hostNameScheme, true);
-    LOG.debug("Modified object name {}", objNameModified);
-    if (stocatorPath.isTemporaryPathContain(objNameModified)) {
+    //String objNameModified = stocatorPath.getObjectNameRoot(src, true,
+    //    storageClient.getDataRoot(), hostNameScheme, true);
+    //LOG.debug("Modified object name {}", objNameModified);
+    if (stocatorPath.isTemporaryPathContain(src)) {
       LOG.debug("Rename on the temp object {}. Return true", src);
       return true;
     }
@@ -317,10 +317,18 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       throws FileNotFoundException, IOException {
     LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
     FileStatus[] result = {};
-    if (stocatorPath.isTemporaryPathContain(f)) {
+    if (stocatorPath.isTemporaryPathContain(f) && !stocatorPath.isTempName(f)) {
       return result;
     }
     FileStatus fileStatus = null;
+    /*
+    String newPath;
+    String oldPath = f.toString();
+    if (stocatorPath.isTempName(f)) {
+      newPath = stocatorPath.getActualPath(f, false, storageClient.getDataRoot() , hostNameScheme);
+      f = new Path(newPath);
+    }
+    */
     try {
       fileStatus = getFileStatus(f);
     } catch (FileNotFoundException e) {

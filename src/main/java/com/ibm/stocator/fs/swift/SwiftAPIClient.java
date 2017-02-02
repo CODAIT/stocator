@@ -357,13 +357,16 @@ public class SwiftAPIClient implements IStoreClient {
           isDirectory = true;
         }
       }
-      LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
+      if (stocatorPath.isTempName(path)) {
+        isDirectory = true;
+      }
+      LOG.debug("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
           isDirectory, obj.getLastModified());
       return new FileStatus(obj.getContentLength(), isDirectory, 1, blockSize,
               obj.getLastModified(), path);
     }
     // We need to check if it may be a directory with no zero byte file associated
-    LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
+    LOG.debug("Checking if directory without 0 byte object associated {}", objectName);
     Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
         "", 10);
     if (directoryFiles != null) {

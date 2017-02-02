@@ -64,6 +64,14 @@ public class StocatorPath {
     return tempFileOriginator.equals(HIVE_OUTPUT_V1);
   }
 
+  public boolean isTempName(Path f) {
+    String name = f.getName();
+    if (name.startsWith(HIVE_TMP1) || name.startsWith(HIVE_EXT1)) {
+      return true;
+    }
+    return false;
+  }
+
   public boolean isTemporaryPathContain(Path path) {
     if (path.toString().contains(tempIdentifier)) {
       return true;
@@ -204,8 +212,18 @@ public class StocatorPath {
           String obj1 = noPrefix.substring(ind);
           if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_TMP1)) {
             int ind1 = obj1.indexOf("/", obj1.indexOf(HIVE_TMP1));
-            String obj2 = obj1.substring(ind1);
-            return objectName + obj2.replace(HIVE_TMP1, "");
+            if (ind1 > 0) {
+              String obj2 = obj1.substring(ind1);
+              return objectName + obj2.replace(HIVE_TMP1, "");
+            }
+            return objectName;
+          } else if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_EXT1)) {
+            int ind1 = obj1.indexOf("/", obj1.indexOf(HIVE_EXT1));
+            if (ind1 > 0) {
+              String obj2 = obj1.substring(ind1);
+              return objectName + obj2.replace(HIVE_EXT1, "");
+            }
+            return objectName;
           } else if (obj1.startsWith("/") && obj1.startsWith("/" + TASK_HIVE_TMP1)) {
             int ind1 = obj1.indexOf("/", obj1.indexOf(TASK_HIVE_TMP1));
             String obj2 = obj1.substring(ind1);

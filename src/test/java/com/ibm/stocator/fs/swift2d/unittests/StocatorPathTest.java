@@ -64,6 +64,31 @@ public class StocatorPathTest {
     result = Whitebox.invokeMethod(mStocatorPath, "parseHiveV1", new Path(input), hostname);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
+
+    input = "swift2d://a.service/fruit_23d/"
+        + ".hive-staging_hive_2017-01-31_15-58-51_954_1542283154702952521-1/_tmp.-ext-10002";
+    expectedResult = "fruit_23d";
+    result = Whitebox.invokeMethod(mStocatorPath, "parseHiveV1", new Path(input), hostname);
+    Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit_23d/"
+        + ".hive-staging_hive_2017-02-01_08-56-17_725_2916730392594052694-1/-ext-10002";
+    expectedResult = "fruit_23d";
+    result = Whitebox.invokeMethod(mStocatorPath, "parseHiveV1", new Path(input), hostname);
+    Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
+            expectedResult, result);
+
+  }
+
+  @Test
+  public void isTempName() throws Exception {
+    String input = "swift2d://a.service/fruit_23d/"
+        + ".hive-staging_hive_2017-02-01_08-56-17_725_2916730392594052694-1/-ext-10002";
+    StocatorPath stocPath = new StocatorPath(HIVE_OUTPUT_V1, null);
+    boolean res = stocPath.isTempName(new Path(input));
+    Assert.assertEquals("isTemporaryName() shows incorrect result",
+        true, res);
   }
 
   @Test
