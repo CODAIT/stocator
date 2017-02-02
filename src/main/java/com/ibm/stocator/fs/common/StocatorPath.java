@@ -281,4 +281,26 @@ public class StocatorPath {
     return noPrefix;
   }
 
+  /**
+   * We need to handle
+   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
+   *    _tmp.-ext-10002/color=Yellow
+   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
+   *    _tmp.-ext-10002/color=Yellow/000000_0
+   * @param fullPath the path
+   * @param hostNameScheme scheme
+   * @return
+   */
+  private String parseHiveV2(Path fullPath, String hostNameScheme) throws IOException {
+    String path = fullPath.toString();
+    int ind1 = -1;
+    if (path.contains(TASK_HIVE_TMP1)) {
+      ind1 = path.indexOf(TASK_HIVE_TMP1);
+    } else if (path.contains(HIVE_TMP1)) {
+      ind1 = path.indexOf(HIVE_TMP1);
+    }
+    String fPart = path.substring(0, ind1);
+    String sPart = path.substring(path.indexOf("/", ind1));
+    return fPart + "-ext-10000" + sPart;
+  }
 }

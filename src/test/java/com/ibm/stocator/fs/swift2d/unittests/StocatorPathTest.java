@@ -187,7 +187,20 @@ public class StocatorPathTest {
 
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
-
   }
 
+  @Test
+  public void parseHiveV2Test() throws Exception {
+    String hostname = "swift2d://a.service/";
+    String input = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/"
+        + "_tmp.-ext-10002/color=Yellow/000000_0";
+    String expectedResult = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/"
+        + "-ext-10000/color=Yellow/000000_0";
+
+    String result = Whitebox.invokeMethod(mStocatorPath, "parseHiveV2", new Path(input), hostname);
+    Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
+            expectedResult, result);
+  }
 }
