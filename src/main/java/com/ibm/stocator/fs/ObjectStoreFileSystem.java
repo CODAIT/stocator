@@ -329,15 +329,45 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       f = new Path(newPath);
     }
     */
-    try {
-      fileStatus = getFileStatus(f);
-    } catch (FileNotFoundException e) {
-      LOG.trace("{} not found. Try to list", f.toString());
+    /*
+     * Experiment section. Trying to resolve final stage to update partitions
+     * Check if this resolves the issues.
+     * Start
+     */
+    String oldPath = f.toString();
+    String newPath;
+    boolean ext1000 = false;
+    if (f.toString().endsWith("-ext-10000")) {
+      LOG.debug("Exp1: Listing on the -ext-10000: {}", f);
+      newPath = stocatorPath.getActualPath(f, false, storageClient.getDataRoot() ,
+          hostNameScheme);
+      LOG.debug("Exp1: Transformed to {}", newPath);
+      f = new Path(newPath);
+      ext1000 = true;
+    }
+    /*
+     * Finish.
+     */
+    if (!ext1000) {
+      LOG.debug("Exp1: Skipt status for {}", f.toString());
+      try {
+        fileStatus = getFileStatus(f);
+      } catch (FileNotFoundException e) {
+        LOG.trace("{} not found. Try to list", f.toString());
+      }
     }
 
     if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
       LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
       result = storageClient.list(hostNameScheme, f, false, prefixBased);
+      if (ext1000) {
+        for (FileStatus fs1: result) {
+          LOG.debug("Exp1 : List returned {}", fs1.getPath());
+          String ts1 = f.toString().substring(hostNameScheme.length());
+          LOG.debug("Exp1 : {}", oldPath);
+          fs1.setPath(new Path(oldPath + "/color=Red"));
+        }
+      }
     } else if (fileStatus != null) {
       LOG.debug("{} is not directory. Adding without list", f);
       result = new FileStatus[1];
