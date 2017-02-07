@@ -76,8 +76,6 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
-import static com.ibm.stocator.fs.common.Constants.OUTPUT_COMMITTER_TYPE;
-import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 
@@ -189,8 +187,6 @@ public class SwiftAPIClient implements IStoreClient {
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf);
-    String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
-    stocatorPath = new StocatorPath(committerType, conf);
     connectionConfiguration.setExecutionCount(conf.getInt(Constants.EXECUTION_RETRY,
         ConnectionConfiguration.DEFAULT_EXECUTION_RETRY));
     connectionConfiguration.setMaxPerRoute(conf.getInt(Constants.MAX_PER_ROUTE,
@@ -293,6 +289,11 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
+  public void setStocatorPath(StocatorPath sp) {
+    stocatorPath = sp;
+  }
+
+  @Override
   public String getScheme() {
     return schemaProvided;
   }
@@ -356,9 +357,6 @@ public class SwiftAPIClient implements IStoreClient {
           // The zero length object is a directory
           isDirectory = true;
         }
-      }
-      if (stocatorPath.isTempName(path)) {
-        isDirectory = true;
       }
       LOG.debug("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
           isDirectory, obj.getLastModified());

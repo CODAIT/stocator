@@ -164,4 +164,6 @@ public interface IStoreClient {
    */
   public void initiate(String scheme) throws IOException, ConfigurationParseException;
 
+  public void setStocatorPath(StocatorPath sp);
+
 }

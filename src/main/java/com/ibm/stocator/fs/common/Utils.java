@@ -190,15 +190,27 @@ public class Utils {
   /**
    * Extract Hadoop Task ID from path
    * @param path path to extract attempt id
+   * @param identifier identifier to extract id
    * @return task id
    */
-  public static String extractTaskID(String path) {
+  public static String extractTaskID(String path, String identifier) {
+    LOG.debug("extract task id for {}", path);
     if (path.contains(HADOOP_ATTEMPT)) {
       String prf = path.substring(path.indexOf(HADOOP_ATTEMPT));
       if (prf.contains("/")) {
         return TaskAttemptID.forName(prf.substring(0, prf.indexOf("/"))).toString();
       }
       return TaskAttemptID.forName(prf).toString();
+    } else if (identifier != null && path.contains(identifier)) {
+      int ind = path.indexOf(identifier);
+      String prf = path.substring(ind + identifier.length());
+      int boundary = prf.length();
+      if (prf.indexOf("/") > 0) {
+        boundary = prf.indexOf("/");
+      }
+      String taskID =  prf.substring(0, boundary);
+      LOG.debug("extracted task id {} for {}", taskID, path);
+      return taskID;
     }
     return null;
   }

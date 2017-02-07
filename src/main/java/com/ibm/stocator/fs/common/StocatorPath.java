@@ -27,13 +27,6 @@ import org.slf4j.LoggerFactory;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
-import static com.ibm.stocator.fs.common.Constants.HIVE_TMP1;
-import static com.ibm.stocator.fs.common.Constants.HIVE_EXT1;
-import static com.ibm.stocator.fs.common.Constants.TASK_HIVE_TMP1;
-import static com.ibm.stocator.fs.common.Constants.HIVE_OUTPUT_V1;
-import static com.ibm.stocator.fs.common.Constants.HCATALOG_V1;
-import static com.ibm.stocator.fs.common.Constants.HCATALOG_STAGING_DEFAULT;
-import static com.ibm.stocator.fs.common.Constants.HIVE_STAGING_DEFAULT;
 
 public class StocatorPath {
   /*
@@ -43,62 +36,59 @@ public class StocatorPath {
 
   private String tempFileOriginator;
   private String tempIdentifier;
+  private String[] tempIdentifiers;
+  private String hostNameScheme;
 
-  public StocatorPath(String fileOriginator, Configuration conf) {
+  /**
+   * @param fileOriginator originator
+   * @param conf Configuration
+   * @param hostName hostname
+   */
+  public StocatorPath(String fileOriginator, Configuration conf, String hostName) {
     tempFileOriginator = fileOriginator;
+    hostNameScheme = hostName;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
       tempIdentifier = HADOOP_TEMPORARY;
-    } else if (tempFileOriginator.equals(HIVE_OUTPUT_V1)) {
-      String stagingDir = HIVE_STAGING_DEFAULT;
-      if (conf != null) {
-        stagingDir = conf.get("hive.exec.stagingdir",HIVE_STAGING_DEFAULT);
-      }
-      tempIdentifier = stagingDir + "_hive_";
-      LOG.debug("Hive identified {}, staging {}", HIVE_OUTPUT_V1, tempIdentifier);
-    } else if (tempFileOriginator.equals(HCATALOG_V1)) {
-      tempIdentifier = HCATALOG_STAGING_DEFAULT;
+    } else if (conf != null) {
+      tempIdentifiers = conf.getStrings("fs.stocator.temp.identifier");
     }
   }
 
-  public boolean isHive() {
-    return tempFileOriginator.equals(HIVE_OUTPUT_V1);
-  }
-
-  public boolean isTempName(Path f) {
-    String name = f.getName();
-    if (name.startsWith(HIVE_TMP1) || name.startsWith(HIVE_EXT1)) {
-      return true;
-    }
-    return false;
+  public boolean addNewPart() {
+    return !tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1);
   }
 
   public boolean isTemporaryPathContain(Path path) {
-    if (path.toString().contains(tempIdentifier)) {
-      return true;
+    for (String tempPath : tempIdentifiers) {
+      String[] tempPathComponents = tempPath.split("/");
+      if (tempPathComponents.length > 0
+          && path.toString().contains(tempPathComponents[0].replace("ID", ""))) {
+        return true;
+      }
     }
     return false;
   }
 
   public boolean isTemporaryPathContain(String path) {
-    if (path.contains(tempIdentifier)) {
-      return true;
+    for (String tempPath : tempIdentifiers) {
+      String[] tempPathComponents = tempPath.split("/");
+      if (tempPathComponents.length > 0
+          && path.contains(tempPathComponents[0].replace("ID", ""))) {
+        return true;
+      }
     }
     return false;
   }
 
   public boolean isTemporaryPathTarget(Path path) {
     String name = path.getName();
-    if (path.getParent().toString().endsWith(tempIdentifier)) {
-      return true;
-    }
-    if (name.startsWith(tempIdentifier)) {
-      return true;
-    }
-    if (!name.startsWith(tempIdentifier)
-            && !name.startsWith(HIVE_TMP1)
-            && !name.startsWith(TASK_HIVE_TMP1)
-            && !name.startsWith(HIVE_EXT1)) {
-      return true;
+    String parent = path.getParent().toString();
+    for (String tempPath : tempIdentifiers) {
+      String[] tempPathComponents = tempPath.split("/");
+      if (parent.endsWith(tempPathComponents[0].replace("ID", ""))
+          || name.startsWith(tempPathComponents[0].replace("ID", ""))) {
+        return true;
+      }
     }
     return false;
   }
@@ -107,23 +97,20 @@ public class StocatorPath {
    * Get object name with data root
    *
    * @param fullPath the path
-   * @param addTaskIdCompositeName add task id composite
+   * @param addTaskId add task id composite
    * @param dataRoot the data root
-   * @param hostNameScheme hostname
    * @param addRoot add or not the data root to the path
    * @return composite of data root and object name
    * @throws IOException if object name is missing
    */
-  public String getObjectNameRoot(Path fullPath, boolean addTaskIdCompositeName,
-      String dataRoot, String hostNameScheme, boolean addRoot) throws IOException {
+  public String getObjectNameRoot(Path fullPath, boolean addTaskId,
+      String dataRoot, boolean addRoot) throws IOException {
     String res = "";
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
       res =  parseHadoopFOutputCommitterV1(fullPath,
-          addTaskIdCompositeName, hostNameScheme);
-    } else if (tempFileOriginator.equals(HIVE_OUTPUT_V1)) {
-      res =  parseHiveV1(fullPath, hostNameScheme);
-    } else if (tempFileOriginator.equals(HCATALOG_V1)) {
-      res = parseHcatalogV1(fullPath, hostNameScheme);
+          addTaskId, hostNameScheme);
+    } else {
+      res = extractNameFromTempPath(fullPath, addTaskId, hostNameScheme);
     }
     if (!res.equals("")) {
       if (addRoot) {
@@ -135,12 +122,99 @@ public class StocatorPath {
   }
 
   public String getActualPath(Path fullPath, boolean addTaskIdCompositeName,
-      String dataRoot, String hostNameScheme) throws IOException {
+      String dataRoot) throws IOException {
     if (isTemporaryPathContain(fullPath)) {
       return hostNameScheme + getObjectNameRoot(fullPath, addTaskIdCompositeName,
-          dataRoot, hostNameScheme, false);
+          dataRoot, false);
     }
     return fullPath.toString();
+  }
+
+  /**
+   * @param p path
+   * @param addTaskID add task id to the extracted name
+   * @param hostName hostname used to register Stocator
+   * @return
+   */
+  private String extractNameFromTempPath(Path p, boolean addTaskID, String hostName) {
+    LOG.debug("Extract name from {}", p.toString());
+    String path = p.toString();
+    // if path starts with host name - no need it, remove.
+    if (path.startsWith(hostName)) {
+      path = path.substring(hostName.length());
+    }
+    // loop over all temporary identifiers and see if match
+    boolean match = true;
+    String midName = "";
+    String namePrefix = "";
+    for (String tempPath : tempIdentifiers) {
+      LOG.debug("Temp identifier {}",tempPath);
+      String taskAttempt = null;
+      match = true;
+      String[] tempPathComponents = tempPath.split("/");
+      int startIndex = path.indexOf(tempPathComponents[0].replace("ID", ""));
+      // if the 1st one match - most likely we hit the right one.
+      // otherwise - proceed to the next temporary structure
+      if (startIndex < 0) {
+        match = false;
+        continue;
+      }
+      // get all the path components that are prefixed the temporary identifier
+      namePrefix = path.substring(0, startIndex - 1);
+      // we need to match temporary structure and take the rest
+      String namePosix = path.substring(startIndex);
+      // namePossix contains all temporary identifier and the following object name
+      // split only as the number of temporary identifiers
+      String[] posixSplit = namePosix.split("/", tempPathComponents.length + 1);
+      // now loop over temporary identifiers and see if they match the path
+      for (int i = 0; i < tempPathComponents.length; i++) {
+        if (i > posixSplit.length - 1) {
+          break;
+        }
+        if (tempPathComponents[i].equals("st_ID")) {
+          continue;
+        } else if (tempPathComponents[i].equals("_ADD_")) {
+          midName = midName + "/" + posixSplit[i];
+        } else if (!tempPathComponents[i].contains("ID")
+            && !tempPathComponents[i].equals(posixSplit[i])) {
+          match = false;
+          break;
+        } else if (tempPathComponents[i].contains("ID")) { // not only contains, but also starts
+          // split _task_tmp.-ext-10002, but temp component is _tmp.-ext-ID1
+          // the temp identifier contains ID. We need to extract the value
+          int split = tempPathComponents[i].indexOf("ID");
+          String prefixID = tempPathComponents[i].substring(0, split);
+          String suffixID = tempPathComponents[i].substring(split);
+          if (!posixSplit[i].startsWith(prefixID)) {
+            match = false;
+            break;
+          }
+          if (addTaskID && suffixID != null && suffixID.equals("ID")) {
+            taskAttempt = Utils.extractTaskID(posixSplit[i], prefixID);
+          }
+        }
+      }
+
+      // check if match and then take the rest
+      if (match) {
+        // take the rest
+        if (!midName.equals("")) {
+          if (!midName.startsWith("/")) {
+            namePrefix = namePrefix + "/" + namePrefix;
+          } else {
+            namePrefix = namePrefix + midName;
+          }
+        }
+        if (posixSplit.length > tempPathComponents.length) {
+          if (taskAttempt != null) {
+            return namePrefix + "/" + posixSplit[posixSplit.length - 1] + "-" + taskAttempt;
+          }
+          return namePrefix + "/" + posixSplit[posixSplit.length - 1];
+        }
+        return namePrefix;
+      }
+    }
+    return path;
   }
   /**
    * Extract object name from path. If addTaskIdCompositeName=true then
@@ -172,7 +246,7 @@ public class StocatorPath {
         //path matches pattern in javadoc
         objectName = noPrefix.substring(0, npIdx - 1);
         if (addTaskIdCompositeName) {
-          String taskAttempt = Utils.extractTaskID(path);
+          String taskAttempt = Utils.extractTaskID(path, HADOOP_ATTEMPT);
           String objName = fullPath.getName();
           if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
             objName = fullPath.getName() + "-" + taskAttempt;
@@ -185,122 +259,4 @@ public class StocatorPath {
     return noPrefix;
   }
 
-  /**
-   * We need to handle
-   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
-   *    _tmp.-ext-10002/color=Yellow
-   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
-   *    _tmp.-ext-10002/color=Yellow/000000_0
-   * @param fullPath the path
-   * @param hostNameScheme scheme
-   * @return
-   */
-  private String parseHiveV1(Path fullPath, String hostNameScheme) throws IOException {
-    String path = fullPath.toString();
-    String noPrefix = path.substring(hostNameScheme.length());
-    int npIdx = noPrefix.indexOf(tempIdentifier);
-    String objectName = "";
-    if (npIdx >= 0) {
-      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
-        throw new IOException("Object name is missing");
-      } else {
-        //path matches pattern in javadoc
-        objectName = noPrefix.substring(0, npIdx - 1);
-        String objName = fullPath.getName();
-        int ind = noPrefix.indexOf("/", noPrefix.indexOf(tempIdentifier));
-        if (ind > 0) {
-          String obj1 = noPrefix.substring(ind);
-          if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_TMP1)) {
-            int ind1 = obj1.indexOf("/", obj1.indexOf(HIVE_TMP1));
-            if (ind1 > 0) {
-              String obj2 = obj1.substring(ind1);
-              return objectName + obj2.replace(HIVE_TMP1, "");
-            }
-            return objectName;
-          } else if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_EXT1)) {
-            int ind1 = obj1.indexOf("/", obj1.indexOf(HIVE_EXT1));
-            if (ind1 > 0) {
-              String obj2 = obj1.substring(ind1);
-              return objectName + obj2.replace(HIVE_EXT1, "");
-            }
-            return objectName;
-          } else if (obj1.startsWith("/") && obj1.startsWith("/" + TASK_HIVE_TMP1)) {
-            int ind1 = obj1.indexOf("/", obj1.indexOf(TASK_HIVE_TMP1));
-            String obj2 = obj1.substring(ind1);
-            return objectName + obj2.replace(HIVE_TMP1, "");
-
-          }
-          return objectName + obj1;
-        }
-        return objectName;
-      }
-    }
-    return noPrefix;
-  }
-
-  /**
-   * We need to handle
-   * /fruit_gil1/_DYN0.600389881457611886943120206775524854029/color=Green/
-   *    _temporary/1/_temporary/attempt_1484176830822_0004_r_000003_0
-   * @param fullPath the path
-   * @param hostNameScheme scheme
-   * @return
-   */
-  private String parseHcatalogV1(Path fullPath, String hostNameScheme) throws IOException {
-    String path = fullPath.toString();
-    String noPrefix = path.substring(hostNameScheme.length());
-    int npIdx = noPrefix.indexOf(tempIdentifier);
-    String objectName = "";
-    if (npIdx >= 0) {
-      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
-        throw new IOException("Object name is missing");
-      } else {
-        //path matches pattern in javadoc
-        objectName = noPrefix.substring(0, npIdx - 1);
-        String objName = fullPath.getName();
-        int ind = noPrefix.indexOf("/", noPrefix.indexOf(tempIdentifier));
-        if (ind > 0) {
-          String obj1 = noPrefix.substring(ind);
-          if (obj1.startsWith("/") && obj1.startsWith("/" + HIVE_TMP1)) {
-            int ind1 = obj1.indexOf("/", obj1.indexOf(HIVE_TMP1));
-            String obj2 = obj1.substring(ind1);
-            return objectName + obj2.replace(HIVE_TMP1, "");
-          } else if (obj1.startsWith("/") && obj1.startsWith("/" + TASK_HIVE_TMP1)) {
-            int ind1 = obj1.indexOf("/", obj1.indexOf(TASK_HIVE_TMP1));
-            String obj2 = obj1.substring(ind1);
-            return objectName + obj2.replace(HIVE_TMP1, "");
-
-          }
-          String obj2 = parseHadoopFOutputCommitterV1(new Path(hostNameScheme + obj1),
-              true, hostNameScheme);
-          return objectName + "/" + obj2;
-        }
-        return objectName;
-      }
-    }
-    return noPrefix;
-  }
-
-  /**
-   * We need to handle
-   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
-   *    _tmp.-ext-10002/color=Yellow
-   * fruit_hive_dyn/.hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/
-   *    _tmp.-ext-10002/color=Yellow/000000_0
-   * @param fullPath the path
-   * @param hostNameScheme scheme
-   * @return
-   */
-  private String parseHiveV2(Path fullPath, String hostNameScheme) throws IOException {
-    String path = fullPath.toString();
-    int ind1 = -1;
-    if (path.contains(TASK_HIVE_TMP1)) {
-      ind1 = path.indexOf(TASK_HIVE_TMP1);
-    } else if (path.contains(HIVE_TMP1)) {
-      ind1 = path.indexOf(HIVE_TMP1);
-    }
-    String fPart = path.substring(0, ind1);
-    String sPart = path.substring(path.indexOf("/", ind1));
-    return fPart + "-ext-10000" + sPart;
-  }
 }

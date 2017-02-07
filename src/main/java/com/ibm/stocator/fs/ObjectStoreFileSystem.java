@@ -91,7 +91,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
     String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
-    stocatorPath = new StocatorPath(committerType, conf);
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(fsuri, conf);
       if (Utils.validSchema(fsuri.toString())) {
@@ -101,6 +100,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
             accessURL) + "/";
       }
+      stocatorPath = new StocatorPath(committerType, conf, hostNameScheme);
+      storageClient.setStocatorPath(stocatorPath);
     }
   }
 
@@ -124,7 +125,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public boolean exists(Path f) throws IOException {
     LOG.debug("exists {}", f.toString());
     String realPath = stocatorPath.getActualPath(f, false,
-        storageClient.getDataRoot(), hostNameScheme);
+        storageClient.getDataRoot());
     LOG.debug("exists(start) {}, transformed {}", f.toString(), realPath);
     boolean res =  storageClient.exists(hostNameScheme, new Path(realPath));
     LOG.debug("exists(finish) found: {}: on {}, transformed {}", res, f.toString(), realPath);
@@ -194,16 +195,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
       objNameModified =  stocatorPath.getObjectNameRoot(f, false,
-          storageClient.getDataRoot(), hostNameScheme, true);
+          storageClient.getDataRoot(), true);
     } else {
       objNameModified = stocatorPath.getObjectNameRoot(f, true,
-          storageClient.getDataRoot(), hostNameScheme, true);
+          storageClient.getDataRoot(), true);
     }
-    if (stocatorPath.isHive()) {
+    if (stocatorPath.addNewPart()) {
       LOG.debug("Hive identified and overwrtie mode {} detected for {}", overwrite,
           objNameModified);
       String actuallName = stocatorPath.getActualPath(f, false,
-          storageClient.getDataRoot(), hostNameScheme);
+          storageClient.getDataRoot());
       Path p = new Path(actuallName);
       LOG.debug("Original path is {}. Going to list {}", f.toString(), p.toString());
       FileStatus[] fsList = storageClient.list(hostNameScheme, p, true, true);
@@ -255,7 +256,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       return true;
     }
     String objNameModified = stocatorPath.getObjectNameRoot(f, true,
-        storageClient.getDataRoot(), hostNameScheme, true);
+        storageClient.getDataRoot(), true);
     LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
         recursive, objNameModified, hostNameScheme);
     Path pathToObj = new Path(objNameModified);
@@ -317,7 +318,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       throws FileNotFoundException, IOException {
     LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
     FileStatus[] result = {};
-    if (stocatorPath.isTemporaryPathContain(f) && !stocatorPath.isTempName(f)) {
+    if (stocatorPath.isTemporaryPathContain(f)) {
       return result;
     }
     FileStatus fileStatus = null;
@@ -339,8 +340,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     boolean ext1000 = false;
     if (f.toString().endsWith("-ext-10000")) {
       LOG.debug("Exp1: Listing on the -ext-10000: {}", f);
-      newPath = stocatorPath.getActualPath(f, false, storageClient.getDataRoot() ,
-          hostNameScheme);
+      newPath = stocatorPath.getActualPath(f, false, storageClient.getDataRoot());
       LOG.debug("Exp1: Transformed to {}", newPath);
       f = new Path(newPath);
       ext1000 = true;
@@ -422,8 +422,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public boolean mkdirs(Path f) throws IOException {
     LOG.debug("mkdirs: {}", f.toString());
     if (stocatorPath.isTemporaryPathTarget(f)) {
-      String objNameModified = stocatorPath.getObjectNameRoot(f,true,
-          storageClient.getDataRoot(), hostNameScheme, true);
+      String objNameModified = stocatorPath.getObjectNameRoot(f,false,
+          storageClient.getDataRoot(), true);
       Path pathToObj = new Path(objNameModified);
       String plainObjName = objNameModified;//pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
@@ -448,7 +448,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     String realPath = stocatorPath.getActualPath(f, false,
-        storageClient.getDataRoot(), hostNameScheme);
+        storageClient.getDataRoot());
     LOG.debug("get file status: {}, transformed to {}", f.toString(), realPath);
     FileStatus fs = storageClient.getObjectMetadata(hostNameScheme, new Path(realPath),
         "fileStatus");
