@@ -129,6 +129,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("exists(start) {}, transformed {}", f.toString(), realPath);
     boolean res =  storageClient.exists(hostNameScheme, new Path(realPath));
     LOG.debug("exists(finish) found: {}: on {}, transformed {}", res, f.toString(), realPath);
+    if (f.getName().startsWith("TEMP_")) {
+      return false;
+    }
     return res;
   }
 
