@@ -245,6 +245,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("Rename on the temp object {}. Return true", src);
       return true;
     }
+    if (dst.toString().contains(".Trash")) {
+      LOG.debug("Experimential (Trash, Start). Moving {} to trash", src);
+      delete(dst, true);
+      LOG.debug("Experimential (Trash, Finish) {} moved to trash", src);
+    }
     LOG.debug("Checking if source exists {}", src);
     if (exists(src)) {
       LOG.debug("Source {} exists", src);
