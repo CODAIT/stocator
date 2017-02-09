@@ -441,14 +441,15 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           Constants.APPLICATION_DIRECTORY, metadata, statistics);
       outStream.close();
     } else {
-      /*
         String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
-            hostNameScheme, true);
+            true);
+        LOG.debug("Going to create identifier {}", objName);
+        Map<String, String> metadata = new HashMap<String, String>();
+        metadata.put("Data-Origin", "stocator");        
         LOG.trace("mkdirs to create directory {}", objName);
         FSDataOutputStream outStream = storageClient.createObject(objName,
-            Constants.APPLICATION_DIRECTORY, null, statistics);
+            Constants.APPLICATION_DIRECTORY, metadata, statistics);
         outStream.close();
-        */
     }
     return true;
   }

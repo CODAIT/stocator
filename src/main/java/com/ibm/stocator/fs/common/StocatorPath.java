@@ -83,7 +83,7 @@ public class StocatorPath {
   public boolean isTemporaryPathTarget(Path path) {
     LOG.debug("isTemporaryPathTarget for {}", path);
     if (path.toString().equals(hostNameScheme) || path.getParent() == null) {
-      return true;
+      return false;
     }
     String name = path.getName();
     String parent = path.getParent().toString();
