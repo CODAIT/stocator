@@ -42,16 +42,21 @@ public class StocatorPathTest {
   private String pattern4 = ".hive-staging_hive_ID/-ext-ID1";
   private String pattern5 = "_DYN0.ID";
   private String pattern6 = "_DYN0.ID/_ADD_/_temporary/st_ID/_temporary/";
+  private String pattern7 = "_SCRATCH0.ID/_temporary/st_ID/_temporary/attempt_ID/";
+  private String pattern8 = "_SCRATCH0.ID";
+  private String pattern9 = "TEMP_ID";
+  private String pattern10 = ".COMMITTING__TEMP_ID";
   String hostname = "swift2d://a.service/";
 
   @Before
   public final void before() {
     mStocatorPath = PowerMockito.mock(StocatorPath.class);
     Whitebox.setInternalState(mStocatorPath, "tempIdentifiers",
-        new String[] {pattern6, pattern2, pattern3, pattern4, pattern5, pattern1});
+        new String[] {pattern6, pattern7, pattern8, pattern9,
+            pattern10, pattern2, pattern3, pattern4, pattern5, pattern1});
     Configuration conf = new Configuration();
-    conf.setStrings("fs.stocator.temp.identifier", pattern6, pattern2,
-        pattern3, pattern4, pattern5, pattern1);
+    conf.setStrings("fs.stocator.temp.identifier", pattern6, pattern7, pattern8, pattern9,
+        pattern10, pattern2, pattern3, pattern4, pattern5, pattern1);
     stocPath = new StocatorPath(CUSTOM_FOUTPUTCOMMITTER, conf, hostname);
 
   }
@@ -119,6 +124,24 @@ public class StocatorPathTest {
         Boolean.FALSE, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "TEMP_1486552852171_590903925_201702080320928";
+    res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + ".COMMITTING__TEMP_1486552852171_590903925_201702080320928";
+    res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + ".COMMITTING__TEMP_1486555911917_-764810680_201702080411141";
+    res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
+
   }
 
   /*
@@ -251,6 +274,48 @@ public class StocatorPathTest {
         + "_tmp.000000_0-2017-02-07_13-34-29_470_1053856006407136479-1";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
         new Path(input), true, hostname);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "_SCRATCH0.2522929312513381824643989192318958144030/_temporary/1/"
+        + "_temporary/attempt_1486475505018_0008_m_000000_0/part-m-00000";
+    expectedResult = "fruit_hive_dyn/part-m-00000-attempt_1486475505018_0008_m_000000_0";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), true, hostname);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "_SCRATCH0.2522929312513381824643989192318958144030/_temporary/1/"
+        + "_temporary/attempt_1486475505018_0008_m_000000_0/";
+    expectedResult = "fruit_hive_dyn";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), true, hostname);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "_SCRATCH0.2522929312513381824643989192318958144030/";
+    expectedResult = "fruit_hive_dyn";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), true, hostname);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "_SCRATCH0.3655423817421201183321170691664364082/_SUCCESS";
+    expectedResult = "fruit_hive_dyn/_SUCCESS";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "TEMP_1486546384743_865956912_201702080143406";
+    expectedResult = "fruit_hive_dyn";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 

@@ -83,6 +83,7 @@ public class StocatorPath {
   public boolean isTemporaryPathTarget(Path path) {
     LOG.debug("isTemporaryPathTarget for {}", path);
     if (path.toString().equals(hostNameScheme) || path.getParent() == null) {
+      LOG.debug("Temporary target on the path eauals hostname or null parent {}", path);
       return false;
     }
     String name = path.getName();
@@ -91,9 +92,11 @@ public class StocatorPath {
       String[] tempPathComponents = tempPath.split("/");
       if (parent.endsWith(tempPathComponents[0].replace("ID", ""))
           || name.startsWith(tempPathComponents[0].replace("ID", ""))) {
+        LOG.debug("Temporary path identified on {}", path);
         return true;
       }
     }
+    LOG.debug("Temporary path not identified for {}", path);
     return false;
   }
 

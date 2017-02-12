@@ -326,6 +326,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       throws FileNotFoundException, IOException {
     LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
     FileStatus[] result = {};
+    if (f.getName() != null && f.getName().startsWith("_SCRATCH0")) {
+      LOG.debug("Exp 2 : return non-empty experiment for {}", f);
+      result = new FileStatus[1];
+      result[0] = new FileStatus();
+      return result;
+    }
     if (stocatorPath.isTemporaryPathContain(f)) {
       return result;
     }
