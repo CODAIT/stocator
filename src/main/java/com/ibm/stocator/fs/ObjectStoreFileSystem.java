@@ -336,8 +336,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       FileStatus[] resultTmp = storageClient.list(hostNameScheme, new Path(name),
           false, prefixBased);
       for (FileStatus fs : resultTmp) {
-        LOG.debug("Listing of {} returned {}", f, fs.getPath());
-        fs.setPath(new Path(f.toString() + "/" + fs.getPath().getName()));
+        LOG.debug("Listing of {} returned {}",  f, fs.getPath());
+        String objName = fs.getPath().getName();
+        if (objName.contains("-attempt")) {
+          objName = objName.substring(0, objName.indexOf("-attempt"));
+        }
+        fs.setPath(new Path(f.toString() + "/" + objName));
         LOG.debug("Listing of {} transformed to {}", f, fs.getPath());
       }
       return resultTmp;
