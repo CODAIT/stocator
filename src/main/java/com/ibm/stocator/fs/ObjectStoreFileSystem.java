@@ -337,8 +337,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           false, prefixBased);
       for (FileStatus fs : resultTmp) {
         LOG.debug("Listing of {} returned {}", f, fs.getPath());
+        fs.setPath(new Path(f.toString() + "/" + fs.getPath().getName()));
+        LOG.debug("Listing of {} transformed to {}", f, fs.getPath());
       }
-      return result;
+      return resultTmp;
     } else {
       LOG.debug("Exp 2 : {} is not _SCRATCH0", f.getName());
     }
