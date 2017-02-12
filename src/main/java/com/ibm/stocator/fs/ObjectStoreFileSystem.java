@@ -332,6 +332,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       /*result = new FileStatus[1];
       result[0] = new FileStatus();
       */
+      String name = stocatorPath.getActualPath(f, false, storageClient.getDataRoot());
+      FileStatus[] resultTmp = storageClient.list(hostNameScheme, new Path(name),
+          false, prefixBased);
+      for (FileStatus fs : resultTmp) {
+        LOG.debug("Listing of {} returned {}", f, fs.getPath());
+      }
       return result;
     } else {
       LOG.debug("Exp 2 : {} is not _SCRATCH0", f.getName());
