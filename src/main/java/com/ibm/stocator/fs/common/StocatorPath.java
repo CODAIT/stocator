@@ -49,8 +49,11 @@ public class StocatorPath {
     hostNameScheme = hostName;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
       tempIdentifier = HADOOP_TEMPORARY;
+      tempIdentifiers = conf.getStrings("fs.stocator.temp.identifier",
+          "_temporary/st_ID/_temporary/attempt_ID/");
     } else if (conf != null) {
-      tempIdentifiers = conf.getStrings("fs.stocator.temp.identifier");
+      tempIdentifiers = conf.getStrings("fs.stocator.temp.identifier",
+          "_temporary/st_ID/_temporary/attempt_ID/");
     }
   }
 
