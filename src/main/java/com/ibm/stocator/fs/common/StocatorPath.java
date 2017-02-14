@@ -18,6 +18,8 @@
 package com.ibm.stocator.fs.common;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -269,4 +271,27 @@ public class StocatorPath {
     return noPrefix;
   }
 
+  public List<Tuple<String, String>> getAllPartitions(String path) {
+    List<Tuple<String, String>> res = new ArrayList<>();
+    if (path.contains("=")) {
+      String[] components = path.split("/");
+      for (String component : components) {
+        int pos = component.indexOf("=");
+        if (pos > 0) {
+          String key = component.substring(0, pos);
+          String value = component.substring(pos + 1);
+          res.add(new Tuple<String, String>(key, value));
+        }
+      }
+    }
+    return res;
+  }
+
+  public boolean isPartitionTarget(Path path) {
+    String name = path.getName();
+    if (name != null && name.contains("=")) {
+      return true;
+    }
+    return false;
+  }
 }

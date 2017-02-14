@@ -45,4 +45,15 @@ public class Tuple<X, Y> {
     x = xT;
     y = yT;
   }
+
+  @Override
+  public int hashCode() {
+    return 42;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    Tuple<X, Y> t = (Tuple<X, Y>) obj;
+    return x.equals(t.x) && y.equals(t.y);
+  }
 }

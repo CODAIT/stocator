@@ -348,7 +348,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     } else {
       LOG.debug("Exp 2 : {} is not _SCRATCH0", f.getName());
     }
-    if (stocatorPath.isTemporaryPathContain(f)) {
+    if (stocatorPath.isTemporaryPathContain(f) && !f.toString().endsWith("-ext-10000")) {
       return result;
     }
     FileStatus fileStatus = null;

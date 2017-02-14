@@ -17,6 +17,9 @@
 
 package com.ibm.stocator.fs.swift2d.unittests;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import com.ibm.stocator.fs.common.StocatorPath;
+import com.ibm.stocator.fs.common.Tuple;
 
 import static com.ibm.stocator.fs.common.Constants.CUSTOM_FOUTPUTCOMMITTER;
 
@@ -144,42 +148,6 @@ public class StocatorPathTest {
 
   }
 
-  /*
-  @Test
-  public void isTempPathTest2() throws Exception {
-    String input1 = "swift2d://a.service/fruit_hive_dyn/"
-        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1";
-    String expectedResult1 = "a/fruit_hive_dyn";
-    String input2 = "swift2d://a.service/fruit_hive_dyn/"
-        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1/-ext-10001";
-    String input3 = "swift2d://a.service/fruit_hive_dyn/"
-        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1/_tmp.-ext-10002";
-    String input4 = "swift2d://a.service/fruit_hive_dyn/"
-        + ".hive-staging_hive_2016-12-21_15-53-10_468_3659726004869556488-1/"
-        + "_tmp.-ext-10002/color=Red";
-    String expectedResult4 = "a/fruit_hive_dyn/color=Red";
-
-    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
-        true, stocPath.isTemporaryPathTarget(new Path(input1)));
-    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
-        false, stocPath.isTemporaryPathTarget(new Path(input2)));
-    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
-        false, stocPath.isTemporaryPathTarget(new Path(input3)));
-    Assert.assertEquals("isTemporaryPathTarget() shows incorrect name",
-        true, stocPath.isTemporaryPathTarget(new Path(input4)));
-
-    String result = stocPath.getObjectNameRoot(new Path(input1),
-        Boolean.FALSE, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
-            expectedResult1, result);
-    result = stocPath.getObjectNameRoot(new Path(input2),
-        Boolean.FALSE, "a", true);
-    result = stocPath.getObjectNameRoot(new Path(input4),
-        Boolean.FALSE, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
-            expectedResult4, result);
-  }
-   */
   @Test
   public void generateCopyObject() throws Exception {
     String input = "swift2d://a.service/fruit_hive_dyn/"
@@ -319,6 +287,30 @@ public class StocatorPathTest {
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
+  }
+
+  @Test
+  public void partitionTest() throws Exception {
+
+    List<Tuple<String, String>> partitions = new ArrayList<>();
+    partitions.add(new Tuple<String, String>("a", "b"));
+    partitions.add(new Tuple<String, String>("c", "d"));
+
+    String input = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1";
+    String partList = "";
+    for (Tuple<String, String> part : partitions) {
+      partList = partList + part.x + "=" + part.y + "/";
+    }
+    input = input + "/" + partList;
+    List<Tuple<String, String>> result = stocPath.getAllPartitions(input);
+    int ind = 0;
+    for (Tuple<String, String> t : result) {
+      Assert.assertEquals("getAllPartitions failed ",t, partitions.get(ind));
+      ind++;
+    }
+    boolean isPartitionPath = stocPath.isPartitionTarget(new Path(input));
+    Assert.assertEquals("isPartitionTarget", isPartitionPath, true);
   }
 
 }
