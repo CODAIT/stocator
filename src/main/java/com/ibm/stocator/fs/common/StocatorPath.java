@@ -122,8 +122,21 @@ public class StocatorPath {
       res =  parseHadoopFOutputCommitterV1(fullPath,
           addTaskId, hostNameScheme);
     } else {
-      res = extractNameFromTempPath(fullPath, addTaskId, hostNameScheme);
+      res = extractNameFromTempPath(fullPath, addTaskId, hostNameScheme, false);
     }
+    if (!res.equals("")) {
+      if (addRoot) {
+        return dataRoot + "/" + res;
+      }
+      return res;
+    }
+    return fullPath.toString();
+  }
+
+  public String getGlobalPrefixName(Path fullPath,
+      String dataRoot, boolean addRoot) throws IOException {
+    String res = "";
+    res = extractNameFromTempPath(fullPath, false, hostNameScheme, true);
     if (!res.equals("")) {
       if (addRoot) {
         return dataRoot + "/" + res;
@@ -146,9 +159,11 @@ public class StocatorPath {
    * @param p path
    * @param addTaskID add task id to the extracted name
    * @param hostName hostname used to register Stocator
+   * @param onlyPrefix return only prefix of the temp names
    * @return
    */
-  private String extractNameFromTempPath(Path p, boolean addTaskID, String hostName) {
+  private String extractNameFromTempPath(Path p, boolean addTaskID, String hostName,
+      boolean onlyPrefix) {
     LOG.debug("Extract name from {}", p.toString());
     String path = p.toString();
     // if path starts with host name - no need it, remove.
@@ -173,6 +188,12 @@ public class StocatorPath {
       }
       // get all the path components that are prefixed the temporary identifier
       namePrefix = path.substring(0, startIndex - 1);
+      if (onlyPrefix) {
+        if (namePrefix.startsWith("/")) {
+          return namePrefix.substring(1);
+        }
+        return namePrefix;
+      }
       // we need to match temporary structure and take the rest
       String namePosix = path.substring(startIndex);
       // namePossix contains all temporary identifier and the following object name
@@ -289,9 +310,20 @@ public class StocatorPath {
 
   public boolean isPartitionTarget(Path path) {
     String name = path.getName();
+    LOG.debug("Is partition target for {} from {}", name, path.toString());
     if (name != null && name.contains("=")) {
       return true;
     }
     return false;
   }
+
+  public boolean isPartitionExists(Path path) {
+    String name = path.toString();
+    LOG.debug("Is partition target for {} from {}", name, path.toString());
+    if (name != null && name.contains("=")) {
+      return true;
+    }
+    return false;
+  }
+
 }

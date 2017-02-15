@@ -56,4 +56,8 @@ public class Tuple<X, Y> {
     Tuple<X, Y> t = (Tuple<X, Y>) obj;
     return x.equals(t.x) && y.equals(t.y);
   }
+
+  public String getPartition() {
+    return x + "=" + y;
+  }
 }

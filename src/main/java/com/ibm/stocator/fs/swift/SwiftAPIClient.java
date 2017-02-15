@@ -347,16 +347,22 @@ public class SwiftAPIClient implements IStoreClient {
       LOG.debug("getObjectMetadata on temp object {}. Return not found", objectName);
       throw new FileNotFoundException("Not found " + path.toString());
     }
+    LOG.debug("Checking cache(start) for {}", objectName);
     SwiftCachedObject obj = objectCache.get(objectName);
+    LOG.debug("Checking cache(finish) for {}", objectName);
     if (obj != null) {
+      LOG.debug("Object type is {} and size is {}", obj.isDir(), obj.getContentLength());
       // object exists, We need to check if the object size is equal to zero
       // If so, it might be a directory
-      if (obj.getContentLength() == 0) {
+      if (obj.getContentLength() == 0 && !obj.isDir()) {
         Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
         if (directoryFiles != null && directoryFiles.size() != 0) {
           // The zero length object is a directory
           isDirectory = true;
         }
+      }
+      if (obj.isDir()) {
+        isDirectory = true;
       }
       LOG.debug("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
           isDirectory, obj.getLastModified());
@@ -493,6 +499,10 @@ public class SwiftAPIClient implements IStoreClient {
           previousElement = tmp.getAsObject();
           continue;
         }
+        if (tmp.getContentType() != null
+            && tmp.getContentType().equals(Constants.APPLICATION_DIRECTORY)) {
+          LOG.debug("List for {} is directory and marked as {}", tmp.getName(), tmp.isDirectory());
+        }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
         if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
             && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
@@ -534,7 +544,7 @@ public class SwiftAPIClient implements IStoreClient {
         if (previousElement.getContentLength() > 0 || fullListing) {
           fs = getFileStatus(previousElement, cObj, hostName, path);
           objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
-                  fs.getModificationTime());
+                  fs.getModificationTime(), fs.isDirectory());
           tmpResult.add(fs);
         }
         previousElement = tmp.getAsObject();
@@ -543,7 +553,8 @@ public class SwiftAPIClient implements IStoreClient {
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
-      objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
+      objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
+          fs.getModificationTime(), fs.isDirectory());
       tmpResult.add(fs);
     }
     LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
@@ -805,7 +816,7 @@ public class SwiftAPIClient implements IStoreClient {
   private FileStatus getFileStatus(StoredObject tmp, Container cObj,
       String hostName, Path path) throws IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
-    return new FileStatus(tmp.getContentLength(), false, 1, blockSize,
+    return new FileStatus(tmp.getContentLength(), tmp.isDirectory(), 1, blockSize,
         Utils.lastModifiedAsLong(tmp.getLastModified()), 0, null,
         null, null, new Path(newMergedPath));
   }

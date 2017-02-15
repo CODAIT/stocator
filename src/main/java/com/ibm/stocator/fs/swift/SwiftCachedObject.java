@@ -20,10 +20,13 @@ package com.ibm.stocator.fs.swift;
 public class SwiftCachedObject {
   private final long contentLength;
   private final long lastModified;
+  private boolean isDirectory;
 
-  public SwiftCachedObject(long objContentLength, long objLastModified) {
+  public SwiftCachedObject(long objContentLength, long objLastModified,
+      boolean objIsDirectory) {
     contentLength = objContentLength;
     lastModified = objLastModified;
+    isDirectory = objIsDirectory;
   }
 
   public long getContentLength() {
@@ -32,5 +35,13 @@ public class SwiftCachedObject {
 
   public long getLastModified() {
     return lastModified;
+  }
+
+  public boolean isDir() {
+    return isDirectory;
+  }
+
+  public void setAsDirectory() {
+    isDirectory = true;
   }
 }

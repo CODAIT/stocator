@@ -20,7 +20,9 @@ package com.ibm.stocator.fs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
@@ -42,6 +44,7 @@ import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import com.ibm.stocator.fs.common.StocatorPath;
+import com.ibm.stocator.fs.common.Tuple;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
 //import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
@@ -123,10 +126,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   public boolean exists(Path f) throws IOException {
-    LOG.debug("exists {}", f.toString());
+    LOG.debug("exists(starts) {}", f.toString());
     String realPath = stocatorPath.getActualPath(f, false,
         storageClient.getDataRoot());
-    LOG.debug("exists(start) {}, transformed {}", f.toString(), realPath);
+    LOG.debug("path {} transformed {}", f.toString(), realPath);
     boolean res =  storageClient.exists(hostNameScheme, new Path(realPath));
     LOG.debug("exists(finish) found: {}: on {}, transformed {}", res, f.toString(), realPath);
     if (f.getName().startsWith("TEMP_")) {
@@ -193,7 +196,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public FSDataOutputStream create(Path f, FsPermission permission,
       boolean overwrite, int bufferSize,
       short replication, long blockSize, Progressable progress) throws IOException {
-    LOG.debug("Create: {}, overwrite is: {}", f.toString(), overwrite);
+    LOG.debug("Create {}. Overwrite is: {}", f.toString(), overwrite);
     String objNameModified = "";
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
@@ -220,6 +223,21 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         LOG.debug("Hive identified: going to create {}", objNameModified);
       }
     }
+    if (stocatorPath.isPartitionExists(f)) {
+      LOG.debug("Create(Partition) target {}", f.toString());
+      List<Tuple<String, String>> partitions = stocatorPath.getAllPartitions(f.toString());
+      String pName = "";
+      for (Tuple<String, String> partition : partitions) {
+        pName = pName + "/" + partition.getPartition();
+        String globalPrefix = stocatorPath.getGlobalPrefixName(f, storageClient.getDataRoot(),
+            true);
+        LOG.debug("Create(Partition) for prefix {} name {}", globalPrefix, pName);
+        FSDataOutputStream outStreamP = storageClient.createObject(globalPrefix + pName,
+            Constants.APPLICATION_DIRECTORY, null, statistics);
+        outStreamP.close();
+      }
+    }
+
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "application/octet-stream", null, statistics);
     return outStream;
@@ -317,21 +335,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
-    LOG.debug("List status of {}", f.toString());
     return listStatus(f, null);
   }
 
   @Override
   public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased)
       throws FileNotFoundException, IOException {
-    LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
-    LOG.debug("Exp 2 : for {}", f.getName());
+    LOG.debug("List status(entry): {},  prefix based {}",f.toString(), prefixBased);
     FileStatus[] result = {};
     if (f.getName() != null && f.getName().startsWith("_SCRATCH0")) {
       LOG.debug("Exp 2 : return non-empty experiment for {}", f);
-      /*result = new FileStatus[1];
-      result[0] = new FileStatus();
-      */
       String name = stocatorPath.getActualPath(f, false, storageClient.getDataRoot());
       FileStatus[] resultTmp = storageClient.list(hostNameScheme, new Path(name),
           false, prefixBased);
@@ -345,21 +358,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         LOG.debug("Listing of {} transformed to {}", f, fs.getPath());
       }
       return resultTmp;
-    } else {
-      LOG.debug("Exp 2 : {} is not _SCRATCH0", f.getName());
     }
     if (stocatorPath.isTemporaryPathContain(f) && !f.toString().endsWith("-ext-10000")) {
       return result;
     }
     FileStatus fileStatus = null;
-    /*
-    String newPath;
-    String oldPath = f.toString();
-    if (stocatorPath.isTempName(f)) {
-      newPath = stocatorPath.getActualPath(f, false, storageClient.getDataRoot() , hostNameScheme);
-      f = new Path(newPath);
-    }
-    */
     /*
      * Experiment section. Trying to resolve final stage to update partitions
      * Check if this resolves the issues.
@@ -379,7 +382,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
      * Finish.
      */
     if (!ext1000) {
-      LOG.debug("Exp1: Skipt status for {}", f.toString());
       try {
         fileStatus = getFileStatus(f);
       } catch (FileNotFoundException e) {
@@ -389,13 +391,26 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
     if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
       LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
-      result = storageClient.list(hostNameScheme, f, false, prefixBased);
       if (ext1000) {
+        result = storageClient.list(hostNameScheme, f, true, prefixBased);
+        ArrayList<FileStatus> resultTmp = new  ArrayList<FileStatus>();
         for (FileStatus fs1: result) {
-          LOG.debug("Exp1 : List returned {}", fs1.getPath());
-          String ts1 = f.toString().substring(hostNameScheme.length());
-          LOG.debug("Exp1 : {}", oldPath);
-          fs1.setPath(new Path(oldPath + "/color=Red"));
+          LOG.debug("Exp11 : list candidate {}", fs1.getPath());
+          if (stocatorPath.isPartitionTarget(fs1.getPath())) {
+            fs1.setPath(new Path(oldPath
+                + "/" + fs1.getPath().toString().substring(hostNameScheme.length())));
+            LOG.debug("Exp12 : partition taget - new path {}", fs1.getPath().toString());
+            resultTmp.add(fs1);
+          }
+        }
+        if (!resultTmp.isEmpty()) {
+          return resultTmp.toArray(new FileStatus[resultTmp.size()]);
+        }
+      } else {
+        result = storageClient.list(hostNameScheme, f, false, prefixBased);
+        LOG.debug("Non ext1000 listing returned {}", result.length);
+        for (FileStatus fs : result) {
+          LOG.debug("{}", fs.getPath().toString());
         }
       }
     } else if (fileStatus != null) {
@@ -451,6 +466,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean mkdirs(Path f) throws IOException {
     LOG.debug("mkdirs: {}", f.toString());
+    if (stocatorPath.isPartitionExists(f)) {
+      LOG.debug("mkdirs(Partion) target path {}", f.toString());
+    }
     if (stocatorPath.isTemporaryPathTarget(f)) {
       LOG.debug("mkdirs on temp path {}", f.toString());
       String objNameModified = stocatorPath.getObjectNameRoot(f,false,
@@ -483,11 +501,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public FileStatus getFileStatus(Path f) throws IOException {
     String realPath = stocatorPath.getActualPath(f, false,
         storageClient.getDataRoot());
-    LOG.debug("get file status: {}, transformed to {}", f.toString(), realPath);
+    LOG.debug("getFileStatus(entry): {}, transformed to {}", f.toString(), realPath);
     FileStatus fs = storageClient.getObjectMetadata(hostNameScheme, new Path(realPath),
         "fileStatus");
-    LOG.debug(" get file status return path is {}. Modify to {}", fs.getPath(), f);
     fs.setPath(f);
+    LOG.debug("getFileStatus(finish): return path is {} modified to {}", fs.getPath(), f);
     return fs;
   }
 

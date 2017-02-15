@@ -26,6 +26,7 @@ import org.javaswift.joss.model.StoredObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.Utils;
 
 /**
@@ -62,18 +63,28 @@ public class SwiftObjectCache {
       StoredObject rawObj = container.getObject(removeTrailingSlash(objName));
       if (rawObj != null && rawObj.exists()) {
         res = new SwiftCachedObject(rawObj.getContentLength(),
-          Utils.lastModifiedAsLong(rawObj.getLastModified()));
+          Utils.lastModifiedAsLong(rawObj.getLastModified()),
+          rawObj.isDirectory());
+        LOG.debug("cache (new) get for {} content type {}", objName, rawObj.getContentType());
+        if (rawObj.getContentType() != null
+            && rawObj.getContentType().equals(Constants.APPLICATION_DIRECTORY)) {
+          LOG.debug("Set {} as directory", objName);
+          res.setAsDirectory();
+        }
         put(objName, res);
       } else {
         return null;
       }
+    } else {
+      LOG.debug("cache (exist) get for {} is directory {}", objName, res.isDir());
     }
     return res;
   }
 
-  public void put(String objNameKey, long contentLength, long lastModified) {
+  public void put(String objNameKey, long contentLength, long lastModified,
+      boolean isDir) {
     LOG.trace("Add to cache  {} ", objNameKey);
-    cache.put(objNameKey, new SwiftCachedObject(contentLength, lastModified));
+    cache.put(objNameKey, new SwiftCachedObject(contentLength, lastModified, isDir));
   }
 
   private void put(String objName, SwiftCachedObject internalObj) {
