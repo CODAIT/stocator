@@ -137,6 +137,9 @@ public class StocatorPath {
       String dataRoot, boolean addRoot) throws IOException {
     String res = "";
     res = extractNameFromTempPath(fullPath, false, hostNameScheme, true);
+    if (dataRoot.endsWith("/")) {
+      dataRoot = dataRoot.substring(0,  dataRoot.length() - 1);
+    }
     if (!res.equals("")) {
       if (addRoot) {
         return dataRoot + "/" + res;
