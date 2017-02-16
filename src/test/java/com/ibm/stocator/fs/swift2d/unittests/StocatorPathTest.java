@@ -74,7 +74,7 @@ public class StocatorPathTest {
     String expectedResult = "fruit_hive_dyn/color=Yellow/000000_0";
 
     String result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
 
@@ -83,7 +83,7 @@ public class StocatorPathTest {
         + "_task_tmp.-ext-10002/color=Yellow/_tmp.000000_0";
     expectedResult = "fruit_hive_dyn/color=Yellow/_tmp.000000_0";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
 
@@ -91,7 +91,7 @@ public class StocatorPathTest {
         + ".hive-staging_hive_2017-01-31_15-58-51_954_1542283154702952521-1/_tmp.-ext-10002";
     expectedResult = "fruit_23d";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
 
@@ -99,7 +99,7 @@ public class StocatorPathTest {
         + ".hive-staging_hive_2017-02-01_08-56-17_725_2916730392594052694-1/-ext-10002";
     expectedResult = "fruit_23d";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
 
@@ -170,7 +170,7 @@ public class StocatorPathTest {
     String expectedResult = "fruit_hive_dyn/color=Green/attempt_1484176830822_0004_r_000003_0";
 
     String result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
 
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
@@ -185,7 +185,7 @@ public class StocatorPathTest {
         + "attempt_201610052038_0001_m_000007_15/part-00007";
     String expectedResult = "aa/bb/cc/one3.txt/part-00007";
     String result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -193,7 +193,7 @@ public class StocatorPathTest {
         + "attempt_201610052038_0001_m_000007_15/a/part-00007";
     expectedResult = "one3.txt/a/part-00007";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -201,7 +201,7 @@ public class StocatorPathTest {
         + "attempt_201610052038_0001_m_000007_15/";
     expectedResult = "one3.txt";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -209,7 +209,7 @@ public class StocatorPathTest {
         + "attempt_201610052038_0001_m_000007_15";
     expectedResult = "one3.txt";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -218,7 +218,7 @@ public class StocatorPathTest {
     expectedResult = "one3.txt/_temporary/0/_temporary/"
         + "attampt_201610052038_0001_m_000007_15";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -231,7 +231,7 @@ public class StocatorPathTest {
         + "color=Green/000000_0";
     String expectedResult = "fruit_hive_dyn/color=Green/000000_0";
     String result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -241,7 +241,7 @@ public class StocatorPathTest {
     expectedResult = "fruit_hive_dyn/color=Red/"
         + "_tmp.000000_0-2017-02-07_13-34-29_470_1053856006407136479-1";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), true, hostname);
+        new Path(input), true, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -250,7 +250,7 @@ public class StocatorPathTest {
         + "_temporary/attempt_1486475505018_0008_m_000000_0/part-m-00000";
     expectedResult = "fruit_hive_dyn/part-m-00000-attempt_1486475505018_0008_m_000000_0";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), true, hostname);
+        new Path(input), true, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -259,7 +259,7 @@ public class StocatorPathTest {
         + "_temporary/attempt_1486475505018_0008_m_000000_0/";
     expectedResult = "fruit_hive_dyn";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), true, hostname);
+        new Path(input), true, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -267,7 +267,7 @@ public class StocatorPathTest {
         + "_SCRATCH0.2522929312513381824643989192318958144030/";
     expectedResult = "fruit_hive_dyn";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), true, hostname);
+        new Path(input), true, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -275,7 +275,7 @@ public class StocatorPathTest {
         + "_SCRATCH0.3655423817421201183321170691664364082/_SUCCESS";
     expectedResult = "fruit_hive_dyn/_SUCCESS";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -283,7 +283,7 @@ public class StocatorPathTest {
         + "TEMP_1486546384743_865956912_201702080143406";
     expectedResult = "fruit_hive_dyn";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname);
+        new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
 
@@ -311,6 +311,13 @@ public class StocatorPathTest {
     }
     boolean isPartitionPath = stocPath.isPartitionTarget(new Path(input));
     Assert.assertEquals("isPartitionTarget", isPartitionPath, true);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + ".hive-staging_hive_2017-02-14_18-01-52_833_2074202740199836878-1/"
+        + "_task_tmp.-ext-10002/color=Green/_tmp.000000_0";
+    String res = stocPath.getGlobalPrefixName(new Path(input), hostname, true);
+    String expected = input = "swift2d://a.service/fruit_hive_dyn";
+    Assert.assertEquals("getGlobalPrefixName", expected, res);
   }
 
 }

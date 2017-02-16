@@ -206,7 +206,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       objNameModified = stocatorPath.getObjectNameRoot(f, true,
           storageClient.getDataRoot(), true);
     }
-    if (stocatorPath.addNewPart()) {
+    if (!stocatorPath.isFileOutputComitter()) {
       LOG.debug("Hive identified and overwrtie mode {} detected for {}", overwrite,
           objNameModified);
       String actuallName = stocatorPath.getActualPath(f, false,
@@ -237,7 +237,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         outStreamP.close();
       }
     }
-
+    LOG.debug("Create(mid) {} isFileOutputComiiter {} contains _tmp. {}",
+        objNameModified, stocatorPath.isFileOutputComitter(),
+        objNameModified.contains("_tmp."));
+    if (!stocatorPath.isFileOutputComitter() && objNameModified.contains("_tmp.")) {
+      objNameModified = objNameModified.replace("_tmp.", "");
+    }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "application/octet-stream", null, statistics);
     return outStream;
@@ -410,6 +415,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         result = storageClient.list(hostNameScheme, f, false, prefixBased);
         LOG.debug("Non ext1000 listing returned {}", result.length);
         for (FileStatus fs : result) {
+          //fs.setPath(new Path(fs.getPath().toString().replace("_tmp.", "")));
           LOG.debug("{}", fs.getPath().toString());
         }
       }
@@ -418,6 +424,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       result = new FileStatus[1];
       result[0] = fileStatus;
     }
+    LOG.debug("List status(finish): {} completed with {} records",f.toString(), result.length);
     return result;
   }
 

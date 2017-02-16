@@ -466,7 +466,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException {
-    LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
+    LOG.debug("List container(entry): raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
@@ -480,18 +480,24 @@ public class SwiftAPIClient implements IStoreClient {
       obj = path.toString();
     }
 
-    LOG.debug("List container for {} container {}", obj, container);
+    LOG.debug("List container(mid) transformed to {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
     FileStatus fs = null;
     StoredObject previousElement = null;
+    LOG.debug("List container(mid) got pagination map for {}", obj);
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
+      LOG.debug("List container(mid) listing the page start {} for {}", page, obj);
       Collection<StoredObject> res = cObj.list(paginationMap, page);
+      LOG.debug("List container(mid) listing the page finish {} for {} with ", page, obj);
       if (page == 0 && (res == null || res.isEmpty())) {
         FileStatus[] emptyRes = {};
-        LOG.debug("List {} in container {} is empty", obj, container);
+        LOG.debug("List {} on container {} is empty", obj, container);
         return emptyRes;
       }
+      LOG.debug("List container(mid) listing the page finish {} for {} with {} records",
+          page, obj, res.size());
+      LOG.debug("List container(mid) loop over objects for container {}", obj);
       for (StoredObject tmp : res) {
         if (previousElement == null) {
           // first entry

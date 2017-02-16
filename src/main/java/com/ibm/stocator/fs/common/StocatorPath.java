@@ -59,8 +59,8 @@ public class StocatorPath {
     }
   }
 
-  public boolean addNewPart() {
-    return !tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1);
+  public boolean isFileOutputComitter() {
+    return tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1);
   }
 
   public boolean isTemporaryPathContain(Path path) {
