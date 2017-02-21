@@ -302,14 +302,17 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       }
     } else {
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
+      HashMap<String, Byte> successExists = new HashMap<String, Byte>();
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
-          LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
           String pathToDelete = f.toString();
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
-          LOG.trace("Delete candidate {} pathToDelete {}", fs.getPath().toString(), pathToDelete);
+          String rootName = stocatorPath.getGlobalPrefixName(fs.getPath(),
+              storageClient.getDataRoot(), true);
+          LOG.debug("Delete on {} candidate {} path to delete {} root name {}", f.toString(),
+              fs.getPath().toString(), pathToDelete, rootName);
           if (fs.getPath().toString().equals(f.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);

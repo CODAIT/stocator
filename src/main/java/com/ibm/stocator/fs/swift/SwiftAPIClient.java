@@ -487,7 +487,7 @@ public class SwiftAPIClient implements IStoreClient {
     StoredObject previousElement = null;
     LOG.debug("List container(mid) got pagination map for {}", obj);
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      LOG.debug("List container(mid) listing the page start {} for {}", page, obj);
+      LOG.debug("List container(mid) listing     the page start {} for {}", page, obj);
       Collection<StoredObject> res = cObj.list(paginationMap, page);
       LOG.debug("List container(mid) listing the page finish {} for {} with ", page, obj);
       if (page == 0 && (res == null || res.isEmpty())) {
