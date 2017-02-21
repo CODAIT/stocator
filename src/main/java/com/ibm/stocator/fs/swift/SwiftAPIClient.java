@@ -35,7 +35,6 @@ import org.javaswift.joss.exception.AlreadyExistsException;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
-import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
 import org.slf4j.Logger;
@@ -483,17 +482,20 @@ public class SwiftAPIClient implements IStoreClient {
 
     LOG.debug("List container for {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
-    FileStatus fs = null;
     StoredObject previousElement = null;
-    for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      Collection<StoredObject> res = cObj.list(paginationMap, page);
-      if (page == 0 && (res == null || res.isEmpty())) {
+    boolean moreData = true;
+    String marker = null;
+    FileStatus fs = null;
+    while (moreData) {
+      Collection<StoredObject> res = cObj.list(obj, marker, pageListSize);
+      moreData = (res.size() == pageListSize);
+      if (marker == null && (res == null || res.isEmpty() || res.size() == 0)) {
         FileStatus[] emptyRes = {};
         LOG.debug("List {} in container {} is empty", obj, container);
         return emptyRes;
       }
       for (StoredObject tmp : res) {
+        marker = tmp.getAsObject().getName();
         if (previousElement == null) {
           // first entry
           setCorrectSize(tmp, cObj);
