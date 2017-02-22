@@ -67,7 +67,7 @@ public class StocatorPathTest {
   }
 
   @Test
-  public void parseHiveV1Test() throws Exception {
+  public void parseTestV1() throws Exception {
     String hostname = "swift2d://a.service/";
     String input = "swift2d://a.service/fruit_hive_dyn/"
         + ".hive-staging_hive_2016-12-21_08-46-44_430_2111117233601747099-1/"
@@ -101,6 +101,17 @@ public class StocatorPathTest {
     expectedResult = "fruit_23d";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
         new Path(input), false, hostname, false);
+    Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "_DYN0.600389881457611886943120206775524854029/color=Green/"
+        + "_temporary/1/_temporary/attempt_1484176830822_0004_r_000003_0";
+    expectedResult = "fruit_hive_dyn/color=Green/attempt_1484176830822_0004_r_000003_0";
+
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname, false);
+
     Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
 
@@ -163,21 +174,6 @@ public class StocatorPathTest {
     String result = stocPath.getActualPath(new Path(input),
         Boolean.FALSE, "a");
     Assert.assertEquals("getActualPath() shows incorrect name",
-            expectedResult, result);
-  }
-
-  @Test
-  public void parseHcatalogV1Test() throws Exception {
-    String hostname = "swift2d://a.service/";
-    String input = "swift2d://a.service/fruit_hive_dyn/"
-        + "_DYN0.600389881457611886943120206775524854029/color=Green/"
-        + "_temporary/1/_temporary/attempt_1484176830822_0004_r_000003_0";
-    String expectedResult = "fruit_hive_dyn/color=Green/attempt_1484176830822_0004_r_000003_0";
-
-    String result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname, false);
-
-    Assert.assertEquals("extractUnifiedObjectName() shows incorrect name",
             expectedResult, result);
   }
 
