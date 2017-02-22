@@ -50,6 +50,7 @@ public class StocatorPathTest {
   private String pattern8 = "_SCRATCH0.ID";
   private String pattern9 = "TEMP_ID";
   private String pattern10 = ".COMMITTING__TEMP_ID";
+  private String pattern11 = ".distcp.tmp.attempt_ID";
   String hostname = "swift2d://a.service/";
 
   @Before
@@ -57,10 +58,10 @@ public class StocatorPathTest {
     mStocatorPath = PowerMockito.mock(StocatorPath.class);
     Whitebox.setInternalState(mStocatorPath, "tempIdentifiers",
         new String[] {pattern6, pattern7, pattern8, pattern9,
-            pattern10, pattern2, pattern3, pattern4, pattern5, pattern1});
+            pattern10, pattern2, pattern3, pattern4, pattern5, pattern1, pattern11});
     Configuration conf = new Configuration();
     conf.setStrings("fs.stocator.temp.identifier", pattern6, pattern7, pattern8, pattern9,
-        pattern10, pattern2, pattern3, pattern4, pattern5, pattern1);
+        pattern10, pattern2, pattern3, pattern4, pattern5, pattern1, pattern11);
     stocPath = new StocatorPath(CUSTOM_FOUTPUTCOMMITTER, conf, hostname);
 
   }
@@ -146,6 +147,10 @@ public class StocatorPathTest {
     Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
         true, res);
 
+    input = "swift2d://a.service/data3/.distcp.tmp.attempt_local2036034928_0001_m_000000_0";
+    res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
   }
 
   @Test
