@@ -179,7 +179,7 @@ public class ObjectStoreGlobber {
       }
     }
     if (results.isEmpty()) {
-      return new FileStatus[0];
+      return null;
     }
 
     return results.toArray(new FileStatus[0]);

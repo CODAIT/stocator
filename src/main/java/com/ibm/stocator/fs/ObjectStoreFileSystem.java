@@ -359,19 +359,28 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean mkdirs(Path f) throws IOException {
     LOG.debug("mkdirs: {}", f.toString());
-    if (stocatorPath.isTemporaryPathTaget(f.getParent())) {
+    boolean isTempPath = false;
+    if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
+      isTempPath = true;
+    }
+    if (isTempPath || !exists(f)) {
       String objNameModified = stocatorPath.getObjectNameRoot(f,true,
           storageClient.getDataRoot(), hostNameScheme);
       Path pathToObj = new Path(objNameModified);
-      String plainObjName = pathToObj.getParent().toString();
-      LOG.debug("Going to create identifier {}", plainObjName);
+      if (isTempPath) {
+        objNameModified = pathToObj.getParent().toString();
+      }
+      LOG.debug("Going to create identifier {}", objNameModified);
       Map<String, String> metadata = new HashMap<String, String>();
       metadata.put("Data-Origin", "stocator");
-      FSDataOutputStream outStream = storageClient.createObject(plainObjName,
+      FSDataOutputStream outStream = storageClient.createObject(objNameModified,
           Constants.APPLICATION_DIRECTORY, metadata, statistics);
       outStream.close();
+      return true;
+    } else {
+      LOG.debug("Path : {} already exists.", f.toString());
+      return false;
     }
-    return true;
   }
 
   @Override
