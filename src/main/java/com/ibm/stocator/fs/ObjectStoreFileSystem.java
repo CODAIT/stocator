@@ -361,7 +361,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         String objName = fs.getPath().getName();
         String taskID = null;
         if (objName.contains("-attempt")) {
-          taskID = objName.substring(objName.indexOf("-attempt") + 8);
+          taskID = objName.substring(objName.indexOf("-attempt") + 9);
           objName = objName.substring(0, objName.indexOf("-attempt"));
         }
         if (taskID != null) {
