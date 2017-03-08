@@ -352,18 +352,24 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("List status(entry): {},  prefix based {}",f.toString(), prefixBased);
     FileStatus[] result = {};
     if (f.getName() != null && f.getName().startsWith("_SCRATCH0")) {
-      LOG.debug("Exp 2 : return non-empty experiment for {}", f);
+      LOG.debug("_SCRATCH0 : return non-empty experiment for {}", f);
       String name = stocatorPath.getActualPath(f, false, storageClient.getDataRoot());
       FileStatus[] resultTmp = storageClient.list(hostNameScheme, new Path(name),
           false, prefixBased);
       for (FileStatus fs : resultTmp) {
-        LOG.debug("Listing of {} returned {}",  f, fs.getPath());
+        LOG.debug("_SCRATCH0 : Listing of {} returned {}",  f, fs.getPath());
         String objName = fs.getPath().getName();
+        String taskID = null;
         if (objName.contains("-attempt")) {
+          taskID = objName.substring(objName.indexOf("-attempt") + 8);
           objName = objName.substring(0, objName.indexOf("-attempt"));
         }
-        fs.setPath(new Path(f.toString() + "/" + objName));
-        LOG.debug("Listing of {} transformed to {}", f, fs.getPath());
+        if (taskID != null) {
+          fs.setPath(new Path(f.toString() + "/_temporary/1/task_" + taskID + "/" +  objName));
+        } else {
+          fs.setPath(new Path(f.toString() + "/" + objName));
+        }
+        LOG.debug("_SCRATCH0 : Listing of {} transformed to {}", f, fs.getPath());
       }
       return resultTmp;
     }
