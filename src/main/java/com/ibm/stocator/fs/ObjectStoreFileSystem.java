@@ -365,7 +365,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           objName = objName.substring(0, objName.indexOf("-attempt"));
         }
         if (taskID != null) {
-          fs.setPath(new Path(f.toString() + "/_temporary/1/task_" + taskID + "/" +  objName));
+          fs.setPath(new Path(f.toString() + "/_temporary/1/task_" + taskID));
         } else {
           fs.setPath(new Path(f.toString() + "/" + objName));
         }
