@@ -143,11 +143,15 @@ public class ObjectStoreGlobber {
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
+    List<String> flattenedPatterns = ObjectStoreGlobExpander.expand(pathPatternString);
+    LOG.debug("ObjectStoreGlobber {} patterns {}", pathPatternString, flattenedPatterns);
 
     if (pathPatternString.contains("?temp_url")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};
       return fs;
     }
+
+    boolean sawWildcard = pathPatternString.contains("*");
 
     if (globFilter.hasPattern()) {
       // Get a list of FileStatuses and filter
@@ -166,6 +170,8 @@ public class ObjectStoreGlobber {
           pathPattern.toString());
       FileStatus[] candidates = listStatus(new Path(pathPattern.toString()));
       if (candidates == null) {
+        LOG.debug("ObjectStoreGlobber: listing of {} return null. Return empty array",
+            pathPattern.toString());
         return new FileStatus[0];
       }
       for (FileStatus candidate : candidates) {
@@ -178,7 +184,13 @@ public class ObjectStoreGlobber {
         }
       }
     }
+    if ((!sawWildcard) && results.isEmpty()
+        && (flattenedPatterns.size() <= 1)) {
+      return null;
+    }
+
     if (results.isEmpty()) {
+      LOG.debug("ObjectStoreGlobber: {} is empty results. Return empty list", pathPatternString);
       return new FileStatus[0];
     }
 
