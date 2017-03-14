@@ -547,7 +547,8 @@ public class SwiftAPIClient implements IStoreClient {
           }
         }
         fs = null;
-        if (previousElement.getContentLength() > 0 || fullListing) {
+        // related https://github.com/SparkTC/stocator/issues/120
+        if (previousElement.getContentLength() >= 0 || fullListing) {
           fs = getFileStatus(previousElement, cObj, hostName, path);
           objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
                   fs.getModificationTime(), fs.isDirectory());
@@ -556,7 +557,8 @@ public class SwiftAPIClient implements IStoreClient {
         previousElement = tmp.getAsObject();
       }
     }
-    if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
+    // related https://github.com/SparkTC/stocator/issues/120
+    if (previousElement != null && (previousElement.getContentLength() >= 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
       objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
