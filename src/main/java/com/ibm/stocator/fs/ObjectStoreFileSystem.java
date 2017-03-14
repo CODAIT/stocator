@@ -42,12 +42,10 @@ import org.slf4j.LoggerFactory;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.Utils;
-import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+//import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.Tuple;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
-
-//import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 import static com.ibm.stocator.fs.common.Constants.OUTPUT_COMMITTER_TYPE;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
@@ -552,7 +550,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.trace("Default block size for: {} is {}", f.toString(), defaultBlockSize);
     return defaultBlockSize;
   }
-
+  /*
+   * Covered in https://github.com/SparkTC/stocator/issues/120
+   * For now we remove calls to ObjectStoreGlobber
   @Override
   public FileStatus[] globStatus(Path pathPattern) throws IOException {
     LOG.debug("Glob status: {}", pathPattern.toString());
@@ -564,7 +564,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("Glob status {} with path filter {}",pathPattern.toString(), filter.toString());
     return new ObjectStoreGlobber(this, pathPattern, filter).glob();
   }
-
+  */
   /**
    * {@inheritDoc}
    *
