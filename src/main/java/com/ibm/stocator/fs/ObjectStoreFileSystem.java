@@ -503,12 +503,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("mkdirs on non temp object. Create {}", f.toString());
       String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
           true);
-      LOG.debug("Going to create identifier {}", objName);
-      Map<String, String> metadata = new HashMap<String, String>();
-      metadata.put("Data-Origin", "stocator");
       LOG.trace("mkdirs to create directory {}", objName);
       FSDataOutputStream outStream = storageClient.createObject(objName,
-          Constants.APPLICATION_DIRECTORY, metadata, statistics);
+          Constants.APPLICATION_DIRECTORY, null, statistics);
       outStream.close();
     }
     return true;
