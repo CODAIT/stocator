@@ -129,7 +129,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("exists(starts) {}", f.toString());
     if (f.getName().startsWith("TEMP_")) {
       return false;
-    }    
+    }
     String realPath = stocatorPath.getActualPath(f, false,
         storageClient.getDataRoot());
     LOG.debug("path {} transformed {}", f.toString(), realPath);
