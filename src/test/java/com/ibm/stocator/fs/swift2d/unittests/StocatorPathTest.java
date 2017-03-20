@@ -287,6 +287,15 @@ public class StocatorPathTest {
         new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "_SCRATCH0.3944118008437942019642303192694375975316/_temporary/1";
+    boolean res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
+    result = stocPath.getObjectNameRoot(new Path(input), false, "a", true);
+    expectedResult = "a/fruit_hive_dyn";
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+        expectedResult, result);
 
   }
 

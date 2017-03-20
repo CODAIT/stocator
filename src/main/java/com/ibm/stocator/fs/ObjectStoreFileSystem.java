@@ -92,6 +92,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
     String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
+    LOG.debug("Over write {} with hiveOutputV1", committerType);
+    committerType = "hiveOutputV1";
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(fsuri, conf);
       if (Utils.validSchema(fsuri.toString())) {
