@@ -127,14 +127,14 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean exists(Path f) throws IOException {
     LOG.debug("exists(starts) {}", f.toString());
+    if (f.getName().startsWith("TEMP_")) {
+      return false;
+    }    
     String realPath = stocatorPath.getActualPath(f, false,
         storageClient.getDataRoot());
     LOG.debug("path {} transformed {}", f.toString(), realPath);
     boolean res =  storageClient.exists(hostNameScheme, new Path(realPath));
     LOG.debug("exists(finish) found: {}: on {}, transformed {}", res, f.toString(), realPath);
-    if (f.getName().startsWith("TEMP_")) {
-      return false;
-    }
     return res;
   }
 
