@@ -1,4 +1,13 @@
 ##Release notes
+### Version 1.0.8
+1. Better debug prints
+2. Reducing number of GET requests
+3. Fixing list status
+4. Fixing get file status on temp object
+5. Remove duplicate call to get object length
+6. Support for temp urls
+7. Added thread pool for create method
+8. Support spaces in the names
 ### Version 1.0.7
 1. Modified JOSS to disable HEAD on account when accessing containers. This caused issues when user doesn't has access on account level, but only on container level.
 2. Fixed regression caused by consumeQueitely. This fix improved read by 3 times
