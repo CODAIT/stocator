@@ -479,7 +479,9 @@ public class SwiftAPIClient implements IStoreClient {
     } else {
       obj = path.toString();
     }
-
+    if (!obj.endsWith("/")) {
+      obj = obj + "/";
+    }
     LOG.debug("List container(mid) transformed to {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
