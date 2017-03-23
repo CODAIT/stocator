@@ -489,9 +489,9 @@ public class SwiftAPIClient implements IStoreClient {
     StoredObject previousElement = null;
     LOG.debug("List container(mid) got pagination map for {}", obj);
     for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      LOG.debug("List container(mid) listing     the page start {} for {}", page, obj);
+      LOG.debug("List container(mid) listing the page start {} for {}", page, obj);
       Collection<StoredObject> res = cObj.list(paginationMap, page);
-      LOG.debug("List container(mid) listing the page finish {} for {} with ", page, obj);
+      LOG.debug("List container(mid) listing the page finish {} for {}", page, obj);
       if (page == 0 && (res == null || res.isEmpty())) {
         FileStatus[] emptyRes = {};
         LOG.debug("List {} on container {} is empty", obj, container);
@@ -516,15 +516,15 @@ public class SwiftAPIClient implements IStoreClient {
             && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
           // JOSS returns all objects that start with the prefix of obj.
           // These may include other unrelated objects.
-          LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
+          LOG.debug("{} does not match {}. Skipped", unifiedObjectName, obj);
           continue;
         }
-        LOG.trace("Unified name: {}, path {}", unifiedObjectName, tmp.getName());
+        LOG.debug("Unified name: {}, path {}", unifiedObjectName, tmp.getName());
         if (!unifiedObjectName.equals(tmp.getName()) && isSparkOrigin(unifiedObjectName)
             && !fullListing) {
-          LOG.trace("{} created by Spark", unifiedObjectName);
+          LOG.debug("{} created by Spark", unifiedObjectName);
           if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
+            LOG.debug("{} created by failed Spark job. Skipped", unifiedObjectName);
             if (fModeAutomaticDelete) {
               delete(hostName, new Path(tmp.getName()), true);
             }
@@ -561,13 +561,13 @@ public class SwiftAPIClient implements IStoreClient {
     }
     // related https://github.com/SparkTC/stocator/issues/120
     if (previousElement != null && (previousElement.getContentLength() >= 0 || fullListing)) {
-      LOG.trace("Adding {} to the list", previousElement.getPath());
+      LOG.debug("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
       objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
           fs.getModificationTime(), fs.isDirectory());
       tmpResult.add(fs);
     }
-    LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
+    LOG.debug("Listing of {} returned with {} results", path.toString(), tmpResult.size());
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 
