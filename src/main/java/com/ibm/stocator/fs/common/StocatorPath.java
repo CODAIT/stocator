@@ -191,6 +191,10 @@ public class StocatorPath {
       }
       // get all the path components that are prefixed the temporary identifier
       namePrefix = path.substring(0, startIndex - 1);
+      if (namePrefix.endsWith("_")) {
+        match = false;
+        break;
+      }
       if (onlyPrefix) {
         if (namePrefix.startsWith("/")) {
           return namePrefix.substring(1);
