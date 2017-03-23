@@ -512,8 +512,9 @@ public class SwiftAPIClient implements IStoreClient {
           LOG.debug("List for {} is directory and marked as {}", tmp.getName(), tmp.isDirectory());
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+        // was obj + "/"
         if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
-            && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
+            && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj)) {
           // JOSS returns all objects that start with the prefix of obj.
           // These may include other unrelated objects.
           LOG.debug("{} does not match {}. Skipped", unifiedObjectName, obj);
