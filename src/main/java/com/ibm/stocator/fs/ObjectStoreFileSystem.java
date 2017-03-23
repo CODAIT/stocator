@@ -505,7 +505,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       //Path pathToObj = new Path(objNameModified);
       String plainObjName = objNameModified;//pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
-      if (exists(new Path(storageClient.getDataRoot() + "/" + plainObjName))) {
+      if (exists(new Path(hostNameScheme + "/" + plainObjName))) {
         return true;
       }
       Map<String, String> metadata = new HashMap<String, String>();
