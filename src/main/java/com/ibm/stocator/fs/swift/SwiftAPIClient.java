@@ -833,8 +833,11 @@ public class SwiftAPIClient implements IStoreClient {
   private FileStatus getFileStatus(StoredObject tmp, Container cObj,
       String hostName, Path path) throws IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
-    LOG.debug("getFileStatus: merged path {}, is directory {}", newMergedPath, tmp.getName());
-    return new FileStatus(tmp.getContentLength(), tmp.isDirectory(), 1, blockSize,
+    boolean isDir = false;
+    if (tmp.getContentLength() == 0) {
+      isDir = true;
+    }
+    return new FileStatus(tmp.getContentLength(), isDir, 1, blockSize,
         Utils.lastModifiedAsLong(tmp.getLastModified()), 0, null,
         null, null, new Path(newMergedPath));
   }
