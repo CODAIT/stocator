@@ -223,7 +223,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           storageClient.getDataRoot());
       Path p = new Path(actuallName);
       LOG.debug("Original path is {}. Going to list {}", f.toString(), p.toString());
-      FileStatus[] fsList = storageClient.list(hostNameScheme, p, true, true);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, p, true, true, true);
       LOG.debug("Hive identified: list {} returned {} results ", p, fsList.length);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
@@ -302,7 +302,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         recursive, objNameModified, hostNameScheme);
     Path pathToObj = new Path(objNameModified);
     if (stocatorPath.isTemporaryPathContain(f.getName())) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true,
+          true);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           if (fs.getPath().getName().endsWith(f.getName())) {
@@ -311,7 +312,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
     } else {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
+      FileStatus fsT = getFileStatus(f);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
+          fsT.isDirectory());
       HashMap<String, Byte> successExists = new HashMap<String, Byte>();
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
@@ -419,7 +422,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
       LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
       if (ext1000) {
-        result = storageClient.list(hostNameScheme, f, true, prefixBased);
+        result = storageClient.list(hostNameScheme, f, true, prefixBased, true);
         ArrayList<FileStatus> resultTmp = new  ArrayList<FileStatus>();
         for (FileStatus fs1: result) {
           LOG.debug("Exp11 : list candidate {}", fs1.getPath());
@@ -434,7 +437,14 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           return resultTmp.toArray(new FileStatus[resultTmp.size()]);
         }
       } else {
-        result = storageClient.list(hostNameScheme, f, false, prefixBased);
+        if (fileStatus.isDirectory()) {
+          LOG.debug("List status(mid):{} is directory. Modified to {}",
+              f, new Path(f.toString() + "/"));
+          result = storageClient.list(hostNameScheme, f, false,
+              prefixBased, true);
+        } else {
+          result = storageClient.list(hostNameScheme, f, false, prefixBased, false);
+        }
         LOG.debug("Non ext1000 listing returned {}", result.length);
         for (FileStatus fs : result) {
           //fs.setPath(new Path(fs.getPath().toString().replace("_tmp.", "")));

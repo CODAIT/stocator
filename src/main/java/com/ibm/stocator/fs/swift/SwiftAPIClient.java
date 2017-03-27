@@ -35,7 +35,6 @@ import org.javaswift.joss.exception.AlreadyExistsException;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Container;
 import org.javaswift.joss.model.DirectoryOrObject;
-import org.javaswift.joss.model.PaginationMap;
 import org.javaswift.joss.model.StoredObject;
 
 import org.slf4j.Logger;
@@ -424,7 +423,7 @@ public class SwiftAPIClient implements IStoreClient {
         && !objName.contains(Constants.HADOOP_TEMPORARY)
         && !objName.contains(Constants.HADOOP_ATTEMPT)) {
       LOG.debug("get object {} on the non existing. Trying listing", objName);
-      FileStatus[] res = list(hostName, path, true, true);
+      FileStatus[] res = list(hostName, path, true, true, true);
       LOG.debug("Listing on {} returned {}", path.toString(), res.length);
       if (res.length == 1) {
         LOG.trace("Original name {}  modified to {}", objName, res[0].getPath());
@@ -461,16 +460,17 @@ public class SwiftAPIClient implements IStoreClient {
    * @param path path to the object
    * @param fullListing if true, will return objects of size 0
    * @param prefixBased if set to true, container will be listed with prefix based query
+   * @param isDirectory is directory or file
    * @return Array of Hadoop FileStatus
    * @throws IOException in case of network failure
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
-      boolean prefixBased) throws IOException {
+      boolean prefixBased, boolean isDirectory) throws IOException {
     LOG.debug("List container(entry): raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
-    if (path.toString().equals(container)) {
+    if (path.toString().equals(hostName)) {
       obj = "";
     } else if (path.toString().startsWith(container + "/")) {
       obj = path.toString().substring(container.length() + 1);
@@ -479,36 +479,42 @@ public class SwiftAPIClient implements IStoreClient {
     } else {
       obj = path.toString();
     }
-    if (!obj.endsWith("/")) {
+    if (isDirectory && !path.toString().equals(hostName)) {
       obj = obj + "/";
     }
     LOG.debug("List container(mid) transformed to {} container {}", obj, container);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    PaginationMap paginationMap = cObj.getPaginationMap(obj, pageListSize);
-    FileStatus fs = null;
     StoredObject previousElement = null;
     LOG.debug("List container(mid) got pagination map for {}", obj);
-    for (Integer page = 0; page < paginationMap.getNumberOfPages(); page++) {
-      LOG.debug("List container(mid) listing the page start {} for {}", page, obj);
-      Collection<StoredObject> res = cObj.list(paginationMap, page);
-      LOG.debug("List container(mid) listing the page finish {} for {}", page, obj);
-      if (page == 0 && (res == null || res.isEmpty())) {
+    boolean moreData = true;
+    String marker = null;
+    FileStatus fs = null;
+    while (moreData) {
+      //Collection<StoredObject> res = cObj.list(obj, marker, pageListSize);
+      Collection<DirectoryOrObject> res = cObj.listDirectory(obj, '/', marker, pageListSize);
+      moreData = (res.size() == pageListSize);
+      if (marker == null && (res == null || res.isEmpty() || res.size() == 0)) {
         FileStatus[] emptyRes = {};
         LOG.debug("List {} on container {} is empty", obj, container);
         return emptyRes;
       }
-      LOG.debug("List container(mid) listing the page finish {} for {} with {} records",
-          page, obj, res.size());
-      LOG.debug("List container(mid) loop over objects for container {}", obj);
-      for (StoredObject tmp : res) {
+      LOG.debug("List container(mid) listing finish {} for {} with {} records",
+          obj, res.size());
+      for (DirectoryOrObject tmp : res) {
+        LOG.debug("List (mid) directory or object : {}", tmp.getName(), tmp.isDirectory());
+        if (tmp.isDirectory()) {
+          continue;
+        }
         if (previousElement == null) {
           // first entry
-          setCorrectSize(tmp, cObj);
+          setCorrectSize(tmp.getAsObject(), cObj);
           previousElement = tmp.getAsObject();
           continue;
         }
-        if (tmp.getContentType() != null
-            && tmp.getContentType().equals(Constants.APPLICATION_DIRECTORY)) {
+        marker = tmp.getAsObject().getName();
+
+        if (tmp.getAsObject().getContentType() != null
+            && tmp.getAsObject().getContentType().equals(Constants.APPLICATION_DIRECTORY)) {
           LOG.debug("List for {} is directory and marked as {}", tmp.getName(), tmp.isDirectory());
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
@@ -539,8 +545,8 @@ public class SwiftAPIClient implements IStoreClient {
               // found failed that was not aborted.
               LOG.trace("Colision identified between {} and {}", previousElement.getName(),
                   tmp.getName());
-              setCorrectSize(tmp, cObj);
-              if (previousElement.getContentLength() < tmp.getContentLength()) {
+              setCorrectSize(tmp.getAsObject(), cObj);
+              if (previousElement.getContentLength() < tmp.getAsObject().getContentLength()) {
                 LOG.trace("New candidate is {}. Removed {}", tmp.getName(),
                     previousElement.getName());
                 previousElement = tmp.getAsObject();
@@ -827,6 +833,7 @@ public class SwiftAPIClient implements IStoreClient {
   private FileStatus getFileStatus(StoredObject tmp, Container cObj,
       String hostName, Path path) throws IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
+    LOG.debug("getFileStatus: merged path {}, is directory {}", newMergedPath, tmp.getName());
     return new FileStatus(tmp.getContentLength(), tmp.isDirectory(), 1, blockSize,
         Utils.lastModifiedAsLong(tmp.getLastModified()), 0, null,
         null, null, new Path(newMergedPath));

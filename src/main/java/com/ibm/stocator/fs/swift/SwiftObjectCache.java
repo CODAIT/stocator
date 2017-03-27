@@ -73,6 +73,7 @@ public class SwiftObjectCache {
         }
         put(objName, res);
       } else {
+        LOG.debug("{} is not exists. Return null", rawObj.getName());
         return null;
       }
     } else {
