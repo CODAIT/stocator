@@ -511,13 +511,15 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (stocatorPath.isTemporaryPathTarget(f)) {
       LOG.debug("mkdirs on temp path {}", f.toString());
       String objNameModified = stocatorPath.getObjectNameRoot(f,false,
-          storageClient.getDataRoot(), true);
+          storageClient.getDataRoot(), false);
       //Path pathToObj = new Path(objNameModified);
       String plainObjName = objNameModified;//pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
       if (exists(new Path(hostNameScheme + "/" + plainObjName))) {
         return true;
       }
+      LOG.debug("Adding data root {} to the {}", storageClient.getDataRoot(), objNameModified);
+      objNameModified = storageClient.getDataRoot() + "/" + objNameModified;
       Map<String, String> metadata = new HashMap<String, String>();
       metadata.put("Data-Origin", "stocator");
       LOG.debug("mkdirs going to create {}", plainObjName);
