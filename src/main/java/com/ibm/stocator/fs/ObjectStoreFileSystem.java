@@ -280,7 +280,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     }
     if (dst.toString().contains(".Trash")) {
       LOG.debug("Experimential (Trash, Start). Moving {} to trash", src);
-      delete(dst, true);
+      delete(src, true);
       LOG.debug("Experimential (Trash, Finish) {} moved to trash", src);
     }
     LOG.debug("Checking if source exists {}", src);
