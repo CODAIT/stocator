@@ -311,6 +311,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           }
         }
       }
+      return true;
     } else {
       FileStatus fsT = getFileStatus(f);
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
@@ -333,6 +334,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           }
         }
       }
+      LOG.debug("Delete {} the root", pathToObj);
+      storageClient.delete(hostNameScheme, f, false);
     }
     return true;
   }
