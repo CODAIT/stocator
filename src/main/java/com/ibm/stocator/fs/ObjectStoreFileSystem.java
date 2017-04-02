@@ -335,7 +335,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
       LOG.debug("Delete {} the root", pathToObj);
-      if (f.getParent() != null && !f.getParent().toString().equals(hostNameScheme)) {
+      if (!fsT.isDirectory() && f.getParent() != null
+          && !f.getParent().toString().equals(hostNameScheme)) {
         storageClient.delete(hostNameScheme, f, false);
       }
     }
