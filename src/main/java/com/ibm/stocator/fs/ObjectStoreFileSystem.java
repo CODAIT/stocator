@@ -335,7 +335,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
       LOG.debug("Delete {} the root", pathToObj);
-      storageClient.delete(hostNameScheme, f, false);
+      if (f.getParent() != null && !f.getParent().equals(hostNameScheme)) {
+        storageClient.delete(hostNameScheme, f, false);
+      }
     }
     return true;
   }
@@ -533,6 +535,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("mkdirs on non temp object. Create {}", f.toString());
       String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
           true);
+      if (!objName.endsWith("/")) {
+        objName = objName + "/";
+      }
       LOG.trace("mkdirs to create directory {}", objName);
       FSDataOutputStream outStream = storageClient.createObject(objName,
           Constants.APPLICATION_DIRECTORY, null, statistics);
