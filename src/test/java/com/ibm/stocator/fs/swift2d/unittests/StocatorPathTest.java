@@ -49,7 +49,7 @@ public class StocatorPathTest {
   private String pattern7 = "_SCRATCH0.ID/_temporary/st_ID/_temporary/attempt_ID/";
   private String pattern8 = "_SCRATCH0.ID";
   private String pattern9 = "TEMP_ID";
-  private String pattern10 = ".COMMITTING__TEMP_ID";
+  private String pattern10 = "TEMP_ID/_temporary/st_ID/";
   private String pattern11 = ".distcp.tmp.attempt_ID";
   String hostname = "swift2d://a.service/";
 
@@ -57,11 +57,12 @@ public class StocatorPathTest {
   public final void before() {
     mStocatorPath = PowerMockito.mock(StocatorPath.class);
     Whitebox.setInternalState(mStocatorPath, "tempIdentifiers",
-        new String[] {pattern6, pattern7, pattern8, pattern9,
-            pattern10, pattern2, pattern3, pattern4, pattern5, pattern1, pattern11});
+        new String[] {pattern6, pattern7, pattern8, pattern10, pattern9,
+            pattern2, pattern3, pattern4, pattern5, pattern1, pattern11});
     Configuration conf = new Configuration();
-    conf.setStrings("fs.stocator.temp.identifier", pattern6, pattern7, pattern8, pattern9,
-        pattern10, pattern2, pattern3, pattern4, pattern5, pattern1, pattern11);
+    conf.setStrings("fs.stocator.temp.identifier", pattern6, pattern7, pattern8,
+        pattern10, pattern9,
+        pattern2, pattern3, pattern4, pattern5, pattern1, pattern11);
     stocPath = new StocatorPath(CUSTOM_FOUTPUTCOMMITTER, conf, hostname);
 
   }
@@ -146,22 +147,30 @@ public class StocatorPathTest {
     res = stocPath.isTemporaryPathTarget(new Path(input));
     Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
         true, res);
+
     input = "swift2d://a.service/fruit_hive_dyn/"
         + ".COMMITTING__TEMP_1486552852171_590903925_201702080320928";
     res = stocPath.isTemporaryPathTarget(new Path(input));
     Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
-        true, res);
+        false, res);
 
     input = "swift2d://a.service/fruit_hive_dyn/"
         + ".COMMITTING__TEMP_1486555911917_-764810680_201702080411141";
     res = stocPath.isTemporaryPathTarget(new Path(input));
     Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
-        true, res);
+        false, res);
 
     input = "swift2d://a.service/data3/.distcp.tmp.attempt_local2036034928_0001_m_000000_0";
     res = stocPath.isTemporaryPathTarget(new Path(input));
     Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
         true, res);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + "TEMP_1486552852171_590903925_201702080320928/_temporary/0";
+    res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
+
   }
 
   @Test
@@ -287,6 +296,7 @@ public class StocatorPathTest {
         new Path(input), false, hostname, false);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
             expectedResult, result);
+
     input = "swift2d://a.service/fruit_hive_dyn/"
         + "_SCRATCH0.3944118008437942019642303192694375975316/_temporary/1";
     boolean res = stocPath.isTemporaryPathTarget(new Path(input));
@@ -294,6 +304,16 @@ public class StocatorPathTest {
         true, res);
     result = stocPath.getObjectNameRoot(new Path(input), false, "a", true);
     expectedResult = "a/fruit_hive_dyn";
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+        expectedResult, result);
+
+    input = "swift2d://a.service/fruit_hive_dyn/"
+        + ".COMMITTING__TEMP_1490190490059_2135471112_201703221038203";
+    res = stocPath.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        false, res);
+    result = stocPath.getObjectNameRoot(new Path(input), false, "a", true);
+    expectedResult = "a/fruit_hive_dyn/.COMMITTING__TEMP_1490190490059_2135471112_201703221038203";
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
         expectedResult, result);
 
