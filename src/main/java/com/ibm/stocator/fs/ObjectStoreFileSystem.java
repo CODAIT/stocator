@@ -525,7 +525,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         return true;
       }
       LOG.debug("Adding data root {} to the {}", storageClient.getDataRoot(), objNameModified);
-      objNameModified = storageClient.getDataRoot() + "/" + objNameModified;
+      plainObjName = storageClient.getDataRoot() + "/" + plainObjName;
       Map<String, String> metadata = new HashMap<String, String>();
       metadata.put("Data-Origin", "stocator");
       LOG.debug("mkdirs going to create {}", plainObjName);

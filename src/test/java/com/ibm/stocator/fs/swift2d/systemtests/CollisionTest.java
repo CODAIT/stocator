@@ -50,13 +50,7 @@ public class CollisionTest extends SwiftBaseTest {
   public void setUp() throws Exception {
     super.setUp();
     Assume.assumeNotNull(getFs());
-    getFs().delete(new Path(getBaseURI(), objectName), true);
-    FileStatus[] stats = getFs().listStatus(new Path(getBaseURI(), objectName));
-    Assert.assertEquals(0, stats.length);
     getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId));
-    getFs().delete(new Path(getBaseURI(), objectName1), true);
-    FileStatus[] stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
-    Assert.assertEquals(0, stats1.length);
     getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId1));
   }
 

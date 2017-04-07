@@ -502,7 +502,7 @@ public class SwiftAPIClient implements IStoreClient {
           obj, res.size());
       for (DirectoryOrObject tmp : res) {
         LOG.debug("List (mid) directory or object : {}", tmp.getName(), tmp.isDirectory());
-        if (tmp.isDirectory()) {
+        if (tmp.isDirectory() || tmp.getName().endsWith(HADOOP_SUCCESS)) {
           continue;
         }
         if (previousElement == null) {
@@ -519,7 +519,7 @@ public class SwiftAPIClient implements IStoreClient {
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
         // was obj + "/"
-        if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
+        if (!prefixBased && !obj.equals("") && path.toString().endsWith("/")
             && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj)) {
           // JOSS returns all objects that start with the prefix of obj.
           // These may include other unrelated objects.
