@@ -527,8 +527,7 @@ public class SwiftAPIClient implements IStoreClient {
           continue;
         }
         LOG.debug("Unified name: {}, path {}", unifiedObjectName, tmp.getName());
-        if (!unifiedObjectName.equals(tmp.getName()) && isSparkOrigin(unifiedObjectName)
-            && !fullListing) {
+        if (!unifiedObjectName.equals(tmp.getName()) && !fullListing) {
           LOG.debug("{} created by Spark", unifiedObjectName);
           if (!isJobSuccessful(unifiedObjectName)) {
             LOG.debug("{} created by failed Spark job. Skipped", unifiedObjectName);
