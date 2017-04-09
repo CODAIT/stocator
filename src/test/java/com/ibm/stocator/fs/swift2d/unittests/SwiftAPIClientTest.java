@@ -19,6 +19,8 @@ package com.ibm.stocator.fs.swift2d.unittests;
 
 import org.javaswift.joss.model.StoredObject;
 import java.util.HashMap;
+import java.util.Locale;
+
 import org.javaswift.joss.client.mock.ContainerMock;
 import org.javaswift.joss.client.mock.StoredObjectMock;
 import org.javaswift.joss.client.mock.AccountMock;
@@ -164,9 +166,21 @@ public class SwiftAPIClientTest {
     String stringTime = "Fri, 06 May 2016 03:44:47 GMT";
     long longTime = 1462506287000L;
 
+    // test to see if getLastModified parses date with default locale
     long result = lastModifiedAsLong(stringTime);
     Assert.assertEquals("getLastModified() shows incorrect time",
             longTime, result);
+
+    // test to see if getLastModified parses date when default locale is different than US
+    Locale originalLocale = Locale.getDefault();
+    try {
+      Locale.setDefault(Locale.ITALIAN);
+      result = lastModifiedAsLong(stringTime);
+      Assert.assertEquals("getLastModified() shows incorrect time",
+              longTime, result);
+    } finally {
+      Locale.setDefault(originalLocale);
+    }
   }
 
   @Test
