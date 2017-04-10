@@ -50,7 +50,7 @@ public class StocatorPath {
     return false;
   }
 
-  public boolean isTemporaryPathTaget(Path path) {
+  public boolean isTemporaryPathTarget(Path path) {
     if (path.toString().endsWith(tempIdentifier)) {
       return true;
     }
