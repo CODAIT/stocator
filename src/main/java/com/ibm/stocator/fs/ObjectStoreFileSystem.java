@@ -301,43 +301,40 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
         recursive, objNameModified, hostNameScheme);
     Path pathToObj = new Path(objNameModified);
-    if (stocatorPath.isTemporaryPathContain(f.getName())) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true,
-          true);
-      if (fsList.length > 0) {
+    if (exists(f)) {
+      if (stocatorPath.isTemporaryPathContain(f.getName())) {
+        FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true,
+            true);
         for (FileStatus fs: fsList) {
           if (fs.getPath().getName().endsWith(f.getName())) {
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
           }
         }
-      }
-      return true;
-    } else {
-      FileStatus fsT = getFileStatus(f);
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
-          fsT.isDirectory());
-      HashMap<String, Byte> successExists = new HashMap<String, Byte>();
-      if (fsList.length > 0) {
-        for (FileStatus fs: fsList) {
+        return true;
+      } else {
+        FileStatus fsT = getFileStatus(f);
+        FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
+                fsT.isDirectory());
+        for (FileStatus fs : fsList) {
           String pathToDelete = f.toString();
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
           String rootName = stocatorPath.getGlobalPrefixName(fs.getPath(),
-              storageClient.getDataRoot(), true);
+                  storageClient.getDataRoot(), true);
           LOG.debug("Delete on {} candidate {} path to delete {} root name {}", f.toString(),
-              fs.getPath().toString(), pathToDelete, rootName);
+                  fs.getPath().toString(), pathToDelete, rootName);
           if (fs.getPath().toString().equals(f.toString())
-              || fs.getPath().toString().startsWith(pathToDelete)) {
+                  || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
           }
         }
-      }
-      LOG.debug("Delete {} the root", pathToObj);
-      if (fsT.isDirectory() && f.getParent() != null
-          && !f.getParent().toString().equals(hostNameScheme)) {
-        storageClient.delete(hostNameScheme, f, false);
+        LOG.debug("Delete {} the root", pathToObj);
+        if (fsT.isDirectory() && f.getParent() != null
+                && !f.getParent().toString().equals(hostNameScheme)) {
+          storageClient.delete(hostNameScheme, f, false);
+        }
       }
     }
     return true;
