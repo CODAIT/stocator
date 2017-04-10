@@ -310,7 +310,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
           }
         }
-        return true;
       } else {
         FileStatus fsT = getFileStatus(f);
         FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
@@ -336,8 +335,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           storageClient.delete(hostNameScheme, f, false);
         }
       }
+      return true;
+    } else {
+      return false;
     }
-    return true;
   }
 
   @Override
