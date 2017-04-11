@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ibm.stocator.fs.common.cache.ObjectCache;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -75,6 +76,14 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   private URI uri;
   private StocatorPath stocatorPath;
 
+  /*
+  * Contains map of objects and their metadata.
+  * Maintained at container listing and on-the-fly object requests,
+  * read at file status check.
+  * Caching can be done since objects are immutable.
+  */
+  private ObjectCache cache;
+
   @Override
   public String getScheme() {
     return storageClient.getScheme();
@@ -99,8 +108,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
             accessURL) + "/";
       }
+
       stocatorPath = new StocatorPath(committerType, conf, hostNameScheme);
       storageClient.setStocatorPath(stocatorPath);
+      cache = new ObjectCache(storageClient, hostNameScheme);
     }
   }
 
@@ -196,6 +207,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "application/octet-stream", null, statistics);
+
+    // When overwriting an object, cached metadata will be outdated
+    if (cache.get(f.toString()) != null) {
+      cache.remove(f.toString());
+    }
+
     return outStream;
   }
 
@@ -243,6 +260,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         for (FileStatus fs: fsList) {
           if (fs.getPath().getName().endsWith(f.getName())) {
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+            cache.remove(fs.getPath().getName());
           }
         }
       }
@@ -260,6 +278,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+            cache.remove(fs.getPath().getName());
           }
         }
       }
@@ -312,6 +331,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("{} is not directory. Adding without list", f);
       result = new FileStatus[1];
       result[0] = fileStatus;
+    }
+    for (FileStatus fs : result) {
+      cache.put(fs.getPath().getName(), fs);
     }
     return result;
   }
@@ -379,7 +401,13 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     LOG.debug("get file status: {}", f.toString());
-    return storageClient.getObjectMetadata(hostNameScheme, f, "fileStatus");
+    if (cache.get(f.getName()) != null) {
+      return new FileStatus();
+    } else {
+      FileStatus fs = storageClient.getObjectMetadata(hostNameScheme, f, "fileStatus");
+      cache.put(f.getName(), fs);
+      return fs;
+    }
   }
 
   @Override

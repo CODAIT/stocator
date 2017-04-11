@@ -124,14 +124,6 @@ public class SwiftAPIClient implements IStoreClient {
   private Map<String, Boolean> cachedSparkJobsStatus;
 
   /*
-  * Contains map of objects and their metadata.
-  * Maintained at container listing and on-the-fly object requests,
-  * read at file status check.
-  * Caching can be done since objects are immutable.
-  */
-  private SwiftObjectCache objectCache;
-
-  /*
    * Page size for container listing
    */
   private final int pageListSize = 1000;
@@ -284,7 +276,6 @@ public class SwiftAPIClient implements IStoreClient {
         LOG.debug("Create container failed. {} was already exists. ", container);
       }
     }
-    objectCache = new SwiftObjectCache(containerObj);
   }
 
   @Override
@@ -340,43 +331,29 @@ public class SwiftAPIClient implements IStoreClient {
       1) a zero byte object with the name of the directory
       2) no zero byte object with the name of the directory
     */
-    boolean isDirectory = false;
     String objectName = getObjName(hostName, path);
     if (stocatorPath.isTemporaryPathContain(objectName)) {
       LOG.debug("getObjectMetadata on temp object {}. Return not found", objectName);
       throw new FileNotFoundException("Not found " + path.toString());
     }
-    SwiftCachedObject obj = objectCache.get(objectName);
-    if (obj != null) {
-      // object exists, We need to check if the object size is equal to zero
-      // If so, it might be a directory
-      if (obj.getContentLength() == 0) {
-        Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName, '/', "", 10);
-        if (directoryFiles != null && directoryFiles.size() != 0) {
-          // The zero length object is a directory
-          isDirectory = true;
-        }
-      }
-      LOG.trace("{} is object. isDirectory: {}  lastModified: {}", path.toString(),
-          isDirectory, obj.getLastModified());
-      return new FileStatus(obj.getContentLength(), isDirectory, 1, blockSize,
-              obj.getLastModified(), path);
-    }
     // We need to check if it may be a directory with no zero byte file associated
     LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
     Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
         "", 10);
-    if (directoryFiles != null) {
+    if (directoryFiles == null || directoryFiles.size() <= 0) {
+      LOG.debug("Not found {}", path.toString());
+      throw new FileNotFoundException("No such object exists " + path.toString());
+    } else {
       LOG.trace("{} got {} candidates", objectName + "/", directoryFiles.size());
+      if (directoryFiles.size() > 1) {
+        // In this case there is no lastModified
+        LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, true, null);
+        return new FileStatus(0, true, 1, blockSize, 0L, path);
+      } else {
+        long len = directoryFiles.iterator().next().getAsObject().getContentLength();
+        return new FileStatus(len, false, 1, blockSize, 0L, path);
+      }
     }
-    if (directoryFiles != null && directoryFiles.size() != 0) {
-      // In this case there is no lastModified
-      isDirectory = true;
-      LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, isDirectory, null);
-      return new FileStatus(0, isDirectory, 1, blockSize, 0L, path);
-    }
-    LOG.debug("Not found {}", path.toString());
-    throw new FileNotFoundException("No such object exists " + path.toString());
   }
 
   /**
@@ -437,8 +414,9 @@ public class SwiftAPIClient implements IStoreClient {
                 + getURLEncodedObjName(objName));
       }
     }
+    long objLen = getObjectMetadata(hostName, path, "getObject").getLen();
     SwiftInputStream sis = new SwiftInputStream(url.toString(), mJossAccount,
-        swiftConnectionManager, blockSize, objectCache, objName);
+        swiftConnectionManager, blockSize, objLen, objName);
     return new FSDataInputStream(sis);
   }
 
@@ -540,11 +518,8 @@ public class SwiftAPIClient implements IStoreClient {
             }
           }
         }
-        fs = null;
         if (previousElement.getContentLength() > 0 || fullListing) {
           fs = getFileStatus(previousElement, cObj, hostName, path);
-          objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
-                  fs.getModificationTime());
           tmpResult.add(fs);
         }
         previousElement = tmp.getAsObject();
@@ -553,7 +528,6 @@ public class SwiftAPIClient implements IStoreClient {
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = getFileStatus(previousElement, cObj, hostName, path);
-      objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
       tmpResult.add(fs);
     }
     LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
@@ -601,13 +575,6 @@ public class SwiftAPIClient implements IStoreClient {
       Map<String, String> metadata, Statistics statistics) throws IOException {
     URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
-
-    // When overwriting an object, cached metadata will be outdated
-    String cachedName = getObjName(container + "/", objName);
-    if (objectCache.get(cachedName) != null) {
-      objectCache.remove(cachedName);
-    }
-
     try {
       return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType,
               metadata, swiftConnectionManager), statistics);
@@ -628,7 +595,6 @@ public class SwiftAPIClient implements IStoreClient {
         .getObject(obj);
     if (so.exists()) {
       so.delete();
-      objectCache.remove(obj);
     }
     return true;
   }

@@ -86,7 +86,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private final SwiftConnectionManager scm;
 
-  private final SwiftObjectCache objectCache;
+  private final long objectLength;
 
   private final long threasholdRead = 65536;
 
@@ -103,10 +103,10 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * @param objNameT object name without host
    */
   public SwiftInputStream(String pathT, JossAccount jossAccountT,
-      SwiftConnectionManager scmT, long readAheadT, SwiftObjectCache objectCacheT,
+      SwiftConnectionManager scmT, long readAheadT, long len,
       String objNameT) {
     mJossAccount = jossAccountT;
-    objectCache = objectCacheT;
+    objectLength = len;
     scm = scmT;
     uri = pathT;
     objName = objNameT;
@@ -368,7 +368,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   @InterfaceAudience.Private
   @InterfaceStability.Unstable
   public synchronized long remainingInFile() throws IOException {
-    return objectCache.get(objName).getContentLength() - pos;
+    return objectLength - pos;
   }
 
   /**
