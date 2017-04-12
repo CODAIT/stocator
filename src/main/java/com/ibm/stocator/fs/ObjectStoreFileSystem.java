@@ -209,8 +209,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         "application/octet-stream", null, statistics);
 
     // When overwriting an object, cached metadata will be outdated
-    if (cache.get(f.toString()) != null) {
-      cache.remove(f.toString());
+    if (cache.get(f.getName()) != null) {
+      cache.remove(f.getName());
     }
 
     return outStream;
