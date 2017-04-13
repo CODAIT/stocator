@@ -338,20 +338,21 @@ public class SwiftAPIClient implements IStoreClient {
     }
     // We need to check if it may be a directory with no zero byte file associated
     LOG.trace("Checking if directory without 0 byte object associated {}", objectName);
-    Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
-        "", 10);
-    if (directoryFiles == null || directoryFiles.size() <= 0) {
+    StoredObject object = cont.getObject(objectName);
+    if (!object.exists()) {
       LOG.debug("Not found {}", path.toString());
       throw new FileNotFoundException("No such object exists " + path.toString());
+    }
+    if (object.exists() && object.getContentLength() != 0) {
+      return new FileStatus(object.getContentLength(), false, 1, blockSize, 0L, path);
     } else {
-      LOG.trace("{} got {} candidates", objectName + "/", directoryFiles.size());
+      Collection<DirectoryOrObject> directoryFiles = cont.listDirectory(objectName + "/", '/',
+              "", 10);
       if (directoryFiles.size() > 1) {
-        // In this case there is no lastModified
         LOG.debug("Got object {}. isDirectory: {}  lastModified: {}", path, true, null);
         return new FileStatus(0, true, 1, blockSize, 0L, path);
       } else {
-        long len = directoryFiles.iterator().next().getAsObject().getContentLength();
-        return new FileStatus(len, false, 1, blockSize, 0L, path);
+        return new FileStatus(0, false, 1, blockSize, 0L, path);
       }
     }
   }

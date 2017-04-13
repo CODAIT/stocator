@@ -21,12 +21,9 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.Path;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ibm.stocator.fs.common.IStoreClient;
 
 /**
  * Wrapper class adding an internal cache layer for objects metadata,
@@ -34,17 +31,13 @@ import com.ibm.stocator.fs.common.IStoreClient;
  */
 public class ObjectCache {
   private HashMap<String, FileStatus> cache;
-  private IStoreClient objectStoreClient;
-  private String hostName;
   /**
    * Logger
    */
   private static final Logger LOG = LoggerFactory.getLogger(ObjectCache.class);
 
-  public ObjectCache(IStoreClient client, String host) {
+  public ObjectCache() {
     cache = new HashMap<>();
-    objectStoreClient = client;
-    hostName = host;
   }
 
   /**
@@ -59,16 +52,6 @@ public class ObjectCache {
   public FileStatus get(String objName) throws IOException {
     LOG.trace("Get from cache  {} ", objName);
     FileStatus res = cache.get(objName);
-    if (res == null) {
-      LOG.trace("Cache get:  {} is not in the cache. Access Swift to get content length", objName);
-      FileStatus objectFS = objectStoreClient.getObjectMetadata(hostName, new Path(objName),
-              "Getting metadata for cache");
-      if (objectFS != null) {
-        put(objName, res);
-      } else {
-        return null;
-      }
-    }
     return res;
   }
 

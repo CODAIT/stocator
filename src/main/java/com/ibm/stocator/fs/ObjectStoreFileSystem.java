@@ -108,10 +108,14 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
             accessURL) + "/";
       }
+<<<<<<< HEAD
 
       stocatorPath = new StocatorPath(committerType, conf, hostNameScheme);
       storageClient.setStocatorPath(stocatorPath);
       cache = new ObjectCache(storageClient, hostNameScheme);
+=======
+      cache = new ObjectCache();
+>>>>>>> Refactored out IStoreClient from cache
     }
   }
 
@@ -212,7 +216,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (cache.get(f.getName()) != null) {
       cache.remove(f.getName());
     }
-
     return outStream;
   }
 
@@ -402,7 +405,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public FileStatus getFileStatus(Path f) throws IOException {
     LOG.debug("get file status: {}", f.toString());
     if (cache.get(f.getName()) != null) {
-      return new FileStatus();
+      return cache.get(f.getName());
     } else {
       FileStatus fs = storageClient.getObjectMetadata(hostNameScheme, f, "fileStatus");
       cache.put(f.getName(), fs);
