@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
@@ -294,7 +295,8 @@ public class Utils {
    * @throws IOException if failed to parse time stamp
    */
   public static long lastModifiedAsLong(String strTime) throws IOException {
-    final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIME_PATTERN);
+    final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(TIME_PATTERN,
+        Locale.US);
     try {
       long lastModified = simpleDateFormat.parse(strTime).getTime();
       if (lastModified == 0) {

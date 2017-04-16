@@ -363,7 +363,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("mkdirs: {}", f.toString());
     if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
       String objNameModified = stocatorPath.getObjectNameRoot(f,true,
-          storageClient.getDataRoot(), false);
+          storageClient.getDataRoot(), true);
       Path pathToObj = new Path(objNameModified);
       String plainObjName = pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
