@@ -90,7 +90,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
     setConf(conf);
     String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
-    stocatorPath = new StocatorPath(committerType);
     if (storageClient == null) {
       storageClient = ObjectStoreVisitor.getStoreClient(fsuri, conf);
       if (Utils.validSchema(fsuri.toString())) {
@@ -100,6 +99,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
             accessURL) + "/";
       }
+      stocatorPath = new StocatorPath(committerType, conf, hostNameScheme);
+      storageClient.setStocatorPath(stocatorPath);
     }
   }
 
@@ -188,10 +189,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
       objNameModified =  stocatorPath.getObjectNameRoot(f, false,
-          storageClient.getDataRoot(), hostNameScheme);
+          storageClient.getDataRoot(), true);
     } else {
       objNameModified = stocatorPath.getObjectNameRoot(f, true,
-          storageClient.getDataRoot(), hostNameScheme);
+          storageClient.getDataRoot(), true);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
         "application/octet-stream", null, statistics);
@@ -211,10 +212,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
     LOG.debug("rename from {} to {}", src.toString(), dst.toString());
-    String objNameModified = stocatorPath.getObjectNameRoot(src, true,
-        storageClient.getDataRoot(), hostNameScheme);
-    LOG.debug("Modified object name {}", objNameModified);
-    if (stocatorPath.isTemporaryPathContain(objNameModified)) {
+    if (stocatorPath.isTemporaryPathContain(src)) {
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
@@ -226,8 +224,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
+    LOG.debug("About to delete {}", f.toString());
+    if (stocatorPath.isTemporaryPathContain(f.toString())) {
+      return true;
+    }
     String objNameModified = stocatorPath.getObjectNameRoot(f, true,
-        storageClient.getDataRoot(), hostNameScheme);
+        storageClient.getDataRoot(), true);
     LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
         recursive, objNameModified, hostNameScheme);
     boolean result = false;
@@ -359,9 +361,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean mkdirs(Path f) throws IOException {
     LOG.debug("mkdirs: {}", f.toString());
-    if (stocatorPath.isTemporaryPathTaget(f.getParent())) {
+    if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
       String objNameModified = stocatorPath.getObjectNameRoot(f,true,
-          storageClient.getDataRoot(), hostNameScheme);
+          storageClient.getDataRoot(), false);
       Path pathToObj = new Path(objNameModified);
       String plainObjName = pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
