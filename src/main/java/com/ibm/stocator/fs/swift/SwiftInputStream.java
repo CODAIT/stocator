@@ -99,7 +99,6 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * @param jossAccountT joss client
    * @param scmT Swift connection manager
    * @param readAheadT read strategy
-   * @param objectCacheT object cache manager
    * @param objNameT object name without host
    */
   public SwiftInputStream(String pathT, JossAccount jossAccountT,
