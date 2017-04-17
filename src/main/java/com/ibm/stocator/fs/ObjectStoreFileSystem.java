@@ -108,14 +108,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
             accessURL) + "/";
       }
-<<<<<<< HEAD
-
       stocatorPath = new StocatorPath(committerType, conf, hostNameScheme);
       storageClient.setStocatorPath(stocatorPath);
-      cache = new ObjectCache(storageClient, hostNameScheme);
-=======
       cache = new ObjectCache();
->>>>>>> Refactored out IStoreClient from cache
     }
   }
 
