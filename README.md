@@ -305,6 +305,9 @@ More information about Stocator can be find at
 * [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
 * [Simulating E.T.
  or: how to insert individual files into object storage from within a map function in Apache Spark](https://medium.com/ibm-watson-data-lab/simulating-e-t-e34f4fa7a4f0)
+* [Hadoop and object stores: Can we do it better?](https://conferences.oreilly.com/strata/strata-eu/public/schedule/detail/57598) Strata Data Conference, 23-25 May 2017, London, UK
+* [VERY LARGE DATA FILES, OBJECT STORES, AND DEEP LEARNING—LESSONS LEARNED WHILE LOOKING FOR SIGNS OF EXTRA-TERRESTRIAL LIFE](https://spark-summit.org/2017/events/very-large-data-files-object-stores-and-deep-learning-lessons-learned-while-looking-for-signs-of-extra-terrestrial-life/) SPARK SUMMIT 2017 DATA SCIENCE AND ENGINEERING AT SCALE,
+JUNE 5 – 7, 2017 SAN FRANCISCO
 
 
 This research was supported by IOStack, an H2020 project of the EU Commission 
