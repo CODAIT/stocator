@@ -303,6 +303,8 @@ More information about Stocator can be find at
 * [Stocator on developerWorks Open](https://developer.ibm.com/open/openprojects/stocator/)
 * [Fast Lane for Connecting Object Stores to Apache Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
 * [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
+* [Simulating E.T.
+ or: how to insert individual files into object storage from within a map function in Apache Spark](https://medium.com/ibm-watson-data-lab/simulating-e-t-e34f4fa7a4f0)
 
 
 This research was supported by IOStack, an H2020 project of the EU Commission 
