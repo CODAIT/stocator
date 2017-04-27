@@ -138,6 +138,10 @@ public class ObjectStoreGlobber {
     String scheme = schemeFromPath(pathPattern);
     String authority = authorityFromPath(pathPattern);
 
+    boolean isRootPath = false;
+    if (pathPattern.toString().equals(fs.getUri().toString() + "/")) {
+      isRootPath = true;
+    }
     String pathPatternString = pathPattern.toUri().getPath();
     String unescapePathString = unescapePathComponent(pathPatternString);
 
@@ -172,7 +176,8 @@ public class ObjectStoreGlobber {
         LOG.trace("No globber pattern. Candidate {}", candidate.getPath().toString());
         if (filter.accept(candidate.getPath())
             && (candidate.getPath().toString().startsWith(pathPattern.toString() + "/")
-                || (candidate.getPath().toString().equals(pathPattern.toString())))) {
+                || candidate.getPath().toString().equals(pathPattern.toString()))
+                || isRootPath) {
           LOG.trace("No globber pattern. Candidate accepted: {}", candidate.getPath().toString());
           results.add(candidate);
         }
