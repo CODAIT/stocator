@@ -82,7 +82,7 @@ public class SwiftAPIDirect {
     }
 
     SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
-        resp.y.y.getEntity(), resp.y.x);
+        resp.y.y.getEntity().getContent(), resp.y.x);
     return httpStream;
   }
 
