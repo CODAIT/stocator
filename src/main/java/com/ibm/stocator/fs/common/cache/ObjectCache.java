@@ -42,8 +42,6 @@ public class ObjectCache {
 
   /**
    * The get function will first search for the object in the cache.
-   * If not found will issue a HEAD request for the object metadata
-   * and add the object to the cache.
    *
    * @param objName object name
    * @return cached entry of the object
@@ -53,6 +51,11 @@ public class ObjectCache {
     LOG.trace("Get from cache  {} ", objName);
     FileStatus res = cache.get(objName);
     return res;
+  }
+
+  public boolean has(String objName) {
+    LOG.trace("Checking cache for {}", objName);
+    return cache.containsKey(objName);
   }
 
   public void put(String objNameKey, FileStatus fs) {

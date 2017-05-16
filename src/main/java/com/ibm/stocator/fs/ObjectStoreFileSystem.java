@@ -208,7 +208,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         "application/octet-stream", null, statistics);
 
     // When overwriting an object, cached metadata will be outdated
-    if (cache.get(f.getName()) != null) {
+    if (cache.has(f.getName())) {
       cache.remove(f.getName());
     }
     return outStream;
@@ -233,8 +233,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("Checking if source exists {}", src);
     if (exists(src)) {
       LOG.debug("Source {} exists", src);
+      cache.remove(src.toString());
+      return storageClient.rename(hostNameScheme, src.toString(), dst.toString());
+    } else {
+      LOG.debug("Source {} does not exist.", src);
+      return false;
     }
-    return storageClient.rename(hostNameScheme, src.toString(), dst.toString());
   }
 
   @Override
@@ -399,7 +403,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     LOG.debug("get file status: {}", f.toString());
-    if (cache.get(f.getName()) != null) {
+    if (cache.has(f.getName())) {
       return cache.get(f.getName());
     } else {
       FileStatus fs = storageClient.getObjectMetadata(hostNameScheme, f, "fileStatus");
