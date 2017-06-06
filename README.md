@@ -300,6 +300,7 @@ Use `stocator@googlegroups.com` to post questions.
 Please follow our [wiki](https://github.com/SparkTC/stocator/wiki) for more details.
 More information about Stocator can be find at
 
+* [MapReduce and object stores – How can we do it better?](https://developer.ibm.com/code/2017/05/19/mapreduce-object-stores-can-better/)
 * [Advantages and complexities of integrating Hadoop with object stores](https://www.ibm.com/blogs/cloud-computing/2017/05/integrating-hadoop-object-stores/)
 * [Stocator on developerWorks Open](https://developer.ibm.com/open/openprojects/stocator/)
 * [Fast Lane for Connecting Object Stores to Apache Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
