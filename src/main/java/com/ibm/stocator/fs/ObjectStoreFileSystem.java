@@ -298,20 +298,26 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (stocatorPath.isTemporaryPathContain(f)) {
       return result;
     }
-    FileStatus fileStatus = null;
-    try {
-      fileStatus = getFileStatus(f);
-    } catch (FileNotFoundException e) {
-      LOG.trace("{} not found. Try to list", f.toString());
-    }
 
-    if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
-      LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
+    if (prefixBased) {
+      LOG.trace("{} is wildcard query, prefix based listing set to {}", f.toString(), prefixBased);
       result = storageClient.list(hostNameScheme, f, false, prefixBased);
-    } else if (fileStatus != null) {
-      LOG.debug("{} is not directory. Adding without list", f);
-      result = new FileStatus[1];
-      result[0] = fileStatus;
+    } else {
+      FileStatus fileStatus;
+      try {
+        fileStatus = getFileStatus(f);
+      } catch (FileNotFoundException e) {
+        // Return empty array
+        return result;
+      }
+      if (fileStatus.isDirectory()) {
+        LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
+        result = storageClient.list(hostNameScheme, f, false, prefixBased);
+      } else {
+        LOG.debug("{} is not directory. Adding without list", f);
+        result = new FileStatus[1];
+        result[0] = fileStatus;
+      }
     }
     return result;
   }
