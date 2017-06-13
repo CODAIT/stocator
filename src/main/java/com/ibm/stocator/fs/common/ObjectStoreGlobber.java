@@ -68,7 +68,7 @@ public class ObjectStoreGlobber {
     try {
       if (fs != null) {
         //return fs.listStatus(new Path(path.toString() + "*"));
-        return fs.listStatus(path, null, true);
+        return fs.listStatus(path, filter, true);
       } else {
         return fc.util().listStatus(path);
       }
