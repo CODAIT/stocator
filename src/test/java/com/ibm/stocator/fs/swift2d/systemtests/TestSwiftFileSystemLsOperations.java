@@ -87,8 +87,8 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testListStatusEmptyDirectory() throws Exception {
     FileStatus[] paths;
-    paths = sFileSystem.listStatus(path(getBaseURI() + "/test/swift/a"));
-    assertEquals(dumpStats("/test/swift/a", paths), 0,
+    paths = sFileSystem.listStatus(path(getBaseURI() + "/test/swift/abc"));
+    assertEquals(dumpStats("/test/swift/abc", paths), 0,
                  paths.length);
   }
 

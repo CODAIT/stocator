@@ -15,13 +15,13 @@
  *
  */
 
-package com.ibm.stocator.fs.swift;
+package com.ibm.stocator.fs.common.cache;
 
-public class SwiftCachedObject {
+public class CachedObject {
   private final long contentLength;
   private final long lastModified;
 
-  public SwiftCachedObject(long objContentLength, long objLastModified) {
+  public CachedObject(long objContentLength, long objLastModified) {
     contentLength = objContentLength;
     lastModified = objLastModified;
   }

@@ -15,69 +15,52 @@
  *
  */
 
-package com.ibm.stocator.fs.swift;
+package com.ibm.stocator.fs.common.cache;
 
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.javaswift.joss.model.Container;
-import org.javaswift.joss.model.StoredObject;
+import org.apache.hadoop.fs.FileStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.ibm.stocator.fs.common.Utils;
 
 /**
  * Wrapper class adding an internal cache layer for objects metadata,
  * This cache is populated by the list function and on-the-fly requests for objects.
  */
-public class SwiftObjectCache {
-  private HashMap<String, SwiftCachedObject> cache;
-  private Container container;
+public class ObjectCache {
+  private HashMap<String, FileStatus> cache;
   /**
    * Logger
    */
-  private static final Logger LOG = LoggerFactory.getLogger(SwiftObjectCache.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ObjectCache.class);
 
-  public SwiftObjectCache(Container cont) {
+  public ObjectCache() {
     cache = new HashMap<>();
-    container = cont;
   }
 
   /**
    * The get function will first search for the object in the cache.
-   * If not found will issue a HEAD request for the object metadata
-   * and add the object to the cache.
    *
    * @param objName object name
    * @return cached entry of the object
    * @throws IOException if failed to parse time stamp
    */
-  public SwiftCachedObject get(String objName) throws IOException {
+  public FileStatus get(String objName) throws IOException {
     LOG.trace("Get from cache  {} ", objName);
-    SwiftCachedObject res = cache.get(objName);
-    if (res == null) {
-      LOG.trace("Cache get:  {} is not in the cache. Access Swift to get content length", objName);
-      StoredObject rawObj = container.getObject(removeTrailingSlash(objName));
-      if (rawObj != null && rawObj.exists()) {
-        res = new SwiftCachedObject(rawObj.getContentLength(),
-          Utils.lastModifiedAsLong(rawObj.getLastModified()));
-        put(objName, res);
-      } else {
-        return null;
-      }
-    }
+    FileStatus res = cache.get(objName);
     return res;
   }
 
-  public void put(String objNameKey, long contentLength, long lastModified) {
-    LOG.trace("Add to cache  {} ", objNameKey);
-    cache.put(objNameKey, new SwiftCachedObject(contentLength, lastModified));
+  public boolean has(String objName) {
+    LOG.trace("Checking cache for {}", objName);
+    return cache.containsKey(objName);
   }
 
-  private void put(String objName, SwiftCachedObject internalObj) {
-    cache.put(objName, internalObj);
+  public void put(String objNameKey, FileStatus fs) {
+    LOG.trace("Add to cache  {} ", objNameKey);
+    cache.put(objNameKey, fs);
   }
 
   public void remove(String objName) {
