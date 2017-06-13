@@ -20,6 +20,7 @@ package com.ibm.stocator.fs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -287,16 +288,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
     LOG.debug("List status of {}", f.toString());
-    return listStatus(f, null);
+    return listStatus(f, DEFAULT_FILTER);
   }
 
   @Override
   public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased)
       throws FileNotFoundException, IOException {
     LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
-    FileStatus[] result = {};
+    ArrayList<FileStatus> result = new ArrayList<>();
     if (stocatorPath.isTemporaryPathContain(f)) {
-      return result;
+      return result.toArray(new FileStatus[0]);
     }
     FileStatus fileStatus = null;
     try {
@@ -307,13 +308,17 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
     if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
       LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
-      result = storageClient.list(hostNameScheme, f, false, prefixBased);
+      FileStatus[] listing = storageClient.list(hostNameScheme, f, false, prefixBased);
+      for (FileStatus fs : listing) {
+        if (filter.accept(fs.getPath())) {
+          result.add(fs);
+        }
+      }
     } else if (fileStatus != null) {
       LOG.debug("{} is not directory. Adding without list", f);
-      result = new FileStatus[1];
-      result[0] = fileStatus;
+      result.add(fileStatus);
     }
-    return result;
+    return result.toArray(new FileStatus[0]);
   }
 
   @Override
