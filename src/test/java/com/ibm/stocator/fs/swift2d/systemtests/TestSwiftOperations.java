@@ -118,32 +118,37 @@ public class TestSwiftOperations extends SwiftBaseTest {
 
     Path wildcard = new Path(getBaseURI() + "/Dir*"); // All files
     ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
-            new ObjectStoreGlobFilter(""));
+            new ObjectStoreGlobFilter(wildcard.toString()));
     FileStatus[] results = globber.glob();
     assertEquals(3, results.length);
 
     wildcard = new Path(getBaseURI() + "/Dir/*"); // Files in "Dir" directory
-    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    globber = new ObjectStoreGlobber(getFs(), wildcard,
+            new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
     assertEquals(3, results.length);
 
     wildcard = new Path(getBaseURI() + "/Dir/SubDir/*"); // Files in "SubDir" directory
-    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    globber = new ObjectStoreGlobber(getFs(), wildcard,
+            new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
     assertEquals(2, results.length);
 
     wildcard = new Path(getBaseURI() + "/*1"); // Files ending in "1"
-    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    globber = new ObjectStoreGlobber(getFs(), wildcard,
+            new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
     assertEquals(2, results.length);
 
     wildcard = new Path(getBaseURI() + "/Dir/SubDir/*2"); // Files in "SubDir" ending with "2"
-    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    globber = new ObjectStoreGlobber(getFs(), wildcard,
+            new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
     assertEquals(1, results.length);
 
     wildcard = new Path(getBaseURI() + "/Dir/*/File1"); // Files called File1 in a SubDir
-    globber = new ObjectStoreGlobber(getFs(), wildcard, new ObjectStoreGlobFilter(""));
+    globber = new ObjectStoreGlobber(getFs(), wildcard,
+            new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
     assertEquals(1, results.length);
 
