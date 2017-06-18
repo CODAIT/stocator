@@ -288,7 +288,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] listStatus(Path f) throws FileNotFoundException, IOException {
     LOG.debug("List status of {}", f.toString());
-    return listStatus(f, DEFAULT_FILTER);
+    return listStatus(f, null);
   }
 
   @Override
@@ -309,9 +309,13 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
       LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
       FileStatus[] listing = storageClient.list(hostNameScheme, f, false, prefixBased);
-      for (FileStatus fs : listing) {
-        if (filter.accept(fs.getPath())) {
-          result.add(fs);
+      if (filter == null) {
+        return listing;
+      } else {
+        for (FileStatus fs : listing) {
+          if (filter.accept(fs.getPath())) {
+            result.add(fs);
+          }
         }
       }
     } else if (fileStatus != null) {
