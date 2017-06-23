@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.common;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.fs.FileContext;
@@ -142,6 +143,7 @@ public class ObjectStoreGlobber {
     String unescapePathString = unescapePathComponent(pathPatternString);
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
+    ArrayList<FileStatus> candidates;
     ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
 
     if (pathPatternString.contains("?temp_url")) {
@@ -154,7 +156,7 @@ public class ObjectStoreGlobber {
       String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
-      FileStatus[] candidates = listStatus(rootPlaceholder.getPath());
+      candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath())));
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
           LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
@@ -164,8 +166,8 @@ public class ObjectStoreGlobber {
     } else {
       LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
           pathPattern.toString());
-      FileStatus[] candidates = listStatus(new Path(pathPattern.toString()));
-      if (candidates == null) {
+      candidates = new ArrayList<>(Arrays.asList(getFileStatus(new Path(pathPattern.toString()))));
+      if (candidates.isEmpty()) {
         return new FileStatus[0];
       }
       for (FileStatus candidate : candidates) {
@@ -181,7 +183,6 @@ public class ObjectStoreGlobber {
     if (results.isEmpty()) {
       return new FileStatus[0];
     }
-
     return results.toArray(new FileStatus[0]);
   }
 }
