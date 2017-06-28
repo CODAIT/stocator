@@ -178,6 +178,40 @@ Below is the optional configuration that can be provided to Stocator and used in
 | fs.stocator.ReqSocketTimeout | 5000 | Defines the socket timeout (SO_TIMEOUT) in milliseconds, which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets).
 | fs.stocator.joss.synchronize.time | false | Will disable JOSS to synchronize time with the server. Setting this value to 'false' will badly impact on temp url. However this will reduce HEAD on account which might be problematic if the user doesn't has access rights to HEAD an account |
 
+## Configure Stocator's schema
+By default Stocator will expose `swift2d://`. However it possible to configure Stocator to expose different schema, like `swift://`. This is useful, so you don't need to modify existing jobs that already uses hadoop-openstack connector. Below the example, how to configure Stocator to respond both to `swift://` and `swift2d://`
+
+	<property>
+	   <name>fs.stocator.scheme.list</name>
+	   <value>swift2d,swift</value>
+	</property>
+	<!-- configure stocator as swift2d:// -->
+	<property>
+   		<name>fs.swift2d.impl</name>
+   		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+	</property>
+	<property>
+   		<name>fs.stocator.swift2d.impl</name>
+	   <value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
+	</property>
+	<property>
+   		<name>fs.stocator.swift2d.scheme</name>
+	   <value>swift2d</value>
+	</property>
+	<!-- configure stocator as swift:// -->
+	<property>
+   		<name>fs.swift.impl</name>
+	   <value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+	</property>
+	<property>
+   		<name>fs.stocator.swift.impl</name>
+	   <value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
+	</property>
+	<property>
+   		<name>fs.stocator.swift.scheme</name>
+	   <value>swift</value>
+	</property>
+
 ## Providing configuration keys in run time
 It's possible to provide configuration keys in run time, without keeping them in core-sites.xml. Just use SparkContext variable with
 
