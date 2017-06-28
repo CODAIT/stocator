@@ -182,34 +182,34 @@ Below is the optional configuration that can be provided to Stocator and used in
 By default Stocator will expose `swift2d://`. However it possible to configure Stocator to expose different schema, like `swift://`. This is useful, so you don't need to modify existing jobs that already uses hadoop-openstack connector. Below the example, how to configure Stocator to respond both to `swift://` and `swift2d://`
 
 	<property>
-	   <name>fs.stocator.scheme.list</name>
-	   <value>swift2d,swift</value>
+		<name>fs.stocator.scheme.list</name>
+		<value>swift2d,swift</value>
 	</property>
 	<!-- configure stocator as swift2d:// -->
 	<property>
-   		<name>fs.swift2d.impl</name>
-   		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+		<name>fs.swift2d.impl</name>
+		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift2d.impl</name>
-	   <value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
+		<name>fs.stocator.swift2d.impl</name>
+		<value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift2d.scheme</name>
-	   <value>swift2d</value>
+		<name>fs.stocator.swift2d.scheme</name>
+		<value>swift2d</value>
 	</property>
 	<!-- configure stocator as swift:// -->
 	<property>
-   		<name>fs.swift.impl</name>
-	   <value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+		<name>fs.swift.impl</name>
+		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift.impl</name>
-	   <value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
+		<name>fs.stocator.swift.impl</name>
+		<value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift.scheme</name>
-	   <value>swift</value>
+		<name>fs.stocator.swift.scheme</name>
+		<value>swift</value>
 	</property>
 
 ## Providing configuration keys in run time
