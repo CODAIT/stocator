@@ -97,6 +97,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private boolean usePublicURL;
   /*
+   * Is the container public
+   */
+  private boolean publicContainer;
+  /*
    * JOSS account object
    */
   private JossAccount mJossAccount;
@@ -223,6 +227,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (authMethod.equals(PUBLIC_ACCESS)) {
       // we need to extract container name and path from the public URL
       String publicURL = filesystemURI.toString().replace(schemaProvided, "https");
+      publicContainer = true;
       LOG.debug("publicURL: {}", publicURL);
       String accessURL = Utils.extractAccessURL(publicURL);
       LOG.debug("auth url {}", accessURL);
@@ -471,7 +476,7 @@ public class SwiftAPIClient implements IStoreClient {
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
-    if (path.toString().equals(container)) {
+    if (path.toString().equals(container) || publicContainer) {
       obj = "";
     } else if (path.toString().startsWith(container + "/")) {
       obj = path.toString().substring(container.length() + 1);
