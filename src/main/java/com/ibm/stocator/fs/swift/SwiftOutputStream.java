@@ -28,8 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.InputStreamEntity;
 import org.slf4j.Logger;
@@ -61,8 +61,7 @@ public class SwiftOutputStream extends OutputStream {
   /*
    * Client used
    */
-  private HttpClient client;
-
+  private CloseableHttpClient client;
   /*
    * Request
    */
@@ -115,8 +114,12 @@ public class SwiftOutputStream extends OutputStream {
         request.setEntity(entity);
 
         LOG.debug("HTTP PUT request {}", mUrl.toString());
-        HttpResponse response = client.execute(request);
-        int responseCode = response.getStatusLine().getStatusCode();
+        int responseCode;
+        String reasonPhrase;
+        try (CloseableHttpResponse response = client.execute(request)) {
+          responseCode = response.getStatusLine().getStatusCode();
+          reasonPhrase = response.getStatusLine().getReasonPhrase();
+        }
         LOG.debug("HTTP PUT response {}. Response code {}",
                 mUrl.toString(), responseCode);
         if (responseCode == 401) { // Unauthorized error
@@ -124,12 +127,14 @@ public class SwiftOutputStream extends OutputStream {
           request.removeHeaders("X-Auth-Token");
           request.addHeader("X-Auth-Token", mAccount.getAuthToken());
           LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
-          response = client.execute(request);
-          responseCode = response.getStatusLine().getStatusCode();
+          try (CloseableHttpResponse response = client.execute(request)) {
+            responseCode = response.getStatusLine().getStatusCode();
+            reasonPhrase = response.getStatusLine().getReasonPhrase();
+          }
         }
         if (responseCode >= 400) { // Code may have changed from retrying
           throw new IOException("HTTP Error: " + responseCode
-                  + " Reason: " + response.getStatusLine().getReasonPhrase());
+                  + " Reason: " + reasonPhrase);
         }
 
         return null;
@@ -169,7 +174,9 @@ public class SwiftOutputStream extends OutputStream {
   public void close() throws IOException {
     LOG.debug("HTTP PUT close {}", mUrl.toString());
     flush();
-    mOutputStream.close();
+    if (null != mOutputStream) {
+      mOutputStream.close();
+    } 
     try {
       futureTask.get();
       futureTask.cancel(true);
@@ -183,6 +190,8 @@ public class SwiftOutputStream extends OutputStream {
   @Override
   public void flush() throws IOException {
     LOG.trace("{} flush method", mUrl.toString());
-    mOutputStream.flush();
+    if (null != mOutputStream) {
+      mOutputStream.flush();
+    }
   }
 }
