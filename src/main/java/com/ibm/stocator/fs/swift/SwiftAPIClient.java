@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Properties;
@@ -281,7 +282,8 @@ public class SwiftAPIClient implements IStoreClient {
             + " Verify the validitiy of the auth url: " + config.getAuthUrl(), e);
       }
     }
-    Container containerObj = mJossAccount.getAccount().getContainer(container);
+    Container containerObj = mJossAccount.getAccount().getContainer(
+            URLDecoder.decode(container, "UTF-8"));
     if (!authMethod.equals(PUBLIC_ACCESS) && !containerObj.exists()) {
       try {
         containerObj.create();
@@ -420,8 +422,8 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
-            + getURLEncodedObjName(objName));
+    String containerObject = URLDecoder.decode(container, "UTF-8") + "/" + objName;
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedName(containerObject));
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
     //stocator need to support this and identify relevant object
@@ -439,7 +441,7 @@ public class SwiftAPIClient implements IStoreClient {
           objName = res[0].getPath().toString().substring(hostName.length());
         }
         url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
-                + getURLEncodedObjName(objName));
+                + getURLEncodedName(objName));
       }
     }
     SwiftInputStream sis = new SwiftInputStream(url.toString(), mJossAccount,
@@ -590,8 +592,9 @@ public class SwiftAPIClient implements IStoreClient {
   /**
    * Encodes special characters to UTF-8
    */
-  private String getURLEncodedObjName(String objName) throws UnsupportedEncodingException {
-    return URLEncoder.encode(objName, "UTF-8").replace("+", "%20");
+  private String getURLEncodedName(String objName) throws UnsupportedEncodingException {
+    // We need to encode spaces as %20 and allow '/'
+    return URLEncoder.encode(objName, "UTF-8").replace("+", "%20").replace("%2F", "/");
   }
 
   /**
@@ -604,7 +607,7 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata, Statistics statistics) throws IOException {
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedName(objName));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
 
     // When overwriting an object, cached metadata will be outdated

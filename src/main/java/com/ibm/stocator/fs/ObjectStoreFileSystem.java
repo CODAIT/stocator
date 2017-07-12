@@ -20,6 +20,7 @@ package com.ibm.stocator.fs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -195,8 +196,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       objNameModified = stocatorPath.getObjectNameRoot(f, true,
           storageClient.getDataRoot(), true);
     }
-    FSDataOutputStream outStream = storageClient.createObject(objNameModified,
-        "application/octet-stream", null, statistics);
+    FSDataOutputStream outStream = storageClient.createObject(
+          URLDecoder.decode(objNameModified, "UTF-8"),
+          "application/octet-stream", null, statistics);
     return outStream;
   }
 

@@ -138,6 +138,9 @@ public class Utils {
     int sInd = host.indexOf("//") + 2;
     host = host.substring(sInd);
     int eInd = host.indexOf("/");
+    if (eInd == -1) {
+      eInd = host.length();
+    }
     host = host.substring(0,eInd);
     return host;
   }
