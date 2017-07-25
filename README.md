@@ -229,10 +229,9 @@ Run Apache Spark with
 
 ### Configure maven build in Apache Spark
 Both main `pom.xml` and `core/pom.xml` should be modified.
- 
  add to the `<properties>` of the main pom.xml
 	
-		<stocator.version>1.0.8</stocator.version>
+	<stocator.version>1.0.8</stocator.version>
 
  add `stocator` dependency to the main pom.xml
 
