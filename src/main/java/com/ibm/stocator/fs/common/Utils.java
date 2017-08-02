@@ -163,7 +163,7 @@ public class Utils {
    *
    * @param conf source configuration
    * @param prefix configuration key prefix
-   * @param alternativePrefix alternative prefix
+   * @param altPrefix alternative prefix list. The last on the list wins
    * @param key key in the configuration file
    * @param props destination property set
    * @param propsKey key in the property set
@@ -171,14 +171,16 @@ public class Utils {
    * @throws ConfigurationParseException if there was no match for the key
    */
 
-  public static void updateProperty(Configuration conf, String prefix, String alternativePrefix,
+  public static void updateProperty(Configuration conf, String prefix, String[] altPrefix,
       String key, Properties props, String propsKey,
       boolean required) throws ConfigurationParseException {
     String val = conf.get(prefix + key);
     if (val == null) {
       // try alternative key
-      val = conf.get(alternativePrefix + key);
-      LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
+      for (String alternativePrefix : altPrefix) {
+        val = conf.get(alternativePrefix + key);
+        LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
+      }
     }
     if (required && val == null) {
       throw new ConfigurationParseException("Missing mandatory configuration: " + key);
@@ -186,6 +188,86 @@ public class Utils {
     if (val != null) {
       props.setProperty(propsKey, val.trim());
     }
+  }
+
+  public static int getInt(Configuration conf, String prefix, String[] altPrefix, String key,
+      int defValue) {
+    int result = -1;
+    if (conf.onlyKeyExists(prefix + key)) {
+      result = conf.getInt(prefix + key, defValue);
+    } else {
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getInt(alternativePrefix + key, defValue);
+      }
+    }
+    if (result == -1) {
+      result = defValue;
+    }
+    return result;
+  }
+
+  public static String getTrimmed(Configuration conf, String prefix, String[] altPrefix,
+      String key, String defValue) {
+    String result = null;
+    if (conf.onlyKeyExists(prefix + key)) {
+      result = conf.getTrimmed(prefix + key, defValue);
+    } else {
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getTrimmed(alternativePrefix + key, defValue);
+      }
+    }
+    if (result == null) {
+      result = defValue;
+    }
+    return result;
+  }
+
+  public static String getTrimmed(Configuration conf, String prefix, String[] altPrefix,
+      String key) {
+    String result = null;
+    if (conf.onlyKeyExists(prefix + key)) {
+      result = conf.getTrimmed(prefix + key);
+    } else {
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getTrimmed(alternativePrefix + key);
+      }
+    }
+    return result;
+  }
+
+  public static long getLong(Configuration conf, String prefix, String[] altPrefix,
+      String key, long defValue) {
+    long result = -1;
+    if (conf.onlyKeyExists(prefix + key)) {
+      result = conf.getLong(prefix + key, defValue);
+    } else {
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getLong(alternativePrefix + key, defValue);
+      }
+    }
+    if (result == -1) {
+      result = defValue;
+    }
+    return result;
+  }
+
+  public static boolean getBoolean(Configuration conf, String prefix, String[] altPrefix,
+      String key, boolean defValue) {
+    boolean found = false;
+    boolean result = false;
+    if (conf.onlyKeyExists(prefix + key)) {
+      found = true;
+      result = conf.getBoolean(prefix + key, defValue);
+    } else {
+      for (String alternativePrefix : altPrefix) {
+        found = true;
+        result = conf.getBoolean(alternativePrefix + key, defValue);
+      }
+    }
+    if (!found) {
+      result = defValue;
+    }
+    return result;
   }
 
   /**
