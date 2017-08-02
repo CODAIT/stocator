@@ -118,7 +118,7 @@ Add the dependence to Stocator in `conf/core-site.xml`
 	</property>
 
 ### Configuration
-Stocator COS connector expose "fs.cos." keys prefix. For backward compatability it also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" is highest priority and "fs.s3a" lowest.
+Stocator COS connector expose "fs.cos." keys prefix. For backward compatability it also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" will overwrite other keys, if present.
 
 #### COS Connector configuration
 The following is the list of the configuration keys. `service` can be any value, like `myCOS`
@@ -154,8 +154,8 @@ Example:
 
 | Key | Default | Info |
 | --- | ------- | ------ |
-| fs.cos.socket.send.buffer | 8*1024 | socket send buffer to be used in Amazon client |
-| fs.cos.socket.recv.buffer | 8*1024 |socket send buffer to be used in Amazon client |
+| fs.cos.socket.send.buffer | 8*1024 | socket send buffer to be used in the client |
+| fs.cos.socket.recv.buffer | 8*1024 |socket send buffer to be used in the client |
 | fs.cos.paging.maximum| 5000 | number of records to get while paging through a directory listing |
 | fs.cos.threads.max | 10 | the maximum number of threads to allow in the pool used by TransferManager |
 | fs.cos.threads.keepalivetime| 60 |the time an idle thread waits before terminating |
@@ -167,9 +167,9 @@ Example:
 | fs.cos.connection.establish.timeout| 50000 | amount of time (in ms) until we give up trying to establish a connection to the object store |
 | fs.cos.client.execution.timeout| 500000 | amount of time (in ms) to allow a client to complete the execution of an API call |
 | fs.cos.client.request.timeout| 500000 | amount of time to wait (in ms) for a request to complete before giving up and timing out |
-|fs.cos.connection.ssl.enabled |true | Enables or disables SSL connections to S3.|
-|fs.cos.proxy.host| | Hostname of the (optional) proxy server for S3 connections. |
-|fs.cos.proxy.port| |Proxy server port. If this property is not set but fs.s3a.proxy.host is, port 80 or 443 is assumed (consistent with the value of fs.s3a.connection.ssl.enabled).|
+|fs.cos.connection.ssl.enabled |true | Enables or disables SSL connections to COS.|
+|fs.cos.proxy.host| | Hostname of the (optional) proxy server for COS connections. |
+|fs.cos.proxy.port| |Proxy server port. If this property is not set but fs.cos.proxy.host is, port 80 or 443 is assumed (consistent with the value of fs.cos.connection.ssl.enabled).|
 | fs.cos.proxy.username| |Username for authenticating with proxy server |
 | fs.cos.proxy.password| |Password for authenticating with proxy server.|
 | fs.cos.proxy.domain| |Domain for authenticating with proxy server. |
@@ -330,7 +330,7 @@ the properties below with the correspondent values :
 	    <value>dallas</value>
 	</property>
 
-## Stocator configuration (optional)
+###  Swift driver additional configuration (optional)
 Stocator uses Apache httpcomponents.httpclient.version version 4.5.2 to access object stores based on Swift API.
 Below is the optional configuration that can be provided to Stocator and used internally to configure HttpClient.
 
@@ -345,7 +345,7 @@ Below is the optional configuration that can be provided to Stocator and used in
 | fs.stocator.ReqSocketTimeout | 5000 | Defines the socket timeout (SO_TIMEOUT) in milliseconds, which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets).
 | fs.stocator.joss.synchronize.time | false | Will disable JOSS to synchronize time with the server. Setting this value to 'false' will badly impact on temp url. However this will reduce HEAD on account which might be problematic if the user doesn't has access rights to HEAD an account |
 
-## Configure Stocator's schema
+## Configure Stocator's schemas (optional)
 By default Stocator will expose `swift2d://`. However it possible to configure Stocator to expose different schema, like `swift://`. This is useful, so you don't need to modify existing jobs that already uses hadoop-openstack connector. Below the example, how to configure Stocator to respond both to `swift://` and `swift2d://`
 
 	<property>
@@ -381,7 +381,7 @@ By default Stocator will expose `swift2d://`. However it possible to configure S
 
 
 	
-### Examples
+## Examples
 #### Create new object in Swift.
 
 	val data = Array(1, 2, 3, 4, 5, 6, 7, 8)
