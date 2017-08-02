@@ -1,33 +1,26 @@
 Stocator - Storage Connector for Apache Spark
 ==============================
-Apache Spark can work with multiple data sources that include object stores like Amazon S3, OpenStack Swift, IBM SoftLayer, and more. To access an object store, Apache Spark uses Hadoop modules that contain drivers to the various object stores. 
+Apache Spark can work with multiple data sources that include various object stores like IBM Cloud Object Storage, OpenStack Swift and more. To access an object store, Apache Spark uses Hadoop modules that contain drivers to the various object stores. 
 
 Apache Spark needs only small set of object store functionalities. Specifically, Apache Spark requires object listing, objects creation, read objects, and getting data partitions. Hadoop drivers, however, must be compliant with the Hadoop eco system. This means they support many more operations, such as shell operations on directories, including move, copy, rename, etc. (these are not native object store operations). Moreover, Hadoop Map Reduce Client is designed to work with file systems and not object stores. The temp files and folders it uses for every write operation are renamed, copied, and deleted. This leads to dozens of useless requests targeted at the object store. It’s clear that Hadoop is designed to work with file systems and not object stores.
 
 Stocator is implicitly designed for the object stores, it has very a different architecture from the existing Hadoop driver. It doesn’t depends on the Hadoop modules and interacts directly with object stores.
 
-Stocator is a generic connector, that may contain various implementations for object stores. It initially provided with complete Swift driver, based on the JOSS package. Stocator can be very easily extended with more object store implementations, like support for Amazon S3.
+Stocator is a generic connector, that may contain various implementations for object stores. It shipped with OpenStack Swift and IBM Cloud Object Storage connectors. Stocator can be easily extended with more object store implementations.
 
 ## Major features
 * Hadoop eco system compliant. Implements Hadoop FileSystem interface
 * No need to change or recompile Apache Spark
-* Doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
+* Stocator doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
 * Object's name may contain "/" and thus simulate directory structures
 * Containers / buckets are automatically created
-* (Swift Driver) Uses streaming for object uploads, without knowing object size. This is unique to Swift driver and removes the need to store object locally prior uploading it.
-* (Swift Driver) Tested to read / write large objects (over 50GB)
-* Supports Swiftauth, Keystone V2, Keystone V3 Password Scope Authentication
-* Tested to work with vanilla Swift cluster, SoftLayer object store,  IBM Bluemix Object service
 * Supports speculate mode
-* (Swift Driver) Supports public containers.  For example
+ 
 
-		sc.textFile("swift2d://dal05.objectstorage.softlayer.net/v1/AUTH_ID/CONT/data.csv")
-
-## Build procedure
+## Stocator build procedure
 
 Checkout the master branch `https://github.com/SparkTC/stocator.git`
 
-### How to build Stocator
 * Change directory to `stocator`
 * Execute `mvn install`
 * If you want to build a jar with all the dependecies, please execute 
@@ -35,21 +28,195 @@ Checkout the master branch `https://github.com/SparkTC/stocator.git`
 		mvn clean package -Pall-in-one
 
 ## Usage with Apache Spark
-Stocator allows to access Swift via unique schema `swift2d://`.
-The configuration template located under `conf/core-site.xml.template`.
+Stocator can be used easily with Apache Spark. There are different options to make it happen
+
+* Using spark-packages. No need to compile Stocator or Spark.
+* Manually build Stocator without re-compile Spark
+* Manually build Stocator with Spark recompilation
+
+Below you can find details on each option
+### Using spark-packages
+Stocator deployed on spark-packages. This is the easiest form to integrate Stocator in Spark.
+Just follow [stocator](https://spark-packages.org/package/SparkTC/stocator)
+
+### Execution without compiling Apache Spark
+
+It is possible to execute Apache Spark with the new driver, without compiling Apache Spark.
+Directory `stocator/target` contains standalone jar `stocator-X.Y.Z-jar-with-dependencies.jar`.
+ 
+Run Apache Spark with 
+
+	./bin/spark-shell --jars stocator-X.Y.Z-jar-with-dependencies.jar
+
+### Execution with Apache Spark compilation
+
+Both main `pom.xml` and `core/pom.xml` of Spark should be modified.
+ add to the `<properties>` of the main pom.xml
+	
+	<stocator.version>X.Y.Z</stocator.version>
+
+ add `stocator` dependency to the main pom.xml
+
+     <dependency>
+          <groupId>com.ibm.stocator</groupId>
+          <artifactId>stocator</artifactId>
+          <version>${stocator.version}</version>
+          <scope>${hadoop.deps.scope}</scope>
+      </dependency>
+
+modify `core/pom.xml` to include `stocator`
+
+    <dependency>
+          <groupId>com.ibm.stocator</groupId>
+          <artifactId>stocator</artifactId>
+     </dependency>
+
+	
+Compile Apache Spark with Haddop support ( example of Hadoop 2.7.3 )
+
+	mvn -Phadoop-2.7 -Dhadoop.version=2.7.3 -DskipTests package
+
+## General requirements
+Stocator uses configuration keys that can be condifgured by using `core-site.xml` or provided in run time without keeping them in core-sites.xml. To provide keys in run time use SparkContext variable with
+
+	sc.hadoopConfiguration.set("KEY","VALUE")
+
+For `core-sites.xml`, the configuration template located under `conf/core-site.xml.template`.
+
 Stocator verifies that 
 
 	mapreduce.fileoutputcommitter.marksuccessfuljobs=true
 
 The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not exists at all in the Apache Spark's configuration
 
+## Stocator and IBM Cloud Object Storage (COS)
+Stocator allows to access IBM Cloud Object Service via `cos://` schema. The general URI is the form
+
+	cos://<bucket>.<service>/object(s)
+where `bucket` is object storage bucket and `<service>` identifies configuration group entry.
+
 ### Reference the new driver in the core-site.xml
+
 Add the dependence to Stocator in `conf/core-site.xml`
 
 	<property>
-   		<name>fs.swift2d.impl</name>
+	   <name>fs.stocator.scheme.list</name>
+	   <value>cos</value>
+	</property>
+
+	<property>
+		<name>fs.cos.impl</name>
    		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
 	</property>
+	<property>
+		<name>fs.stocator.cos.impl</name>
+		<value>com.ibm.stocator.fs.cos.COSAPIClient</value>
+	</property>
+	<property>
+		<name>fs.stocator.cos.scheme</name>
+		<value>cos</value>
+	</property>
+
+### Configuration
+Stocator COS connector expose "fs.cos." keys prefix. For backward compatability it also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" is highest priority and "fs.s3a" lowest.
+
+#### COS Connector configuration
+The following is the list of the configuration keys. `service` can be any value, like `myCOS`
+
+| Key | Info | Default value |
+| --- | ------------ | ------------- |
+|fs.cos.service.access.key | Access key (mandatory) |
+|fs.cos.service.secret.key  | Secret key (mandatory)| 
+|fs.cos.service.endpoint | COS endpoint |
+|fs.cos.service.v2.signer.type |  Signer type (mandatory) |
+
+Example:
+
+	<property>
+  		 <name>fs.cos.myCos.access.key</name>
+  		 <value>ACCESS KEY</value>
+	</property>
+	<property>
+   		<name>fs.cos.myCos.endpoint</name>
+	   <value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
+	</property>
+	<property>
+   		<name>fs.cose.myCos.secret.key</name>
+	   <value>SECRET KEY</value>
+	</property>
+	<property>
+   		<name>fs.cos.service.v2.signer.type</name>
+	   <value>false</value>
+	</property>
+
+#### COS Connector optional configuration
+
+
+| Key | Default | Info |
+| --- | ------- | ------ |
+| fs.cos.socket.send.buffer | 8*1024 | socket send buffer to be used in Amazon client |
+| fs.cos.socket.recv.buffer | 8*1024 |socket send buffer to be used in Amazon client |
+| fs.cos.paging.maximum| 5000 | number of records to get while paging through a directory listing |
+| fs.cos.threads.max | 10 | the maximum number of threads to allow in the pool used by TransferManager |
+| fs.cos.threads.keepalivetime| 60 |the time an idle thread waits before terminating |
+| fs.cos.signing-algorithm | | override signature algorithm used for signing requests |
+| fs.cos.connection.maximum| 10000 | number of simultaneous connections to the object store |
+| fs.cos.attempts.maximum| 20 | number of times we should retry errors |
+| fs.cos.block.size| 128 | size of a block in MB |
+| fs.cos.connection.timeout | 800000 | amount of time (in ms) until we give up on a connection to the object store |
+| fs.cos.connection.establish.timeout| 50000 | amount of time (in ms) until we give up trying to establish a connection to the object store |
+| fs.cos.client.execution.timeout| 500000 | amount of time (in ms) to allow a client to complete the execution of an API call |
+| fs.cos.client.request.timeout| 500000 | amount of time to wait (in ms) for a request to complete before giving up and timing out |
+|fs.cos.connection.ssl.enabled |true | Enables or disables SSL connections to S3.|
+|fs.cos.proxy.host| | Hostname of the (optional) proxy server for S3 connections. |
+|fs.cos.proxy.port| |Proxy server port. If this property is not set but fs.s3a.proxy.host is, port 80 or 443 is assumed (consistent with the value of fs.s3a.connection.ssl.enabled).|
+| fs.cos.proxy.username| |Username for authenticating with proxy server |
+| fs.cos.proxy.password| |Password for authenticating with proxy server.|
+| fs.cos.proxy.domain| |Domain for authenticating with proxy server. |
+
+## Stocator and Object Storaged based on OpenStack Swift API
+
+* Uses streaming for object uploads, without knowing object size. This is unique to Swift driver and removes the need to store object locally prior uploading it.
+* Tested to read / write large objects
+* Supports Swiftauth, Keystone V2, Keystone V3 Password Scope Authentication
+* Tested to work with any object store that expose Swift API, like vanilla Swift cluster, SoftLayer object store,  IBM Bluemix Object service
+* (Swift Driver) Supports public containers.  For example
+
+		sc.textFile("swift2d://dal05.objectstorage.softlayer.net/v1/AUTH_ID/CONT/data.csv")
+
+Stocator allows to access OpenStack Swift API based object stores via unique schema `swift2d://`. 
+
+### Reference the new driver in the core-site.xml
+
+Add the dependence to Stocator in `conf/core-site.xml`
+
+	<property>
+	   <name>fs.stocator.scheme.list</name>
+	   <value>swift2d</value>
+	</property>
+
+If Swift connector used concurrently with COS connector, then make it 
+
+	<property>
+	   <name>fs.stocator.scheme.list</name>
+	   <value>swift2d,cos</value>
+	</property>
+
+Configure rest keys
+
+	<property>
+		<name>fs.swift2d.impl</name>
+   		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+	</property>
+	<property>
+   		<name>fs.stocator.swift2d.impl</name>
+   		<value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
+	</property>
+	<property>
+   		<name>fs.stocator.swift2d.scheme</name>
+   		<value>swift2d</value>
+	</property>
+
 	
    	
 #### Swift Driver configuration
@@ -212,49 +379,6 @@ By default Stocator will expose `swift2d://`. However it possible to configure S
 		<value>swift</value>
 	</property>
 
-## Providing configuration keys in run time
-It's possible to provide configuration keys in run time, without keeping them in core-sites.xml. Just use SparkContext variable with
-
-	sc.hadoopConfiguration.set("KEY","VALUE")
-
-## Execution without compiling Apache Spark
-It is possible to execute Apache Spark with the new driver, without compiling Apache Spark.
-Directory `stocator/target` contains standalone jar `stocator-1.0.8-jar-with-dependencies.jar`.
- 
-Run Apache Spark with 
-
-	./bin/spark-shell --jars stocator-1.0.8-jar-with-dependencies.jar
-
-## Execution with Apache Spark compilation
-
-### Configure maven build in Apache Spark
-Both main `pom.xml` and `core/pom.xml` should be modified.
- add to the `<properties>` of the main pom.xml
-	
-	<stocator.version>1.0.8</stocator.version>
-
- add `stocator` dependency to the main pom.xml
-
-     <dependency>
-          <groupId>com.ibm.stocator</groupId>
-          <artifactId>stocator</artifactId>
-          <version>${stocator.version}</version>
-          <scope>${hadoop.deps.scope}</scope>
-      </dependency>
-
-modify `core/pom.xml` to include `stocator`
-
-    <dependency>
-          <groupId>com.ibm.stocator</groupId>
-          <artifactId>stocator</artifactId>
-     </dependency>
-
-	
-	
-### Compile Apache Spark
-Compile Apache Spark with Haddop support 
-
-	mvn -Phadoop-2.7 -Dhadoop.version=2.7.3 -DskipTests package
 
 	
 ### Examples

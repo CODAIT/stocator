@@ -265,6 +265,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
     }
+    if (!hostNameScheme.equals(pathToObj.toString())) {
+      LOG.debug("Delete main entry {}", pathToObj);
+      storageClient.delete(hostNameScheme, f, recursive);
+    }
     return true;
   }
 

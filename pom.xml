@@ -69,9 +69,15 @@
         <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
+        <amazon.sdk.version>1.11.59</amazon.sdk.version>
     </properties>
 
     <dependencies>
+		<dependency>
+			<groupId>com.amazonaws</groupId> 
+			<artifactId>aws-java-sdk</artifactId> 
+			<version>${amazon.sdk.version}</version>
+		</dependency>    
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
@@ -220,6 +226,13 @@
         </dependency>
     </dependencies>
     <build>
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>  
+    
         <pluginManagement>
             <plugins>
                 <plugin>

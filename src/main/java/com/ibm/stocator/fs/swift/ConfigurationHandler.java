@@ -74,7 +74,7 @@ public final class ConfigurationHandler {
     } else {
       String container = Utils.getContainerName(host);
       String service = Utils.getServiceName(host);
-      String prefix = SWIFT_SERVICE_PREFIX + service;
+      String[] prefix = new String[]{SWIFT_SERVICE_PREFIX + service};
       String prefix2D = SWIFT2D_SERVICE_PREFIX + service;
       props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
