@@ -48,8 +48,7 @@ public class OnetimeInitialization {
     InputStream in = OnetimeInitialization.class.getResourceAsStream("/stocator.properties");
     try {
       prop.load(in);
-      userAgentName += " " + prop.getProperty("stocator-s3.version");
-      userAgentName += "/" + prop.getProperty("stocator.version");
+      userAgentName += " " + prop.getProperty("stocator.version");
     } catch (IOException e) {
       // Do nothing and just ignore the exception.  We'll end up with
       // a stocator signature that has no version number, but hopefully
