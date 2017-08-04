@@ -24,14 +24,14 @@ public class COSConstants {
   /*
    * COS name space identifier
    */
-  public static final String S3 = "s3d";
+  public static final String S3_D = "s3d";
   public static final String S3_A = "s3a";
   public static final String COS = "cos";
 
   /*
    * COS configuration prefix in the core-site.xml
    */
-  public static final String FS_S3_D = "fs." + S3;
+  public static final String FS_S3_D = "fs." + S3_D;
   public static final String FS_COS = "fs." + COS;
   public static final String FS_S3_A = "fs." + S3_A;
   /*
