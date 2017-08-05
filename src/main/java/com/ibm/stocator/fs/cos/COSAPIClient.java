@@ -851,11 +851,6 @@ public class COSAPIClient implements IStoreClient {
     return key;
   }
 
-  // @Override
-  public boolean rename(String hostName, String srcPath, String dstPath) throws IOException {
-    return false;
-  }
-
   /**
    * Initializes connection management
    *
