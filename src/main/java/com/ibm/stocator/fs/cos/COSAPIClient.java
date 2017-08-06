@@ -887,6 +887,12 @@ public class COSAPIClient implements IStoreClient {
     clientConf.setUserAgent(userAgentName);
   }
 
+  @Override
+  public boolean rename(String hostName, String srcPath, String dstPath) throws IOException {
+    // Not yet implemented
+    return false;
+  }
+
   private void initTransferManager() {
     TransferManagerConfiguration transferConfiguration =
         new TransferManagerConfiguration();
