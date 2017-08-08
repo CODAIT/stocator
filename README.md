@@ -176,7 +176,7 @@ Example, configure `<service>` as `myCOS`:
 | fs.cos.proxy.password| |Password for authenticating with proxy server.|
 | fs.cos.proxy.domain| |Domain for authenticating with proxy server. |
 
-## Stocator and Object Storaged based on OpenStack Swift API
+## Stocator and Object Storage based on OpenStack Swift API
 
 * Uses streaming for object uploads, without knowing object size. This is unique to Swift connector and removes the need to store object locally prior uploading it.
 * Tested to read / write large objects
