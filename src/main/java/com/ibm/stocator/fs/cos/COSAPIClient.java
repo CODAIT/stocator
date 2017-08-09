@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
 
+import com.ibm.oauth.BasicIBMOAuthCredentials;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.StocatorPath;
@@ -40,11 +41,13 @@ import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.cos.ConfigurationHandler;
 import com.ibm.stocator.fs.cos.OnetimeInitialization;
 import com.ibm.stocator.fs.cos.COSInputStream;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -58,6 +61,7 @@ import com.amazonaws.services.s3.transfer.Upload;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
+import com.amazonaws.SDKGlobalConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,6 +113,9 @@ import static com.ibm.stocator.fs.cos.COSConstants.PROXY_WORKSTATION;
 import static com.ibm.stocator.fs.cos.COSConstants.REQUEST_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.AUTO_BUCKET_CREATE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ACCESS_KEY_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.API_KEY_IAM_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_ENDPOINT_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_SERVICE_INSTANCE_ID_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
@@ -207,16 +214,15 @@ public class COSAPIClient implements IStoreClient {
     // Define COS client
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
     String secretKey = props.getProperty(SECRET_KEY_COS_PROPERTY);
+    String apiKey = props.getProperty(API_KEY_IAM_PROPERTY);
 
-    if (accessKey == null) {
+    if (apiKey == null && accessKey == null) {
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
     }
-    if (secretKey == null) {
+    if (apiKey == null && secretKey == null) {
       throw new ConfigurationParseException("Secret KEY is empty. Please provide valid secret key");
     }
 
-    BasicAWSCredentials creds =
-        new BasicAWSCredentials(accessKey, secretKey);
     ClientConfiguration clientConf = new ClientConfiguration();
 
     int maxThreads = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_THREADS,
@@ -289,13 +295,37 @@ public class COSAPIClient implements IStoreClient {
     if (mIsV2Signer) {
       clientConf.withSignerOverride("S3SignerType");
     }
-    mClient = new AmazonS3Client(creds, clientConf);
+    AWSStaticCredentialsProvider credProvider = null;
+    if (apiKey != null) {
+      String serviceInstanceID = props.getProperty(IAM_SERVICE_INSTANCE_ID_PROPERTY);
+      String iamEndpoint = props.getProperty(IAM_ENDPOINT_PROPERTY);
+      if (iamEndpoint != null) {
+        SDKGlobalConfiguration.IAM_ENDPOINT = iamEndpoint;
+      }
 
-    final String serviceUrl = props.getProperty(ENDPOINT_URL_COS_PROPERTY);
-    if (serviceUrl != null && !serviceUrl.equals(amazonDefaultEndpoint)) {
-      mClient.setEndpoint(serviceUrl);
+      BasicIBMOAuthCredentials creds = new BasicIBMOAuthCredentials(apiKey, serviceInstanceID);
+      credProvider = new AWSStaticCredentialsProvider(creds);
+    } else {
+      BasicAWSCredentials creds =
+          new BasicAWSCredentials(accessKey, secretKey);
+      credProvider = new AWSStaticCredentialsProvider(creds);
     }
-    mClient.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
+    final String serviceUrl = props.getProperty(ENDPOINT_URL_COS_PROPERTY);
+
+    AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard()
+        .withClientConfiguration(clientConf)
+        .withPathStyleAccessEnabled(true)
+        .withCredentials(credProvider);
+
+    if (serviceUrl != null && !serviceUrl.equals(amazonDefaultEndpoint)) {
+      EndpointConfiguration endpointConfiguration = new EndpointConfiguration(serviceUrl,
+          Regions.DEFAULT_REGION.getName());
+      clientBuilder.withEndpointConfiguration(endpointConfiguration);
+
+    } else {
+      clientBuilder.withRegion(Regions.DEFAULT_REGION);
+    }
+    mClient = clientBuilder.build();
 
     // Set block size property
     String mBlockSizeString = props.getProperty(BLOCK_SIZE_COS_PROPERTY, "128");
