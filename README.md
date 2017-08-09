@@ -135,20 +135,20 @@ The following is the list of the configuration keys. `<service>` can be any valu
 Example, configure `<service>` as `myCOS`:
 
 	<property>
-  		 <name>fs.cos.myCos.access.key</name>
-  		 <value>ACCESS KEY</value>
+		<name>fs.cos.myCos.access.key</name>
+		<value>ACCESS KEY</value>
 	</property>
 	<property>
-   		<name>fs.cos.myCos.endpoint</name>
-	   <value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
+		<name>fs.cos.myCos.endpoint</name>
+		<value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
 	</property>
 	<property>
-   		<name>fs.cose.myCos.secret.key</name>
-	   <value>SECRET KEY</value>
+		<name>fs.cose.myCos.secret.key</name>
+		<value>SECRET KEY</value>
 	</property>
 	<property>
-   		<name>fs.cos.service.v2.signer.type</name>
-	   <value>false</value>
+		<name>fs.cos.service.v2.signer.type</name>
+		<value>false</value>
 	</property>
 
 #### COS Connector optional configuration
@@ -193,30 +193,30 @@ Stocator allows to access OpenStack Swift API based object stores via unique sch
 Add the dependence to Stocator in `conf/core-site.xml`
 
 	<property>
-	   <name>fs.stocator.scheme.list</name>
-	   <value>swift2d</value>
+		<name>fs.stocator.scheme.list</name>
+		<value>swift2d</value>
 	</property>
 
 If Swift connector used concurrently with COS connector, then make it 
 
 	<property>
-	   <name>fs.stocator.scheme.list</name>
-	   <value>swift2d,cos</value>
+		<name>fs.stocator.scheme.list</name>
+		<value>swift2d,cos</value>
 	</property>
 
 Configure the rest of keys
 
 	<property>
 		<name>fs.swift2d.impl</name>
-   		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift2d.impl</name>
-   		<value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
+		<name>fs.stocator.swift2d.impl</name>
+		<value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift2d.scheme</name>
-   		<value>swift2d</value>
+		<name>fs.stocator.swift2d.scheme</name>
+		<value>swift2d</value>
 	</property>
 
 	
