@@ -914,7 +914,7 @@ public class COSAPIClient implements IStoreClient {
     }
 
     String userAgentName = singletoneInitTimeData.getUserAgentName();
-    clientConf.setUserAgent(userAgentName);
+    clientConf.setUserAgentPrefix(userAgentName);
   }
 
   @Override

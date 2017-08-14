@@ -1,6 +1,6 @@
 Stocator - Storage Connector for Apache Spark
 ==============================
-Apache Spark can work with multiple data sources that include various object stores like IBM Cloud Object Storage, OpenStack Swift and more. To access an object store, Apache Spark uses Hadoop modules that contain conenctors to the various object stores. 
+Apache Spark can work with multiple data sources that include various object stores like IBM Cloud Object Storage, OpenStack Swift and more. To access an object store, Apache Spark uses Hadoop modules that contain connectors to the various object stores. 
 
 Apache Spark needs only small set of object store functionalities. Specifically, Apache Spark requires object listing, objects creation, read objects, and getting data partitions. Hadoop connectors, however, must be compliant with the Hadoop eco system. This means they support many more operations, such as shell operations on directories, including move, copy, rename, etc. (these are not native object store operations). Moreover, Hadoop Map Reduce Client is designed to work with file systems and not object stores. The temp files and folders it uses for every write operation are renamed, copied, and deleted. This leads to dozens of useless requests targeted at the object store. It’s clear that Hadoop is designed to work with file systems and not object stores.
 
@@ -24,7 +24,7 @@ Checkout the master branch `https://github.com/SparkTC/stocator.git`
 
 * Change directory to `stocator`
 * Execute `mvn install`
-* If you want to build a jar with all the dependecies, please execute 
+* If you want to build a jar with all the dependencies, please execute 
 
 		mvn clean package -Pall-in-one
 
@@ -84,7 +84,7 @@ Stocator verifies that
 The default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`, therefore this key may not exists at all in the Apache Spark's configuration
 
 ## Configuration keys
-Stocator uses configuration keys that can be condifgured via `core-site.xml` or provided in the run time without keeping them in core-sites.xml. To provide keys in run time use SparkContext variable with
+Stocator uses configuration keys that can be configured via `core-site.xml` or provided in the run time without keeping them in core-sites.xml. To provide keys in run time use SparkContext variable with
 
 	sc.hadoopConfiguration.set("KEY","VALUE")
 
@@ -95,7 +95,7 @@ For `core-sites.xml`, the configuration template located under `conf/core-site.x
 Stocator allows to access IBM Cloud Object Service via `cos://` schema. The general URI is the form
 
 	cos://<bucket>.<service>/object(s)
-where `bucket` is object storage bucket and `<service>` identifies configuration group entry. Each `<service>` may use it's specific credentials and has different endpoint. By using multiple `<service>` allows to use different endpoints simulateneously. 
+where `bucket` is object storage bucket and `<service>` identifies configuration group entry. Each `<service>` may use it's specific credentials and has different endpoint. By using multiple `<service>` allows to use different endpoints simultaneously. 
 
 ### Reference Stocator in the core-site.xml
 
@@ -120,12 +120,12 @@ Add the dependence to Stocator in `conf/core-site.xml`
 	</property>
 
 ### Configuration
-Stocator COS connector expose "fs.cos." keys prefix. For backward compatability it also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" will overwrite other keys, if present.
+Stocator COS connector expose "fs.cos." keys prefix. For backward compatibility it also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" will overwrite other keys, if present.
 
 #### COS Connector configuration
 The following is the list of the configuration keys. `<service>` can be any value, like `myCOS`
 
-| Key | Info | Manadatory |
+| Key | Info | Mandatory |
 | --- | ------------ | ------------- |
 |fs.cos.`<service>`.access.key | Access key  | mandatory
 |fs.cos.`<service>`.secret.key  | Secret key | mandatory
@@ -135,20 +135,20 @@ The following is the list of the configuration keys. `<service>` can be any valu
 Example, configure `<service>` as `myCOS`:
 
 	<property>
-  		 <name>fs.cos.myCos.access.key</name>
-  		 <value>ACCESS KEY</value>
+		<name>fs.cos.myCos.access.key</name>
+		<value>ACCESS KEY</value>
 	</property>
 	<property>
-   		<name>fs.cos.myCos.endpoint</name>
-	   <value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
+		<name>fs.cos.myCos.endpoint</name>
+		<value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
 	</property>
 	<property>
-   		<name>fs.cose.myCos.secret.key</name>
-	   <value>SECRET KEY</value>
+		<name>fs.cose.myCos.secret.key</name>
+		<value>SECRET KEY</value>
 	</property>
 	<property>
-   		<name>fs.cos.service.v2.signer.type</name>
-	   <value>false</value>
+		<name>fs.cos.service.v2.signer.type</name>
+		<value>false</value>
 	</property>
 
 #### COS Connector optional configuration
@@ -176,7 +176,7 @@ Example, configure `<service>` as `myCOS`:
 | fs.cos.proxy.password| |Password for authenticating with proxy server.|
 | fs.cos.proxy.domain| |Domain for authenticating with proxy server. |
 
-## Stocator and Object Storaged based on OpenStack Swift API
+## Stocator and Object Storage based on OpenStack Swift API
 
 * Uses streaming for object uploads, without knowing object size. This is unique to Swift connector and removes the need to store object locally prior uploading it.
 * Tested to read / write large objects
@@ -193,30 +193,30 @@ Stocator allows to access OpenStack Swift API based object stores via unique sch
 Add the dependence to Stocator in `conf/core-site.xml`
 
 	<property>
-	   <name>fs.stocator.scheme.list</name>
-	   <value>swift2d</value>
+		<name>fs.stocator.scheme.list</name>
+		<value>swift2d</value>
 	</property>
 
 If Swift connector used concurrently with COS connector, then make it 
 
 	<property>
-	   <name>fs.stocator.scheme.list</name>
-	   <value>swift2d,cos</value>
+		<name>fs.stocator.scheme.list</name>
+		<value>swift2d,cos</value>
 	</property>
 
 Configure the rest of keys
 
 	<property>
 		<name>fs.swift2d.impl</name>
-   		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
+		<value>com.ibm.stocator.fs.ObjectStoreFileSystem</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift2d.impl</name>
-   		<value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
+		<name>fs.stocator.swift2d.impl</name>
+		<value>com.ibm.stocator.fs.swift.SwiftAPIClient</value>
 	</property>
 	<property>
-   		<name>fs.stocator.swift2d.scheme</name>
-   		<value>swift2d</value>
+		<name>fs.stocator.swift2d.scheme</name>
+		<value>swift2d</value>
 	</property>
 
 	
