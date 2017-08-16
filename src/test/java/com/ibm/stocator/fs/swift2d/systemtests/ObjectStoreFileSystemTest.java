@@ -61,11 +61,13 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
       Path[] testFile0 = new Path[iterNum];
       for (int i = 0; i < iterNum; i++) {
         testFile0[i] = new Path(fileName + "0" + i);
+        System.out.println("Delete " + testFile0[i]);
         getFs().delete(testFile0[i], false);
       }
       Path[] testFile1 = new Path[iterNum * 2];
       for (int i = 0; i < iterNum * 2; i++) {
         testFile1[i] = new Path(fileName + "1" + i);
+        System.out.println("Delete " + testFile1[i]);
         getFs().delete(testFile1[i], false);
       }
     }

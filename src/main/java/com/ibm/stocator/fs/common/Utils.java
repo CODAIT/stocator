@@ -303,10 +303,19 @@ public class Utils {
    * http://hostname/v1/auth_id
    *
    * @param publicURL public url
+   * @param scheme URL scheme
    * @return accessURL access url
    * @throws IOException if path is malformed
    */
-  public static String extractAccessURL(String publicURL) throws IOException {
+  public static String extractAccessURL(String publicURL, String scheme) throws IOException {
+    if (publicURL != null && !publicURL.startsWith("http")) {
+      String startScheme = scheme + "://";
+      int end = publicURL.length();
+      if (publicURL.indexOf("/", startScheme.length()) >= 0) {
+        end = publicURL.indexOf("/", startScheme.length());
+      }
+      return publicURL.substring(0, end);
+    }
     try {
       String hostName = new URI(publicURL).getAuthority();
       int  start = publicURL.indexOf("//") + 2 + hostName.length() + 1;
@@ -331,6 +340,9 @@ public class Utils {
    * @return container name
    */
   public static String extractDataRoot(String publicURL, String accessURL) {
+    if (publicURL != null && !publicURL.startsWith("http")) {
+      return "";
+    }
     String reminder = publicURL.substring(accessURL.length() + 1);
     String container = null;
     if (reminder.indexOf("/") > 0) {

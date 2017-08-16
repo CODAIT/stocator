@@ -229,7 +229,7 @@ public class SwiftAPIClient implements IStoreClient {
       String publicURL = filesystemURI.toString().replace(schemaProvided, "https");
       publicContainer = true;
       LOG.debug("publicURL: {}", publicURL);
-      String accessURL = Utils.extractAccessURL(publicURL);
+      String accessURL = Utils.extractAccessURL(publicURL, scheme);
       LOG.debug("auth url {}", accessURL);
       config.setAuthUrl(accessURL);
       config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
