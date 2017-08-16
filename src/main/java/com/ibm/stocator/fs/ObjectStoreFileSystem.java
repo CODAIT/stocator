@@ -233,7 +233,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
     LOG.debug("About to delete {}", f.toString());
-    System.out.println("* About to delete " + f.toString());
     if (stocatorPath.isTemporaryPathContain(f.toString())) {
       return true;
     }
@@ -269,10 +268,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           if (fs.getPath().toString().equals(f.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
-            System.out.println("* Delete  " + fs.getPath());
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
             if (fs.getPath().toString().equals(f.toString())) {
-              System.out.println("Skip delete main entry for " + fs.getPath());
               deleteMainEntry = false;
             }
           }
@@ -281,7 +278,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     }
     if (!hostNameScheme.equals(pathToObj.toString()) && deleteMainEntry) {
       LOG.debug("*** Delete main entry {}", pathToObj);
-      System.out.println("Delete main entry " +  f);
       storageClient.delete(hostNameScheme, f, recursive);
     }
     return true;
