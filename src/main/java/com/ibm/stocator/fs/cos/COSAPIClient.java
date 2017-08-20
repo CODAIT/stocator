@@ -326,6 +326,16 @@ public class COSAPIClient implements IStoreClient {
             mClient.createBucket(mBucket, mRegion);
           }
         }
+      } catch (AmazonServiceException ase) {
+        /*
+        *  we ignore the BucketAlreadyExists exception since multiple processes or threads
+        *  might try to create the bucket in parrallel, therefore it is expected that
+        *  some will fail to create the bucket
+        */
+        if (!ase.getErrorCode().equals("BucketAlreadyExists")) {
+          LOG.error(ase.getMessage());
+          throw (ase);
+        }
       } catch (Exception e) {
         LOG.error(e.getMessage());
         throw (e);
