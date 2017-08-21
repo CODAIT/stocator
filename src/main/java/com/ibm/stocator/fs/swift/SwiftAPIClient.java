@@ -17,8 +17,10 @@
 
 package com.ibm.stocator.fs.swift;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
@@ -43,6 +45,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
@@ -74,6 +77,9 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR;
+import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
@@ -170,6 +176,9 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration();
   private StocatorPath stocatorPath;
+  private LocalDirAllocator directoryAllocator;
+  private String bufferDir = "";
+  private boolean nonStreamingUpload;
 
   /**
    * Constructor method
@@ -209,6 +218,8 @@ public class SwiftAPIClient implements IStoreClient {
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
     LOG.trace("{}", connectionConfiguration.toString());
 
+    bufferDir = props.getProperty(BUFFER_DIR_PROPERTY, "");
+    nonStreamingUpload = "true".equals(props.getProperty(NON_STREAMING_UPLOAD_PROPERTY, "false"));
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
@@ -614,8 +625,15 @@ public class SwiftAPIClient implements IStoreClient {
     }
 
     try {
-      return new FSDataOutputStream(new SwiftOutputStream(mJossAccount, url, contentType,
-              metadata, swiftConnectionManager), statistics);
+      OutputStream  sos;
+      if (nonStreamingUpload) {
+        sos = new SwiftNoStreamingOutputStream(mJossAccount, url, contentType,
+            metadata, swiftConnectionManager, this);
+      } else {
+        sos = new SwiftOutputStream(mJossAccount, url, contentType,
+            metadata, swiftConnectionManager);
+      }
+      return new FSDataOutputStream(sos, statistics);
     } catch (IOException e) {
       LOG.error(e.getMessage());
       throw e;
@@ -847,4 +865,16 @@ public class SwiftAPIClient implements IStoreClient {
     so.copyObject(cont, soDst);
     return true;
   }
+
+  synchronized File createTmpFileForWrite(String pathStr, long size) throws IOException {
+    LOG.trace("Create temp file for write {}. size {}", pathStr, size);
+    if (directoryAllocator == null) {
+      String bufferTargetDir = !bufferDir.isEmpty()
+          ? BUFFER_DIR : "hadoop.tmp.dir";
+      LOG.trace("Local buffer directorykey is {}", bufferTargetDir);
+      directoryAllocator = new LocalDirAllocator(bufferTargetDir);
+    }
+    return directoryAllocator.createTmpFileForWrite(pathStr, size, conf);
+  }
+
 }

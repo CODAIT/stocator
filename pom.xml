@@ -77,6 +77,12 @@
            <groupId>com.amazonaws</groupId>
            <artifactId>aws-java-sdk</artifactId>
            <version>${amazon.sdk.version}</version>
+           <exclusions>
+                <exclusion>
+                    <artifactId>org.apache.httpcomponents</artifactId>
+                    <groupId>httpclient</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>

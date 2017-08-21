@@ -61,4 +61,12 @@ public class SwiftConstants {
   public static final String FMODE_AUTOMATIC_DELETE_PROPERTY = Constants.FS_SWIFT2D
       + FMODE_DELETE_TEMP_DATA;
 
+  //comma separated list of directories
+  public static final String BUFFER_DIR = ".buffer.dir";
+  public static final String BUFFER_DIR_PROPERTY = Constants.FS_SWIFT2D + BUFFER_DIR;
+
+  public static final String NON_STREAMING_UPLOAD = ".nonstreaming.upload";
+  public static final String NON_STREAMING_UPLOAD_PROPERTY = Constants.FS_SWIFT2D
+      + NON_STREAMING_UPLOAD;
+
 }

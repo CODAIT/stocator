@@ -18,13 +18,18 @@
 package com.ibm.stocator.fs.swift;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,6 +118,67 @@ public class SwiftAPIDirect {
         HttpResponse>(httpGet, response);
     return new Tuple<Integer, Tuple<HttpRequestBase,
         HttpResponse>>(Integer.valueOf(responseCode), respData);
+  }
+
+  /**
+   * @param path path to object
+   * @param inputStream input stream
+   * @param account JOSS Account object
+   * @param metadata custom metadata
+   * @param size the object size
+   * @param type the content type
+   * @return HTTP response code
+   * @throws IOException if error
+   */
+  private static int httpPUT(String path,
+      InputStream inputStream, JossAccount account, SwiftConnectionManager scm,
+      Map<String, String> metadata, long size, String type)
+          throws IOException {
+    LOG.debug("HTTP PUT {} request on {}", path);
+    HttpPut httpPut = new HttpPut(path);
+    httpPut.addHeader("X-Auth-Token", account.getAuthToken());
+    httpPut.addHeader("Content-Type", type);
+    httpPut.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
+    if (metadata != null && !metadata.isEmpty()) {
+      for (Map.Entry<String, String> entry : metadata.entrySet()) {
+        httpPut.addHeader("X-Object-Meta-" + entry.getKey(), entry.getValue());
+      }
+    }
+    RequestConfig config = RequestConfig.custom().setExpectContinueEnabled(true).build();
+    httpPut.setConfig(config);
+    InputStreamEntity entity = new InputStreamEntity(inputStream,size);
+    httpPut.setEntity(entity);
+    CloseableHttpClient httpclient = scm.createHttpConnection();
+    CloseableHttpResponse response = httpclient.execute(httpPut);
+    int responseCode = response.getStatusLine().getStatusCode();
+    LOG.debug("HTTP PUT {} response. Status code {}", path, responseCode);
+    response.close();
+    return responseCode;
+  }
+
+  /**
+   * PUT object
+   *
+   * @param path path to the object
+   * @param account Joss Account wrapper object
+   * @param inputStream InputStream
+   * @param scm Swift Connection manager
+   * @param metadata custom metadata
+   * @param size the object size
+   * @param type the content type
+   * @return HTTP Response code
+   * @throws IOException if network errors
+   */
+  public static int putObject(String path, JossAccount account,
+      InputStream inputStream, SwiftConnectionManager scm,
+      Map<String, String> metadata, long size, String type) throws IOException {
+    int  resp = httpPUT(path, inputStream, account, scm, metadata, size, type);
+    if (resp >= 400) {
+      LOG.warn("Re-authentication attempt for GET {}", path);
+      account.authenticate();
+      resp = httpPUT(path.toString(),inputStream, account, scm, metadata, size, type);
+    }
+    return resp;
   }
 
   /*
