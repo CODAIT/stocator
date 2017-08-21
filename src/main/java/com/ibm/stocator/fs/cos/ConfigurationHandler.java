@@ -56,6 +56,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.S3_D_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_PROPERTY;
 
 /**
  * Integrates Hadoop configuration with the COS client implementation
@@ -97,6 +99,8 @@ public final class ConfigurationHandler {
     props.setProperty(COS_BUCKET_PROPERTY, bucket);
     Utils.updateProperty(conf, prefix, altPrefix, ACCESS_KEY, props,
         ACCESS_KEY_COS_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN, props,
+        IAM_TOKEN_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, SECRET_KEY, props,
         SECRET_KEY_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, ENDPOINT_URL, props,

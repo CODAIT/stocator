@@ -40,6 +40,7 @@ import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.cos.ConfigurationHandler;
 import com.ibm.stocator.fs.cos.OnetimeInitialization;
+import com.ibm.stocator.fs.cos.auth.CustomTokenManager;
 import com.ibm.stocator.fs.cos.COSInputStream;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.AmazonClientException;
@@ -128,6 +129,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.SIGNING_ALGORITHM;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_RECV_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_SEND_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_TIMEOUT;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class COSAPIClient implements IStoreClient {
@@ -215,11 +217,12 @@ public class COSAPIClient implements IStoreClient {
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
     String secretKey = props.getProperty(SECRET_KEY_COS_PROPERTY);
     String apiKey = props.getProperty(API_KEY_IAM_PROPERTY);
+    String token = props.getProperty(IAM_TOKEN_PROPERTY);
 
-    if (apiKey == null && accessKey == null) {
+    if (apiKey == null && accessKey == null && token == null) {
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
     }
-    if (apiKey == null && secretKey == null) {
+    if (apiKey == null && secretKey == null && token == null) {
       throw new ConfigurationParseException("Secret KEY is empty. Please provide valid secret key");
     }
 
@@ -296,14 +299,19 @@ public class COSAPIClient implements IStoreClient {
       clientConf.withSignerOverride("S3SignerType");
     }
     AWSStaticCredentialsProvider credProvider = null;
-    if (apiKey != null) {
+    if (apiKey != null || token != null) {
       String serviceInstanceID = props.getProperty(IAM_SERVICE_INSTANCE_ID_PROPERTY);
       String iamEndpoint = props.getProperty(IAM_ENDPOINT_PROPERTY);
       if (iamEndpoint != null) {
         SDKGlobalConfiguration.IAM_ENDPOINT = iamEndpoint;
       }
-
-      BasicIBMOAuthCredentials creds = new BasicIBMOAuthCredentials(apiKey, serviceInstanceID);
+      BasicIBMOAuthCredentials creds = null;
+      if (apiKey != null) {
+        creds = new BasicIBMOAuthCredentials(apiKey, serviceInstanceID);
+      } else if (token != null) {
+        CustomTokenManager customToken = new CustomTokenManager(token);
+        creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
+      }
       credProvider = new AWSStaticCredentialsProvider(creds);
     } else {
       BasicAWSCredentials creds =

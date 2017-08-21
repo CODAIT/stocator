@@ -52,6 +52,9 @@ public class COSConstants {
   public static final String API_KEY = ".iam.api.key";
   public static final String API_KEY_IAM_PROPERTY = FS_COS + API_KEY;
 
+  public static final String IAM_TOKEN = ".iam.token";
+  public static final String IAM_TOKEN_PROPERTY = FS_COS + IAM_TOKEN;
+
   public static final String IAM_ENDPOINT = ".iam.endpoint";
   public static final String IAM_ENDPOINT_PROPERTY = FS_COS + IAM_ENDPOINT;
 
