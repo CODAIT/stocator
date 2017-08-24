@@ -193,9 +193,10 @@ public class Utils {
   public static int getInt(Configuration conf, String prefix, String[] altPrefix, String key,
       int defValue) {
     int result = -1;
-    if (conf.onlyKeyExists(prefix + key)) {
-      result = conf.getInt(prefix + key, defValue);
-    } else {
+    int notExistsValue = -2;
+    result = conf.getInt(prefix + key, notExistsValue);
+    if (result == notExistsValue) {
+      result = -1;
       for (String alternativePrefix : altPrefix) {
         result = conf.getInt(alternativePrefix + key, defValue);
       }
@@ -209,9 +210,10 @@ public class Utils {
   public static String getTrimmed(Configuration conf, String prefix, String[] altPrefix,
       String key, String defValue) {
     String result = null;
-    if (conf.onlyKeyExists(prefix + key)) {
-      result = conf.getTrimmed(prefix + key, defValue);
-    } else {
+    String notExistsValue = "-2";
+    result = conf.getTrimmed(prefix + key, notExistsValue);
+    if (result.equals(notExistsValue)) {
+      result = null;
       for (String alternativePrefix : altPrefix) {
         result = conf.getTrimmed(alternativePrefix + key, defValue);
       }
@@ -225,9 +227,10 @@ public class Utils {
   public static String getTrimmed(Configuration conf, String prefix, String[] altPrefix,
       String key) {
     String result = null;
-    if (conf.onlyKeyExists(prefix + key)) {
-      result = conf.getTrimmed(prefix + key);
-    } else {
+    String notExistsValue = "-2";
+    result = conf.getTrimmed(prefix + key, notExistsValue);
+    if (result.equals(notExistsValue)) {
+      result = null;
       for (String alternativePrefix : altPrefix) {
         result = conf.getTrimmed(alternativePrefix + key);
       }
@@ -238,9 +241,10 @@ public class Utils {
   public static long getLong(Configuration conf, String prefix, String[] altPrefix,
       String key, long defValue) {
     long result = -1;
-    if (conf.onlyKeyExists(prefix + key)) {
-      result = conf.getLong(prefix + key, defValue);
-    } else {
+    long notExistsValue = -2;
+    result = conf.getLong(prefix + key, notExistsValue);
+    if (result == notExistsValue) {
+      result = -1;
       for (String alternativePrefix : altPrefix) {
         result = conf.getLong(alternativePrefix + key, defValue);
       }
@@ -255,7 +259,10 @@ public class Utils {
       String key, boolean defValue) {
     boolean found = false;
     boolean result = false;
-    if (conf.onlyKeyExists(prefix + key)) {
+    String notExistsValue = "-2";
+    String res = conf.getTrimmed(prefix + key, notExistsValue);
+
+    if (!res.equals(notExistsValue)) {
       found = true;
       result = conf.getBoolean(prefix + key, defValue);
     } else {

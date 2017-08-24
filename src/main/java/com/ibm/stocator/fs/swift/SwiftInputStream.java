@@ -29,7 +29,6 @@ import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.fs.CanSetReadahead;
-import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
@@ -159,7 +158,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
     LOG.trace("seek {} to {}", uri, targetPos);
     checkNotClosed();
     if (targetPos < 0) {
-      throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK + " " + targetPos);
+      throw new EOFException("NEGATIVE_SEEK" + " " + targetPos);
     }
 
     nextReadPos = targetPos;
@@ -303,7 +302,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
 
   private void checkNotClosed() throws IOException {
     if (closed) {
-      throw new IOException(uri + ": " + FSExceptionMessages.STREAM_IS_CLOSED);
+      throw new IOException(uri + ": " + "STREAM_IS_CLOSED");
     }
   }
 
