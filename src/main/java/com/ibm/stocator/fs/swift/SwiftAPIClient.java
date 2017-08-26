@@ -282,8 +282,8 @@ public class SwiftAPIClient implements IStoreClient {
             + " Verify the validitiy of the auth url: " + config.getAuthUrl(), e);
       }
     }
-    Container containerObj = mJossAccount.getAccount().getContainer(
-            URLDecoder.decode(container, "UTF-8"));
+    container = URLDecoder.decode(container, "UTF-8");
+    Container containerObj = mJossAccount.getAccount().getContainer(container);
     if (!authMethod.equals(PUBLIC_ACCESS) && !containerObj.exists()) {
       try {
         containerObj.create();
@@ -422,7 +422,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    String containerObject = URLDecoder.decode(container, "UTF-8") + "/" + objName;
+    String containerObject = container + "/" + objName;
     URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedName(containerObject));
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000

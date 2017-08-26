@@ -20,7 +20,9 @@ public class TestSwiftSpecialChars extends SwiftFileSystemBaseTest {
     String text = "Testing PUT and GET on container with spaces "
             + System.currentTimeMillis();
     writeTextFile(sFileSystem, path, text, false);
+    assertTrue(sFileSystem.exists(path));
     String result = readBytesToString(sFileSystem, path, text.length());
     assertEquals(text, result);
+    assertTrue(sFileSystem.delete(path, false));
   }
 }
