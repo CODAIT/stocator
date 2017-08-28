@@ -282,7 +282,7 @@ public class SwiftAPIClient implements IStoreClient {
             + " Verify the validitiy of the auth url: " + config.getAuthUrl(), e);
       }
     }
-    container = URLDecoder.decode(container, "UTF-8");
+    container = getURLDecodedName(container);
     Container containerObj = mJossAccount.getAccount().getContainer(container);
     if (!authMethod.equals(PUBLIC_ACCESS) && !containerObj.exists()) {
       try {
@@ -595,6 +595,13 @@ public class SwiftAPIClient implements IStoreClient {
   private String getURLEncodedName(String objName) throws UnsupportedEncodingException {
     // We need to encode spaces as %20 and allow '/'
     return URLEncoder.encode(objName, "UTF-8").replace("+", "%20").replace("%2F", "/");
+  }
+
+  /**
+   * Decodes UTF-8 for special characters
+   */
+  private String getURLDecodedName(String name) throws UnsupportedEncodingException {
+    return URLDecoder.decode(name, "UTF-8");
   }
 
   /**
