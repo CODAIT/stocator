@@ -110,6 +110,26 @@ public class Utils {
   }
 
   /**
+   * Extracts service name from the container.service
+   *
+   * @param hostname hostname
+   * @param defaultService default value
+   * @return the separated out service name
+   * @throws IOException if the hostname was invalid
+   */
+  public static String getServiceName(String hostname, String defaultService) throws IOException {
+    int i = hostname.indexOf(".");
+    if (i <= 0) {
+      throw badHostName(hostname);
+    }
+    String service = hostname.substring(i + 1);
+    if (service.isEmpty() || service.contains(".")) {
+      throw badHostName(hostname);
+    }
+    return service;
+  }
+
+  /**
    * Test if hostName of the form container.service
    *
    * @param uri schema URI
