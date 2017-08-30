@@ -67,9 +67,25 @@ public class Utils {
    * @throws IOException if hostname is invalid
    */
   public static String getContainerName(String hostname) throws IOException {
+    return getContainerName(hostname, true);
+  }
+
+  /**
+   * Extracts container name from the container.service or container
+   *
+   * @param hostname hostname to split
+   * @param serviceRequired flag if service name required as part of hostname
+   * @return the container
+   * @throws IOException if hostname is invalid
+   */
+  public static String getContainerName(String hostname,
+      boolean serviceRequired) throws IOException {
     int i = hostname.indexOf(".");
     if (i <= 0) {
-      throw badHostName(hostname);
+      if (serviceRequired) {
+        throw badHostName(hostname);
+      }
+      return hostname;
     }
     return hostname.substring(0, i);
   }
