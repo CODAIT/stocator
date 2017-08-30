@@ -122,7 +122,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   protected void checkPath(Path path) {
-    LOG.trace("Check path: {}", path.toString());
+    LOG.debug("Check path: {}", path.toString());
   }
 
   /**
