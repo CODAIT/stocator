@@ -15,7 +15,7 @@
  *
  */
 
-package com.ibm.stocator.fs.swift2d.unittests;
+package com.ibm.stocator.fs.commom.unittests;
 
 import org.junit.Assert;
 import org.junit.Before;
