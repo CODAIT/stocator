@@ -28,10 +28,12 @@ import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.http.conn.util.InetAddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
+import com.ibm.stocator.fs.common.exception.InvalidContainerNameException;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
@@ -442,5 +444,17 @@ public class Utils {
     } catch (ParseException e) {
       throw new IOException("Failed to parse " + strTime, e);
     }
+  }
+
+  public static boolean validContainer(String container) throws InvalidContainerNameException {
+    if (container != null && container.length() < 4) {
+      throw new InvalidContainerNameException("Container " + container
+          + " length must be at least 3 letters");
+    }
+    if (InetAddressUtils.isIPv4Address(container)) {
+      throw new InvalidContainerNameException("Container " + container
+          + " is of IP address pattern");
+    }
+    return true;
   }
 }
