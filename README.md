@@ -143,7 +143,7 @@ Example, configure `<service>` as `myCOS`:
 		<value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
 	</property>
 	<property>
-		<name>fs.cose.myCos.secret.key</name>
+		<name>fs.cos.myCos.secret.key</name>
 		<value>SECRET KEY</value>
 	</property>
 	<property>
