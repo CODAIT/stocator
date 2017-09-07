@@ -28,10 +28,12 @@ import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.http.conn.util.InetAddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
+import com.ibm.stocator.fs.common.exception.InvalidContainerNameException;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
@@ -67,9 +69,25 @@ public class Utils {
    * @throws IOException if hostname is invalid
    */
   public static String getContainerName(String hostname) throws IOException {
+    return getContainerName(hostname, true);
+  }
+
+  /**
+   * Extracts container name from the container.service or container
+   *
+   * @param hostname hostname to split
+   * @param serviceRequired flag if service name required as part of hostname
+   * @return the container
+   * @throws IOException if hostname is invalid
+   */
+  public static String getContainerName(String hostname,
+      boolean serviceRequired) throws IOException {
     int i = hostname.indexOf(".");
     if (i <= 0) {
-      throw badHostName(hostname);
+      if (serviceRequired) {
+        throw badHostName(hostname);
+      }
+      return hostname;
     }
     return hostname.substring(0, i);
   }
@@ -82,6 +100,26 @@ public class Utils {
    * @throws IOException if the hostname was invalid
    */
   public static String getServiceName(String hostname) throws IOException {
+    int i = hostname.indexOf(".");
+    if (i <= 0) {
+      throw badHostName(hostname);
+    }
+    String service = hostname.substring(i + 1);
+    if (service.isEmpty() || service.contains(".")) {
+      throw badHostName(hostname);
+    }
+    return service;
+  }
+
+  /**
+   * Extracts service name from the container.service
+   *
+   * @param hostname hostname
+   * @param defaultService default value
+   * @return the separated out service name
+   * @throws IOException if the hostname was invalid
+   */
+  public static String getServiceName(String hostname, String defaultService) throws IOException {
     int i = hostname.indexOf(".");
     if (i <= 0) {
       throw badHostName(hostname);
@@ -163,7 +201,7 @@ public class Utils {
    *
    * @param conf source configuration
    * @param prefix configuration key prefix
-   * @param alternativePrefix alternative prefix
+   * @param altPrefix alternative prefix list. The last on the list wins
    * @param key key in the configuration file
    * @param props destination property set
    * @param propsKey key in the property set
@@ -171,14 +209,16 @@ public class Utils {
    * @throws ConfigurationParseException if there was no match for the key
    */
 
-  public static void updateProperty(Configuration conf, String prefix, String alternativePrefix,
+  public static void updateProperty(Configuration conf, String prefix, String[] altPrefix,
       String key, Properties props, String propsKey,
       boolean required) throws ConfigurationParseException {
     String val = conf.get(prefix + key);
     if (val == null) {
       // try alternative key
-      val = conf.get(alternativePrefix + key);
-      LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
+      for (String alternativePrefix : altPrefix) {
+        val = conf.get(alternativePrefix + key);
+        LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
+      }
     }
     if (required && val == null) {
       throw new ConfigurationParseException("Missing mandatory configuration: " + key);
@@ -186,6 +226,92 @@ public class Utils {
     if (val != null) {
       props.setProperty(propsKey, val.trim());
     }
+  }
+
+  public static int getInt(Configuration conf, String prefix, String[] altPrefix, String key,
+      int defValue) {
+    int result = -1;
+    int notExistsValue = -2;
+    result = conf.getInt(prefix + key, notExistsValue);
+    if (result == notExistsValue) {
+      result = -1;
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getInt(alternativePrefix + key, defValue);
+      }
+    }
+    if (result == -1) {
+      result = defValue;
+    }
+    return result;
+  }
+
+  public static String getTrimmed(Configuration conf, String prefix, String[] altPrefix,
+      String key, String defValue) {
+    String result = null;
+    String notExistsValue = "-2";
+    result = conf.getTrimmed(prefix + key, notExistsValue);
+    if (result.equals(notExistsValue)) {
+      result = null;
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getTrimmed(alternativePrefix + key, defValue);
+      }
+    }
+    if (result == null) {
+      result = defValue;
+    }
+    return result;
+  }
+
+  public static String getTrimmed(Configuration conf, String prefix, String[] altPrefix,
+      String key) {
+    String result = null;
+    String notExistsValue = "-2";
+    result = conf.getTrimmed(prefix + key, notExistsValue);
+    if (result.equals(notExistsValue)) {
+      result = null;
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getTrimmed(alternativePrefix + key);
+      }
+    }
+    return result;
+  }
+
+  public static long getLong(Configuration conf, String prefix, String[] altPrefix,
+      String key, long defValue) {
+    long result = -1;
+    long notExistsValue = -2;
+    result = conf.getLong(prefix + key, notExistsValue);
+    if (result == notExistsValue) {
+      result = -1;
+      for (String alternativePrefix : altPrefix) {
+        result = conf.getLong(alternativePrefix + key, defValue);
+      }
+    }
+    if (result == -1) {
+      result = defValue;
+    }
+    return result;
+  }
+
+  public static boolean getBoolean(Configuration conf, String prefix, String[] altPrefix,
+      String key, boolean defValue) {
+    boolean found = false;
+    boolean result = false;
+    String notExistsValue = "-2";
+    String res = conf.getTrimmed(prefix + key, notExistsValue);
+    if (!res.equals(notExistsValue)) {
+      found = true;
+      result = conf.getBoolean(prefix + key, defValue);
+    } else {
+      for (String alternativePrefix : altPrefix) {
+        found = true;
+        result = conf.getBoolean(alternativePrefix + key, defValue);
+      }
+    }
+    if (!found) {
+      result = defValue;
+    }
+    return result;
   }
 
   /**
@@ -221,10 +347,19 @@ public class Utils {
    * http://hostname/v1/auth_id
    *
    * @param publicURL public url
+   * @param scheme URL scheme
    * @return accessURL access url
    * @throws IOException if path is malformed
    */
-  public static String extractAccessURL(String publicURL) throws IOException {
+  public static String extractAccessURL(String publicURL, String scheme) throws IOException {
+    if (publicURL != null && !publicURL.startsWith("http")) {
+      String startScheme = scheme + "://";
+      int end = publicURL.length();
+      if (publicURL.indexOf("/", startScheme.length()) >= 0) {
+        end = publicURL.indexOf("/", startScheme.length());
+      }
+      return publicURL.substring(0, end);
+    }
     try {
       String hostName = new URI(publicURL).getAuthority();
       int  start = publicURL.indexOf("//") + 2 + hostName.length() + 1;
@@ -249,6 +384,9 @@ public class Utils {
    * @return container name
    */
   public static String extractDataRoot(String publicURL, String accessURL) {
+    if (publicURL != null && !publicURL.startsWith("http")) {
+      return "";
+    }
     String reminder = publicURL.substring(accessURL.length() + 1);
     String container = null;
     if (reminder.indexOf("/") > 0) {
@@ -306,5 +444,17 @@ public class Utils {
     } catch (ParseException e) {
       throw new IOException("Failed to parse " + strTime, e);
     }
+  }
+
+  public static boolean validContainer(String container) throws InvalidContainerNameException {
+    if (container != null && container.length() < 4) {
+      throw new InvalidContainerNameException("Container " + container
+          + " length must be at least 3 letters");
+    }
+    if (InetAddressUtils.isIPv4Address(container)) {
+      throw new InvalidContainerNameException("Container " + container
+          + " is of IP address pattern");
+    }
+    return true;
   }
 }

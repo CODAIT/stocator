@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.9-SNAPSHOT</version>
+    <version>1.0.11-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -62,16 +62,28 @@
         <slf4j.version>1.7.10</slf4j.version>
         <java.version>1.7</java.version>
         <joss.version>0.9.15</joss.version>
-        <hadoop.version>2.7.2</hadoop.version>
+        <hadoop.version>2.7.3</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.7</jackson.version>
         <httpcomponents.httpcore.version>4.4.5</httpcomponents.httpcore.version>
         <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
+        <amazon.sdk.version>1.11.59</amazon.sdk.version>
     </properties>
 
     <dependencies>
+        <dependency>
+           <groupId>com.amazonaws</groupId>
+           <artifactId>aws-java-sdk</artifactId>
+           <version>${amazon.sdk.version}</version>
+           <exclusions>
+                <exclusion>
+                    <artifactId>org.apache.httpcomponents</artifactId>
+                    <groupId>httpclient</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
@@ -142,8 +154,12 @@
                    <artifactId>*</artifactId>
                </exclusion>
             </exclusions>
-
         </dependency>
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+            <version>1.6</version>
+	</dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -220,6 +236,13 @@
         </dependency>
     </dependencies>
     <build>
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>  
+    
         <pluginManagement>
             <plugins>
                 <plugin>

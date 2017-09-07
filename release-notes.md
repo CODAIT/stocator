@@ -1,4 +1,14 @@
 ##Release notes
+
+### Version 1.0.9
+1. Stocator COS support 
+2. Fixing Stocator user agent
+3. Fixing issues with streaming
+4. Proper handle of the Filter for list operations
+4. Moving JOSS to 0.9.15
+5. Avoid duplicate get container
+6. Making API to work with non US locale
+
 ### Version 1.0.8
 1. Better debug prints
 2. Reducing number of GET requests

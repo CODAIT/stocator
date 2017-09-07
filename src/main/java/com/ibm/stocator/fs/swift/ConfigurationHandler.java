@@ -40,6 +40,8 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TENANT_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_REGION_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.USERNAME;
+import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR;
+import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PASSWORD;
 import static com.ibm.stocator.fs.swift.SwiftConstants.TENANT;
 import static com.ibm.stocator.fs.swift.SwiftConstants.REGION;
@@ -51,6 +53,8 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_DELETE_TEMP_DATA;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
+import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD;
+import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROPERTY;
 
 /**
  * Integrates Hadoop configuration with the Swift implementation
@@ -74,13 +78,15 @@ public final class ConfigurationHandler {
     } else {
       String container = Utils.getContainerName(host);
       String service = Utils.getServiceName(host);
-      String prefix = SWIFT_SERVICE_PREFIX + service;
+      String[] prefix = new String[]{SWIFT_SERVICE_PREFIX + service};
       String prefix2D = SWIFT2D_SERVICE_PREFIX + service;
       props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, USERNAME, props, SWIFT_USERNAME_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, PASSWORD, props, SWIFT_PASSWORD_PROPERTY, true);
-
+      Utils.updateProperty(conf, prefix2D, prefix, BUFFER_DIR, props, BUFFER_DIR_PROPERTY, false);
+      Utils.updateProperty(conf, prefix2D, prefix, NON_STREAMING_UPLOAD, props,
+          NON_STREAMING_UPLOAD_PROPERTY, false);
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_METHOD, props, SWIFT_AUTH_METHOD_PROPERTY,
           false);
       Utils.updateProperty(conf, prefix2D, prefix, BLOCK_SIZE, props, SWIFT_BLOCK_SIZE_PROPERTY,

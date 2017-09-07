@@ -138,9 +138,8 @@ mvn -Pdistribution clean install
 mvn -Pdistribution -DaltDeploymentRepository=sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2 clean package release:clean release:prepare $DRY_RUN -Dgpg.passphrase="$GPG_PASSPHRASE" -DskipTests -DreleaseVersion="$RELEASE_VERSION" -DdevelopmentVersion="$DEVELOPMENT_VERSION" -Dtag="$RELEASE_TAG"
 
 if [ -z "$DRY_RUN" ]; then
+   git checkout $RELEASE_TAG
    mvn -Pdistribution -DaltDeploymentRepository=sonatype-nexus-staging::default::https://oss.sonatype.org/service/local/staging/deploy/maven2 clean install gpg:sign install:install deploy:deploy
 fi
 
 exit 0
-
-
