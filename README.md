@@ -169,12 +169,13 @@ Example, configure `<service>` as `myCOS`:
 | fs.cos.connection.establish.timeout| 50000 | amount of time (in ms) until we give up trying to establish a connection to the object store |
 | fs.cos.client.execution.timeout| 500000 | amount of time (in ms) to allow a client to complete the execution of an API call |
 | fs.cos.client.request.timeout| 500000 | amount of time to wait (in ms) for a request to complete before giving up and timing out |
-|fs.cos.connection.ssl.enabled |true | Enables or disables SSL connections to COS.|
-|fs.cos.proxy.host| | Hostname of the (optional) proxy server for COS connections. |
-|fs.cos.proxy.port| |Proxy server port. If this property is not set but fs.cos.proxy.host is, port 80 or 443 is assumed (consistent with the value of fs.cos.connection.ssl.enabled).|
+|fs.cos.connection.ssl.enabled |true | Enables or disables SSL connections to COS |
+|fs.cos.proxy.host| | Hostname of the (optional) proxy server for COS connections |
+|fs.cos.proxy.port| |Proxy server port. If this property is not set but fs.cos.proxy.host is, port 80 or 443 is assumed (consistent with the value of fs.cos.connection.ssl.enabled) |
 | fs.cos.proxy.username| |Username for authenticating with proxy server |
-| fs.cos.proxy.password| |Password for authenticating with proxy server.|
-| fs.cos.proxy.domain| |Domain for authenticating with proxy server. |
+| fs.cos.proxy.password| |Password for authenticating with proxy server |
+| fs.cos.proxy.domain| |Domain for authenticating with proxy server |
+| fs.cos.user.agent.prefix| |User agent prefix |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 

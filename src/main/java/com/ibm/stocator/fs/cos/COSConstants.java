@@ -146,4 +146,7 @@ public class COSConstants {
   public static final String PROXY_DOMAIN = ".proxy.domain";
   public static final String PROXY_WORKSTATION = ".proxy.workstation";
 
+  // User agent prefix
+  public static final String USER_AGENT_PREFIX = ".user.agent.prefix";
+  public static final String DEFAULT_USER_AGENT_PREFIX = "";
 }

@@ -125,6 +125,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_RECV_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_SEND_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_TIMEOUT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.cos.COSConstants.USER_AGENT_PREFIX;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_USER_AGENT_PREFIX;
 
 public class COSAPIClient implements IStoreClient {
 
@@ -896,7 +898,12 @@ public class COSAPIClient implements IStoreClient {
       clientConf.setSignerOverride(signerOverride);
     }
 
+    String userAgentPrefix = Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS,
+        USER_AGENT_PREFIX, DEFAULT_USER_AGENT_PREFIX);
     String userAgentName = singletoneInitTimeData.getUserAgentName();
+    if (!userAgentPrefix.equals(DEFAULT_USER_AGENT_PREFIX)) {
+      userAgentName = userAgentPrefix + " " + userAgentName;
+    }
     clientConf.setUserAgentPrefix(userAgentName);
   }
 
