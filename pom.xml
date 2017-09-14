@@ -69,13 +69,13 @@
         <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
-        <ibm.sdk.version>0.0.1-SNAPSHOT</ibm.sdk.version>
+        <ibm.sdk.version>1.0.0</ibm.sdk.version>
     </properties>
 
     <dependencies>
         <dependency>
-           <groupId>com.cleversafe</groupId>
-           <artifactId>cos-java-sdk-bundle</artifactId>
+           <groupId>com.ibm.cos</groupId>
+           <artifactId>ibm-cos-java-sdk-s3</artifactId>
            <version>${ibm.sdk.version}</version>
         </dependency>
         <dependency>
