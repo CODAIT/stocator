@@ -96,9 +96,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       if (Utils.validSchema(fsuri.toString())) {
         hostNameScheme = storageClient.getScheme() + "://"  + Utils.getHost(fsuri) + "/";
       } else {
-        String accessURL = Utils.extractAccessURL(fsuri.toString());
-        hostNameScheme = accessURL + "/" + Utils.extractDataRoot(fsuri.toString(),
-            accessURL) + "/";
+        LOG.debug("Non valid schema for {}", fsuri.toString());
+        String accessURL = Utils.extractAccessURL(fsuri.toString(), storageClient.getScheme());
+        LOG.debug("Non valid schema. Access url {}", accessURL);
+        String dataRoot = Utils.extractDataRoot(fsuri.toString(),
+            accessURL);
+        if (dataRoot.isEmpty()) {
+          hostNameScheme = accessURL + "/";
+        } else {
+          hostNameScheme = accessURL + "/" + dataRoot + "/";
+        }
       }
       stocatorPath = new StocatorPath(committerType, conf, hostNameScheme);
       storageClient.setStocatorPath(stocatorPath);
@@ -115,7 +122,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   protected void checkPath(Path path) {
-    LOG.trace("Check path: {}", path.toString());
+    LOG.debug("Check path: {}", path.toString());
   }
 
   /**
@@ -234,6 +241,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
         recursive, objNameModified, hostNameScheme);
     boolean result = false;
+    boolean deleteMainEntry = true;
     if (stocatorPath.isTemporaryPathContain(objNameModified)) {
       return true;
     }
@@ -256,17 +264,20 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
-          LOG.trace("Delete candidate {} pathToDelete {}", fs.getPath().toString(), pathToDelete);
+          LOG.trace("Delete candidate {} ", fs.getPath().toString(), pathToDelete);
           if (fs.getPath().toString().equals(f.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
+            if (fs.getPath().toString().equals(f.toString())) {
+              deleteMainEntry = false;
+            }
           }
         }
       }
     }
-    if (!hostNameScheme.equals(pathToObj.toString())) {
-      LOG.debug("Delete main entry {}", pathToObj);
+    if (!hostNameScheme.equals(pathToObj.toString()) && deleteMainEntry) {
+      LOG.debug("*** Delete main entry {}", pathToObj);
       storageClient.delete(hostNameScheme, f, recursive);
     }
     return true;

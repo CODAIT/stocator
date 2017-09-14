@@ -76,10 +76,10 @@ public final class ConfigurationHandler {
    */
   public static Properties initialize(URI uri, Configuration conf,
       String scheme) throws IOException {
-    LOG.debug("COS driver: initialize start");
+    LOG.debug("COS driver: initialize start for {} ", uri.toString());
     String host = Utils.getHost(uri);
-    LOG.trace("extracted host name from {} is {}", uri.toString(), host);
-    String bucket = getContainerName(host);
+    LOG.debug("extracted host name from {} is {}", uri.toString(), host);
+    String bucket = Utils.getContainerName(host, false);
     String service = null;
     try {
       service = Utils.getServiceName(host);
@@ -126,14 +126,6 @@ public final class ConfigurationHandler {
 
     LOG.debug("Initialize completed successfully");
     return props;
-  }
-
-  private static String getContainerName(String hostname) throws IOException {
-    int i = hostname.indexOf(".");
-    if (i <= 0) {
-      return hostname;
-    }
-    return hostname.substring(0, i);
   }
 
 }

@@ -48,6 +48,8 @@ public class StocatorPath {
    * @param hostName hostname
    */
   public StocatorPath(String fileOriginator, Configuration conf, String hostName) {
+    LOG.debug("StocatorPath generated with hostname {} and file originator {}", hostName,
+        fileOriginator);
     tempFileOriginator = fileOriginator;
     hostNameScheme = hostName;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {

@@ -143,7 +143,7 @@ Example, configure `<service>` as `myCOS`:
 		<value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
 	</property>
 	<property>
-		<name>fs.cose.myCos.secret.key</name>
+		<name>fs.cos.myCos.secret.key</name>
 		<value>SECRET KEY</value>
 	</property>
 	<property>
@@ -234,6 +234,7 @@ The following is the list of the configuration keys
 |fs.swift2d.service.SERVICE_NAME.block.size | Block size in MB | 128MB |
 |fs.swift2d.service.SERVICE_NAME.region | Mandatory for Keystone|
 |fs.swift2d.service.SERVICE_NAME.auth.method | Optional. Values: keystone, swiftauth, keystoneV3| keystoneV3
+|fs.swift2d.service.SERVICE_NAME.nonstreaming.upload | Optional. If set to true then any object upload will be stored locally in the temp file and uploaded on close method. Disable stocator streaming mode |
 
 #### Keystone V3 mapping to keys
 

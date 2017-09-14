@@ -1,18 +1,21 @@
-/**
- * (C) Copyright IBM Corp. 2015, 2016
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
+ *  (C) Copyright IBM Corp. 2015, 2016
  */
 
 package com.ibm.stocator.fs.cos;
@@ -28,7 +31,6 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.ibm.stocator.fs.common.Constants;
 
 import org.apache.hadoop.fs.CanSetReadahead;
-import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,7 +172,7 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
     LOG.trace("seek {} to {}", uri, targetPos);
     checkNotClosed();
     if (targetPos < 0) {
-      throw new EOFException(FSExceptionMessages.NEGATIVE_SEEK + " " + targetPos);
+      throw new EOFException("NEGATIVE_SEEK " + targetPos);
     }
     nextReadPos = targetPos;
   }
@@ -334,7 +336,7 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
   private void checkNotClosed() throws IOException {
     if (closed) {
       LOG.debug("closed {}. Throw exception", uri);
-      throw new IOException(uri + ": " + FSExceptionMessages.STREAM_IS_CLOSED);
+      throw new IOException(uri + ": STREAM_IS_CLOSED");
     }
   }
 
