@@ -2,14 +2,14 @@ Stocator - Storage Connector for Apache Spark
 ==============================
 Apache Spark can work with multiple data sources that include various object stores like IBM Cloud Object Storage, OpenStack Swift and more. To access an object store, Apache Spark uses Hadoop modules that contain connectors to the various object stores. 
 
-Apache Spark needs only small set of object store functionalities. Specifically, Apache Spark requires object listing, objects creation, read objects, and getting data partitions. Hadoop connectors, however, must be compliant with the Hadoop eco system. This means they support many more operations, such as shell operations on directories, including move, copy, rename, etc. (these are not native object store operations). Moreover, Hadoop Map Reduce Client is designed to work with file systems and not object stores. The temp files and folders it uses for every write operation are renamed, copied, and deleted. This leads to dozens of useless requests targeted at the object store. It’s clear that Hadoop is designed to work with file systems and not object stores.
+Apache Spark needs only small set of object store functionalities. Specifically, Apache Spark requires object listing, objects creation, read objects, and getting data partitions. Hadoop connectors, however, must be compliant with the Hadoop ecosystem. This means they support many more operations, such as shell operations on directories, including move, copy, rename, etc. (these are not native object store operations). Moreover, Hadoop Map Reduce Client is designed to work with file systems and not object stores. The temp files and folders it uses for every write operation are renamed, copied, and deleted. This leads to dozens of useless requests targeted at the object store. It’s clear that Hadoop is designed to work with file systems and not object stores.
 
 Stocator is implicitly designed for the object stores, it has very a different architecture from the existing Hadoop connector. It doesn’t depends on the Hadoop modules and interacts directly with object stores.
 
 Stocator is a generic connector, that may contain various implementations for object stores. It shipped with OpenStack Swift and IBM Cloud Object Storage connectors. Stocator can be easily extended with more object store implementations.
 
 ## Major features
-* Hadoop eco system compliant. Implements Hadoop FileSystem interface
+* Hadoop ecosystem compliant. Implements Hadoop FileSystem interface
 * No need to change or recompile Apache Spark
 * Stocator doesn’t create any temporary folders or files for write operations. Each Spark's task generates only one object in the object store. Preserves existing Hadoop fault tolerance model.
 * Object's name may contain "/" and thus simulate directory structures
