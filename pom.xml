@@ -75,7 +75,8 @@
     <dependencies>
         <dependency>
            <groupId>com.ibm.cos</groupId>
-           <artifactId>ibm-cos-java-sdk-s3</artifactId>
+           <artifactId>ibm-cos-java-sdk</artifactId>
+           <type>pom</type>
            <version>${ibm.sdk.version}</version>
         </dependency>
         <dependency>
