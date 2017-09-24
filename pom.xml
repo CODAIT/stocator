@@ -75,7 +75,7 @@
     <dependencies>
         <dependency>
            <groupId>com.ibm.cos</groupId>
-           <artifactId>ibm-cos-java-sdk</artifactId>
+           <artifactId>ibm-cos-java-sdk-bundle</artifactId>
            <type>pom</type>
            <version>${ibm.sdk.version}</version>
         </dependency>
@@ -282,36 +282,68 @@
             </plugins>
         </pluginManagement>
         <plugins>
-        <!--
-	<plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>2.4.3</version>
-        <configuration>
-        
-    <artifactSet>
-      <includes>
-        <include>com.ibm.oauth:*</include>
-      </includes>
-    </artifactSet>
-     
-        <relocations>
-           <relocation>
-              <pattern>com.amazonaws</pattern>
-              <shadedPattern>com.amazonaws.cos.sdk</shadedPattern>
-           </relocation>
-        </relocations>
-        </configuration>
-       <executions>
-       <execution>
-          <phase>package</phase>
-          <goals>
-             <goal>shade</goal>
-          </goals>
-       </execution>
-      </executions>
-    </plugin>
-    -->
+           <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-shade-plugin</artifactId>
+              <version>2.4.3</version>
+              <configuration>
+                 <artifactSet>
+                      <includes>
+                          <include>com.ibm.cos:*</include>
+                          <include>com.amazonaws:*</include>
+                          <include>joda-time:joda-time</include>
+                          <include>com.fasterxml.jackson.core:*</include>
+                          <include>com.fasterxml.jackson.dataformat:jackson-dataformat-cbor</include>
+                          <include>org.apache.httpcomponents:*</include>
+                          <include>commons-codec:commons-codec</include>
+                          <include>software.amazon.ion:ion-java</include>
+                          <include>commons-logging:commons-logging</include>
+                      </includes>
+                  </artifactSet>
+                   <relocations>
+                        <relocation>
+                            <pattern>org.joda</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.joda</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.fasterxml.jackson</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.jackson</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.http</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.http</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons.codec</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.codec</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>software.amazon.ion</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.ion</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons.logging</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.logging</shadedPattern>
+                        </relocation>
+                       <relocation>
+                           <pattern>com.amazonaws</pattern>
+                           <shadedPattern>com.amazonaws.shade</shadedPattern>
+                       </relocation>
+                       <relocation>
+                           <pattern>com.ibm.oauth</pattern>
+                           <shadedPattern>com.ibm.oauth.shade</shadedPattern>
+                       </relocation>
+                   </relocations>
+               </configuration>
+               <executions>
+                   <execution>
+                      <phase>package</phase>
+                       <goals>
+                           <goal>shade</goal>
+                       </goals>
+                   </execution>
+               </executions>
+           </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
