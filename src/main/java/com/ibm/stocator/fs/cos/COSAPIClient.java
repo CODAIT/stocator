@@ -306,12 +306,15 @@ public class COSAPIClient implements IStoreClient {
       String serviceInstanceID = props.getProperty(IAM_SERVICE_INSTANCE_ID_PROPERTY);
       String iamEndpoint = props.getProperty(IAM_ENDPOINT_PROPERTY);
       if (iamEndpoint != null) {
+        LOG.debug("Setting custom IAM endpoint to {}", iamEndpoint);
         SDKGlobalConfiguration.IAM_ENDPOINT = iamEndpoint;
       }
       BasicIBMOAuthCredentials creds = null;
       if (apiKey != null) {
+        LOG.debug("Using API key ");
         creds = new BasicIBMOAuthCredentials(apiKey, serviceInstanceID);
       } else if (token != null) {
+        LOG.debug("Setting custom token");
         CustomTokenManager customToken = new CustomTokenManager(token);
         creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
       }
