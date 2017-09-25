@@ -141,23 +141,29 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   public boolean isDirectory(Path f) throws IOException {
+    if (stocatorPath.isTemporaryPathContain(f)) {
+      return false;
+    }
     try {
       FileStatus fileStatus = getFileStatus(f);
       LOG.debug("is directory: {}" + f.toString() + " " + fileStatus.isDirectory());
       return fileStatus.isDirectory();
     } catch (FileNotFoundException e) {
-      return false;               // f does not exist
+      return false;
     }
   }
 
   @Override
   public boolean isFile(Path f) throws IOException {
+    if (stocatorPath.isTemporaryPathContain(f)) {
+      return true;
+    }
     try {
       FileStatus fileStatus = getFileStatus(f);
       LOG.debug("is file: {}" + f.toString() + " " + fileStatus.isFile());
       return fileStatus.isFile();
     } catch (FileNotFoundException e) {
-      return false;               // f does not exist
+      return false;
     }
   }
 
