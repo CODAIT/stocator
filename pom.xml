@@ -291,6 +291,7 @@
                       <includes>
                           <include>com.ibm.cos:*</include>
                           <include>com.amazonaws:*</include>
+                          <include>org.javaswift:*</include>
                           <include>joda-time:joda-time</include>
                           <include>com.fasterxml.jackson.core:*</include>
                           <include>com.fasterxml.jackson.dataformat:jackson-dataformat-cbor</include>
@@ -301,6 +302,10 @@
                       </includes>
                   </artifactSet>
                    <relocations>
+                        <relocation>
+                            <pattern>org.javaswift.joss</pattern>
+                            <shadedPattern>org.javaswift.joss.shade</shadedPattern>
+                        </relocation>
                         <relocation>
                             <pattern>org.joda</pattern>
                             <shadedPattern>com.amazonaws.shade.thirdparty.joda</shadedPattern>
