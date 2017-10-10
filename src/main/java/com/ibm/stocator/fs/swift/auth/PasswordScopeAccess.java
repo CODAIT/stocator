@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Extends JOSS Access Interface to support Keystone V3 API
  */
-public class PasswordScopeAccess implements Access{
+public class PasswordScopeAccess implements Access {
 
   /*
    * Logger

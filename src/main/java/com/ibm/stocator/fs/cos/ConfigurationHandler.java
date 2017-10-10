@@ -81,7 +81,6 @@ public final class ConfigurationHandler {
     if (service == null) {
       service =  "service";
     }
-    LOG.debug("bucket: {}, service: {}", bucket , service);
     String[] altPrefix = new String[]{S3_A_SERVICE_PREFIX + service,
         S3_D_SERVICE_PREFIX + service};
     String prefix = COS_SERVICE_PREFIX + service;
@@ -89,12 +88,29 @@ public final class ConfigurationHandler {
         prefix, Arrays.toString(altPrefix));
     Properties props = new Properties();
     props.setProperty(COS_BUCKET_PROPERTY, bucket);
-    Utils.updateProperty(conf, prefix, altPrefix, ACCESS_KEY, props,
-        ACCESS_KEY_COS_PROPERTY, false);
-    Utils.updateProperty(conf, prefix, altPrefix, SECRET_KEY, props,
-        SECRET_KEY_COS_PROPERTY, false);
-    Utils.updateProperty(conf, prefix, altPrefix, ENDPOINT_URL, props,
-        ENDPOINT_URL_COS_PROPERTY, false);
+    LOG.debug("bucket: {}, service: {}", bucket , service);
+    if (!Utils.validSchema(uri)) {
+      String accessKey = (String) props.setProperty(ACCESS_KEY_COS_PROPERTY,
+          Utils.extractAccessKey(uri.toString()));
+      Utils.updateProperty(conf, prefix, altPrefix, accessKey, props,
+          ACCESS_KEY_COS_PROPERTY, false);
+      String secretKey = (String) props.setProperty(SECRET_KEY_COS_PROPERTY,
+          Utils.extractSecretKey(uri.toString()));
+      Utils.updateProperty(conf, prefix, altPrefix, secretKey, props,
+          SECRET_KEY_COS_PROPERTY, false);
+      props.setProperty(Utils.extractSecretKey(uri.toString()), SECRET_KEY_COS_PROPERTY);
+      String endpointURL = (String) props.setProperty(ENDPOINT_URL_COS_PROPERTY,
+          Utils.extractEndpointName(uri.toString()));
+      Utils.updateProperty(conf, prefix, altPrefix, endpointURL, props,
+          ENDPOINT_URL_COS_PROPERTY, false);
+    } else {
+      Utils.updateProperty(conf, prefix, altPrefix, ACCESS_KEY, props,
+          ACCESS_KEY_COS_PROPERTY, false);
+      Utils.updateProperty(conf, prefix, altPrefix, SECRET_KEY, props,
+          SECRET_KEY_COS_PROPERTY, false);
+      Utils.updateProperty(conf, prefix, altPrefix, ENDPOINT_URL, props,
+          ENDPOINT_URL_COS_PROPERTY, false);
+    }
     Utils.updateProperty(conf, prefix, altPrefix, AUTO_BUCKET_CREATE, props,
         AUTO_BUCKET_CREATE_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, V2_SIGNER_TYPE, props,

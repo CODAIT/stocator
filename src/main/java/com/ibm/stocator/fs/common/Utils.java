@@ -145,9 +145,14 @@ public class Utils {
     if (i < 0) {
       return false;
     }
-    String service = hostName.substring(i + 1);
+    String service = "";
+    if (!uri.toString().contains("@")) {
+      service = hostName.substring(i + 1);
+    }
     LOG.trace("Got service as {}", service);
     if (service.isEmpty() || service.contains(".")) {
+      return false;
+    } else if (uri.toString().contains("@")) {
       return false;
     }
     return true;
@@ -377,14 +382,68 @@ public class Utils {
   }
 
   /**
+   * Extracts endpoint name from schema://accesskey:secretkey@endpoint/container/object
+   * @param wholeURL is the url
+   * @return endpoint name
+   * @throws IOException if endpoint is not fond
+   */
+  public static String extractEndpointName(String wholeURL) throws IOException {
+    String endpointName = null;
+    if (wholeURL != null) {
+      int sInd = wholeURL.indexOf("@") + 1;
+      wholeURL = wholeURL.substring(sInd);
+      int eInd = wholeURL.indexOf("/");
+      endpointName = wholeURL.substring(0, eInd);
+    }
+    return endpointName;
+  }
+
+  /**
+   * Extracts accesskey name from schema://accesskey:secretkey@endpoint/container/object
+   * @param wholeURL is the url
+   * @return access key
+   * @throws IOException if access key is not found
+   */
+  public static String extractAccessKey(String wholeURL) throws IOException {
+    String accessKey = null;
+    if (wholeURL != null) {
+      int sInd = wholeURL.indexOf("//") + 2;
+      wholeURL = wholeURL.substring(sInd);
+      int eInd = wholeURL.indexOf(":");
+      accessKey = wholeURL.substring(0, eInd);
+    }
+    return accessKey;
+  }
+
+  /**
+   * Extracts secretkey name from schema://accesskey:secretkey@endpoint/container/object
+   * @param wholeURL is the url
+   * @return secret key
+   * @throws IOException if secret key is not found
+   */
+  public static String extractSecretKey(String wholeURL) throws IOException {
+    String secretKey = null;
+    if (wholeURL != null) {
+      int sInd = wholeURL.indexOf(":") + 1;
+      wholeURL = wholeURL.substring(sInd);
+      sInd = wholeURL.indexOf(":") + 1;
+      wholeURL = wholeURL.substring(sInd);
+      int eInd = wholeURL.indexOf("@");
+      secretKey = wholeURL.substring(0, eInd);
+    }
+    return secretKey;
+  }
+
+  /**
    * Extracts container name from http://hostname/v1/auth_id/container/object
+   * or schema://accesskey:secretkey@endpoint/container/object
    *
    * @param publicURL public url
    * @param accessURL access url
    * @return container name
    */
   public static String extractDataRoot(String publicURL, String accessURL) {
-    if (publicURL != null && !publicURL.startsWith("http")) {
+    if (publicURL != null && (!publicURL.startsWith("http") || !publicURL.contains("@"))) {
       return "";
     }
     String reminder = publicURL.substring(accessURL.length() + 1);

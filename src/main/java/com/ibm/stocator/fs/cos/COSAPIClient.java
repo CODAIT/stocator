@@ -202,7 +202,14 @@ public class COSAPIClient implements IStoreClient {
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
-    mBucket = props.getProperty(COS_BUCKET_PROPERTY);
+    if (!Utils.validSchema(filesystemURI)) {
+      String accessURL = Utils.extractAccessURL(filesystemURI.toString(), scheme);
+      String dataRoot = Utils.extractDataRoot(filesystemURI.toString(),
+          accessURL);
+      mBucket = dataRoot;
+    } else {
+      mBucket = props.getProperty(COS_BUCKET_PROPERTY);
+    }
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
         getWorkingDirectory());
 
