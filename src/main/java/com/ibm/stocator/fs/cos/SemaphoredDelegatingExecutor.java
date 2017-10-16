@@ -35,8 +35,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 @SuppressWarnings("NullableProblems")
-class SemaphoredDelegatingExecutor extends
-    ForwardingListeningExecutorService {
+class SemaphoredDelegatingExecutor extends ForwardingListeningExecutorService {
 
   private final Semaphore queueingPermits;
   private final ListeningExecutorService executorDelegatee;
@@ -50,8 +49,7 @@ class SemaphoredDelegatingExecutor extends
    * @param fair should the semaphore be "fair"
    */
   SemaphoredDelegatingExecutor(ListeningExecutorService executorDelegateeT,
-      int permitCountT,
-      boolean fair) {
+      int permitCountT, boolean fair) {
     permitCount = permitCountT;
     queueingPermits = new Semaphore(permitCount, fair);
     executorDelegatee = executorDelegateeT;
@@ -70,7 +68,8 @@ class SemaphoredDelegatingExecutor extends
 
   @Override
   public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
-      long timeout, TimeUnit unit) throws InterruptedException {
+      long timeout, TimeUnit unit)
+      throws InterruptedException {
     throw new RuntimeException("Not implemented");
   }
 
@@ -81,8 +80,7 @@ class SemaphoredDelegatingExecutor extends
   }
 
   @Override
-  public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout,
-      TimeUnit unit)
+  public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
     throw new RuntimeException("Not implemented");
   }
@@ -133,6 +131,7 @@ class SemaphoredDelegatingExecutor extends
   /**
    * Get the number of permits available; guaranteed to be
    * {@code 0 <= availablePermits <= size}.
+   *
    * @return the number of permits available at the time of invocation
    */
   public int getAvailablePermits() {
@@ -141,6 +140,7 @@ class SemaphoredDelegatingExecutor extends
 
   /**
    * Get the number of threads waiting to acquire a permit.
+   *
    * @return snapshot of the length of the queue of blocked threads
    */
   public int getWaitingCount() {
@@ -149,6 +149,7 @@ class SemaphoredDelegatingExecutor extends
 
   /**
    * Total number of permits.
+   *
    * @return the number of permits as set in the constructor
    */
   public int getPermitCount() {
@@ -157,8 +158,7 @@ class SemaphoredDelegatingExecutor extends
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder(
-        "SemaphoredDelegatingExecutor{");
+    final StringBuilder sb = new StringBuilder("SemaphoredDelegatingExecutor{");
     sb.append("permitCount=").append(getPermitCount());
     sb.append(", available=").append(getAvailablePermits());
     sb.append(", waiting=").append(getWaitingCount());
@@ -189,7 +189,7 @@ class SemaphoredDelegatingExecutor extends
   }
 
   /**
-   * Releases a permit after the task is completed.
+   * Releases a permit after the task is completed
    */
   class CallableWithPermitRelease<T> implements Callable<T> {
 

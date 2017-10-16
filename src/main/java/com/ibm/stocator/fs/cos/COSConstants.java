@@ -149,4 +149,39 @@ public class COSConstants {
   // User agent prefix
   public static final String USER_AGENT_PREFIX = ".user.agent.prefix";
   public static final String DEFAULT_USER_AGENT_PREFIX = "";
+
+  // community block upload support
+  public static final String FAST_UPLOAD_BUFFER_ARRAY = "array";
+  public static final String FAST_UPLOAD_BUFFER_DISK = "disk";
+  public static final String FAST_UPLOAD_BYTEBUFFER = "bytebuffer";
+
+  public static final String FAST_UPLOAD = ".fast.upload";
+  public static final boolean DEFAULT_FAST_UPLOAD = false;
+
+  public static final String FAST_UPLOAD_BUFFER =
+      ".fast.upload.buffer";
+  public static final String DEFAULT_FAST_UPLOAD_BUFFER =
+      FAST_UPLOAD_BUFFER_DISK;
+
+  public static final String FAST_UPLOAD_ACTIVE_BLOCKS =
+      ".fast.upload.active.blocks";
+  public static final int DEFAULT_FAST_UPLOAD_ACTIVE_BLOCKS = 4;
+
+  /** The minimum multipart size which COS supports. */
+  public static final int MULTIPART_MIN_SIZE = 5 * 1024 * 1024;
+  public static final int MAX_MULTIPART_COUNT = 10000;
+  //enable multiobject-delete calls?
+  public static final String ENABLE_MULTI_DELETE =
+      ".multiobjectdelete.enable";
+
+  // should we try to purge old multipart uploads when starting up
+  public static final String PURGE_EXISTING_MULTIPART =
+      ".multipart.purge";
+  public static final boolean DEFAULT_PURGE_EXISTING_MULTIPART = false;
+
+  // purge any multipart uploads older than this number of seconds
+  public static final String PURGE_EXISTING_MULTIPART_AGE =
+      ".multipart.purge.age";
+  public static final long DEFAULT_PURGE_EXISTING_MULTIPART_AGE = 86400;
+
 }
