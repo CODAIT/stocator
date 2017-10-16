@@ -207,10 +207,8 @@ public class StocatorPath {
       }
       if (onlyPrefix) {
         if (namePrefix.startsWith("/")) {
-          LOG.debug("namePrefix.substring(1) {}",namePrefix.substring(1));
           return namePrefix.substring(1);
         }
-        LOG.debug("namePrefix {}",namePrefix);
         return namePrefix;
       }
       // we need to match temporary structure and take the rest
