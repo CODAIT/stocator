@@ -120,9 +120,6 @@ public class COSConstants {
   public static final String MAX_TOTAL_TASKS = ".max.total.tasks";
   public static final int DEFAULT_MAX_TOTAL_TASKS = 5;
 
-  //comma separated list of directories
-  public static final String BUFFER_DIR = ".buffer.dir";
-
   // amount of time (in ms) to allow the client to complete the execution of
   // an API call
   public static final String CLIENT_EXEC_TIMEOUT = ".client.execution.timeout";
