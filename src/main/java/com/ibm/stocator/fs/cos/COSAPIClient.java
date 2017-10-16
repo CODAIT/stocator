@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
+import java.util.UUID;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -76,7 +77,6 @@ import org.apache.hadoop.fs.Path;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
-import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
 import static com.ibm.stocator.fs.cos.COSConstants.CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_ESTABLISH_TIMEOUT;
@@ -925,16 +925,20 @@ public class COSAPIClient implements IStoreClient {
     transfers.setConfiguration(transferConfiguration);
   }
 
-  synchronized File createTmpFileForWrite(String pathStr, long size) throws IOException {
-    LOG.trace("Create temp file for write {}. size {}", pathStr, size);
-    if (directoryAllocator == null) {
-      String bufferDir = !Utils.getTrimmed(conf, FS_COS,
-          FS_ALT_KEYS, BUFFER_DIR, "").isEmpty()
-          ? BUFFER_DIR : "hadoop.tmp.dir";
-      LOG.trace("Local buffer directorykey is {}", bufferDir);
-      directoryAllocator = new LocalDirAllocator(bufferDir);
+  private synchronized File createTmpDirForWrite(String tmpDirName) {
+    LOG.trace("tmpDirName is {}", tmpDirName);
+    File tmpDir = new File(tmpDirName);
+    if (!tmpDir.exists()) {
+      tmpDir.mkdir();
     }
-    return directoryAllocator.createTmpFileForWrite(pathStr, size, conf);
+    return tmpDir;
   }
 
+  File createTmpFileForWrite(String pathStr) throws IOException {
+    LOG.trace("Create temp file for write {}.", pathStr);
+    String tmpDirName = conf.get("hadoop.tmp.dir") + "/stocator";
+    File tmpDir = createTmpDirForWrite(tmpDirName);
+    File tmpFile = new File(tmpDir, pathStr + UUID.randomUUID().toString());
+    return tmpFile;
+  }
 }
