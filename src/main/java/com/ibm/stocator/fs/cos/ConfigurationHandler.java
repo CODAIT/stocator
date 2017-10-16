@@ -98,7 +98,6 @@ public final class ConfigurationHandler {
           Utils.extractSecretKey(uri.toString()));
       Utils.updateProperty(conf, prefix, altPrefix, secretKey, props,
           SECRET_KEY_COS_PROPERTY, false);
-      props.setProperty(Utils.extractSecretKey(uri.toString()), SECRET_KEY_COS_PROPERTY);
       String endpointURL = (String) props.setProperty(ENDPOINT_URL_COS_PROPERTY,
           Utils.extractEndpointName(uri.toString()));
       Utils.updateProperty(conf, prefix, altPrefix, endpointURL, props,

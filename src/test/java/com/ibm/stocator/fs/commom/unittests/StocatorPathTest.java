@@ -37,8 +37,10 @@ public class StocatorPathTest {
 
   private StocatorPath mStocatorPath;
   private StocatorPath stocPath;
+  private StocatorPath stocPathCOSEndpoint;
   private String pattern1 = "_temporary/st_ID/_temporary/attempt_ID/";
   String hostname = "swift2d://a.service/";
+  String cosEndpointHostname = "cos://accesskey:secretkey@endpoint/";
 
   @Before
   public final void before() {
@@ -48,6 +50,7 @@ public class StocatorPathTest {
     Configuration conf = new Configuration();
     conf.setStrings("fs.stocator.temp.identifier", pattern1);
     stocPath = new StocatorPath(DEFAULT_FOUTPUTCOMMITTER_V1, conf, hostname);
+    stocPathCOSEndpoint = new StocatorPath(DEFAULT_FOUTPUTCOMMITTER_V1, conf, cosEndpointHostname);
   }
 
   @Test
@@ -134,6 +137,94 @@ public class StocatorPathTest {
     String hostNameScheme = accessURL + "/" + Utils.extractDataRoot(input,
         accessURL);
     expected = "swift2d://a.service/";
+    Assert.assertEquals("host name scheme shows incorrect result",
+        expected, hostNameScheme);
+  }
+
+  @Test
+  public void isTempPathCOSEndpointURLTest() throws Exception {
+
+    String input = "cos://accesskey:secretkey@endpoint/container/one3.txt/_temporary/0/_temporary/"
+        + "attempt_201710121127_0001_m_000007_15";
+    String expectedResult = "container/one3.txt";
+    String result = stocPathCOSEndpoint.getObjectNameRoot(new Path(input),
+        Boolean.FALSE, "container", false);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult, result);
+    boolean res = stocPathCOSEndpoint.isTemporaryPathContain(new Path(input));
+    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+        true, res);
+    res = stocPathCOSEndpoint.isTemporaryPathTarget(new Path(input));
+    Assert.assertEquals("isTemporaryPathTaget() shows incorrect name",
+        true, res);
+
+    input = "cos://accesskey:secretkey@endpoint/container/fruit";
+    expectedResult = "container/fruit";
+    result = stocPathCOSEndpoint.getObjectNameRoot(new Path(input),
+        Boolean.FALSE, "container", false);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult, result);
+
+  }
+
+  @Test
+  public void parseHadoopDefaultCOSEndpointPathTest() throws Exception {
+
+    String hostname = "cos://accesskey:secretkey@endpoint/container";
+
+    String input = "cos://accesskey:secretkey@endpoint/container/aa/bb/cc/one3.txt/_temporary/0/"
+        + "_temporary/attempt_201610052038_0001_m_000007_15/part-00007";
+    String expectedResult = "/aa/bb/cc/one3.txt/part-00007";
+    String result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname, false);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "cos://accesskey:secretkey@endpoint/container/one3.txt/_temporary/0/_temporary/"
+        + "attempt_201610052038_0001_m_000007_15/a/part-00007";
+    expectedResult = "/one3.txt/a/part-00007";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname, false);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "cos://accesskey:secretkey@endpoint/container/one3.txt/_temporary/0/_temporary/"
+        + "attempt_201610052038_0001_m_000007_15/";
+    expectedResult = "/one3.txt";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname, false);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "cos://accesskey:secretkey@endpoint/container/one3.txt/_temporary/0/_temporary/"
+        + "attempt_201610052038_0001_m_000007_15";
+    expectedResult = "/one3.txt";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname, false);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "cos://accesskey:secretkey@endpoint/container/one3.txt/_temporary/0/_temporary/"
+        + "attampt_201610052038_0001_m_000007_15";
+    expectedResult = "/one3.txt/_temporary/0/_temporary/"
+        + "attampt_201610052038_0001_m_000007_15";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+        new Path(input), false, hostname, false);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+            expectedResult, result);
+
+  }
+
+  @Test
+  public void extractAccessCOSEndpointURLTest() throws Exception {
+    String input = "cos://accesskey:secretkey@endpoint/container/a/c/d/e/f/";
+    String expected = "cos://accesskey:secretkey@endpoint";
+    String accessURL = Utils.extractAccessURL(input, "cos");
+    Assert.assertEquals("extractAccessURL() shows incorrect result",
+        expected, accessURL);
+    String hostNameScheme = accessURL + "/" + Utils.extractDataRoot(input,
+        accessURL);
+    expected = "cos://accesskey:secretkey@endpoint/container";
     Assert.assertEquals("host name scheme shows incorrect result",
         expected, hostNameScheme);
   }

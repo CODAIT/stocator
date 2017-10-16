@@ -443,7 +443,7 @@ public class Utils {
    * @return container name
    */
   public static String extractDataRoot(String publicURL, String accessURL) {
-    if (publicURL != null && (!publicURL.startsWith("http") || !publicURL.contains("@"))) {
+    if (publicURL != null && !publicURL.startsWith("http") && !publicURL.contains("@")) {
       return "";
     }
     String reminder = publicURL.substring(accessURL.length() + 1);

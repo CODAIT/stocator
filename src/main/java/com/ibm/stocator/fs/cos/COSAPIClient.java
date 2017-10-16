@@ -753,7 +753,10 @@ public class COSAPIClient implements IStoreClient {
     if (path.toUri().getScheme() != null && path.toUri().getPath().isEmpty()) {
       return "";
     }
-
+    if (!Utils.validSchema(filesystemURI)) {
+      int ind = path.toUri().getPath().indexOf("/", path.toUri().getPath().indexOf("/") + 1);
+      return path.toUri().getPath().substring(ind + 1);
+    }
     return path.toUri().getPath().substring(1);
   }
 
