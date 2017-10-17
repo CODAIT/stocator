@@ -96,6 +96,10 @@ Stocator allows to access IBM Cloud Object Service via `cos://` schema. The gene
 
 where `bucket` is object storage bucket and `<service>` identifies configuration group entry.
 
+Stocator also allows for the passing of the access key, secret key and endpoint in the URI to access IBM Cloud Object service. The format for this is
+
+	cos://<access key>:<secret key>@<endpoint>/<bucket>/object(s) 
+
 ### Using multiple service names
 Each `<service>` may be any name, without special characters. Each service may has it's specific credentials and has different endpoint. By using multiple `<service>` allows to use different endpoints simultaneously. 
 
