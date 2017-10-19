@@ -30,6 +30,9 @@ import java.net.URI;
 import java.util.Map;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -204,6 +207,7 @@ public class COSAPIClient implements IStoreClient {
   private long partSize;
   private long multiPartThreshold;
   private ListeningExecutorService threadPoolExecutor;
+  private ExecutorService unboundedThreadPool;
   private LocalDirAllocator directoryAllocator;
   private Path workingDir;
   private OnetimeInitialization singletoneInitTimeData;
@@ -269,6 +273,13 @@ public class COSAPIClient implements IStoreClient {
         maxThreads + totalTasks,
         keepAliveTime, TimeUnit.SECONDS,
         "s3a-transfer-shared");
+
+    unboundedThreadPool = new ThreadPoolExecutor(
+        maxThreads, Integer.MAX_VALUE,
+        keepAliveTime, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        BlockingThreadPoolExecutorService.newDaemonThreadFactory(
+            "s3a-transfer-unbounded"));
 
     boolean secureConnections = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS,
         SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
@@ -850,24 +861,6 @@ public class COSAPIClient implements IStoreClient {
   }
 
   /**
-   * Turns a path (relative or otherwise) into a COS key.
-   *
-   * @param path input path, may be relative to the working dir
-   * @return a key excluding the leading "/", or, if it is the root path, ""
-   */
-  private String pathToKey(Path path) {
-    if (!path.isAbsolute()) {
-      path = new Path(workingDir, path);
-    }
-
-    if (path.toUri().getScheme() != null && path.toUri().getPath().isEmpty()) {
-      return "";
-    }
-
-    return path.toUri().getPath().substring(1);
-  }
-
-  /**
    * Checks if container/object contains container/object/_SUCCESS If so, this
    * object was created by successful Hadoop job
    *
@@ -1062,7 +1055,7 @@ public class COSAPIClient implements IStoreClient {
     transferConfiguration.setMultipartCopyPartSize(partSize);
     transferConfiguration.setMultipartCopyThreshold(multiPartThreshold);
 
-    transfers = new TransferManager(mClient, threadPoolExecutor);
+    transfers = new TransferManager(mClient, unboundedThreadPool);
     transfers.setConfiguration(transferConfiguration);
   }
 
@@ -1132,36 +1125,7 @@ public class COSAPIClient implements IStoreClient {
      * Callback on a successful write.
      */
     void writeSuccessful() {
-      finishedWrite(key);
-    }
-
-    /**
-     * Perform post-write actions.
-     * @param keyT key written to
-     */
-    private void finishedWrite(String keyT) {
-      LOG.debug("Finished write to {}", keyT);
-      LOG.debug("Delete parent mock directories");
-      Path path = new Path("/" + keyT).getParent();
-      LOG.debug("Delete parent mock directories");
-      List<DeleteObjectsRequest.KeyVersion> keysToRemove = new ArrayList<>();
-      while (!path.isRoot()) {
-        String key = pathToKey(path);
-        key = (key.endsWith("/")) ? key : (key + "/");
-        keysToRemove.add(new DeleteObjectsRequest.KeyVersion(key));
-        path = path.getParent();
-      }
-      try {
-        removeKeys(keysToRemove, false, true);
-      } catch (AmazonClientException | InvalidRequestException e) {
-        if (LOG.isDebugEnabled()) {
-          StringBuilder sb = new StringBuilder();
-          for (DeleteObjectsRequest.KeyVersion kv : keysToRemove) {
-            sb.append(kv.getKey()).append(",");
-          }
-          LOG.debug("While deleting keys {} ", sb.toString(), e);
-        }
-      }
+      LOG.debug("successful write");
     }
 
     /**

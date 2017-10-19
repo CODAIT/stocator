@@ -68,7 +68,7 @@ public class COSOutputStream extends OutputStream {
   /*
    * Output stream
    */
-  private OutputStream mBackupOutputStream;
+  private final OutputStream mBackupOutputStream;
   /*
    * Temporal output file (output stream is buffered by it)
    */
@@ -114,16 +114,11 @@ public class COSOutputStream extends OutputStream {
     }
     mContentType = contentType;
     mMetadata = metadata;
-    try {
-      mBackupFile = fs.createTmpFileForWrite("output-",
-          LocalDirAllocator.SIZE_UNKNOWN);
+    mBackupFile = fs.createTmpFileForWrite("output-",
+        LocalDirAllocator.SIZE_UNKNOWN);
 
-      LOG.debug("OutputStream for key '{}' writing to tempfile: {}", key, mBackupFile);
-      mBackupOutputStream = new BufferedOutputStream(new FileOutputStream(mBackupFile), 32768);
-    } catch (IOException e) {
-      LOG.error(e.getMessage());
-      throw e;
-    }
+    LOG.debug("OutputStream for key '{}' writing to tempfile: {}", key, mBackupFile);
+    mBackupOutputStream = new BufferedOutputStream(new FileOutputStream(mBackupFile), 32768);
   }
 
   void checkOpen() throws IOException {
