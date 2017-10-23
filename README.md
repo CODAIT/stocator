@@ -428,22 +428,23 @@ Follow
 
 	https://github.com/ehiggs/spark-terasort
 	
-You can run Terasort as follows (remember to change the word "SERVICE_NAME" with your Swift SERVICE_NAME name)
+Setup Stocator with COS as previosuly explained. In the example we use bucket `teradata` and service =`service`
+
 Step 1:
 	
 	export MAVEN_OPTS="-Xmx2g -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=512m"
 
 Step 2:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraGen /spark-terasort/target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.SERVICE_NAME/terasort_in
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraGen /spark-terasort/target/spark-terasort-1.1-SNAPSHOT-jar-with-dependencies.jar 1g cos://teradata.service/terasort_in
 	
 Step 3:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraSort /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.SERVICE_NAME/terasort_in swift2d://teradata.SERVICE_NAME/terasort_out
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraSort /target/spark-terasort-1.1-SNAPSHOT-jar-with-dependencies.jar 1g cos://teradata.service/terasort_in cos://teradata.service/terasort_out
 	
 Step 4:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraValidate /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar swift2d://teradata.SERVICE_NAME/terasort_out swift2d://teradata.SERVICE_NAME/terasort_validate
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraValidate /target/spark-terasort-1.1-SNAPSHOT-jar-with-dependencies.jar cos://teradata.service/terasort_out cos://teradata.service/terasort_validate
 	
 ### Functional tests
 Copy 
