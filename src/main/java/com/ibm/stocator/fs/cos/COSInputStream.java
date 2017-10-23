@@ -119,7 +119,7 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
     mClient = client;
     readahead = readAheadT;
     setReadahead(readahead);
-    uri = mBucketName + mKey;
+    uri = mBucketName + "/" + mKey;
   }
 
   /**
