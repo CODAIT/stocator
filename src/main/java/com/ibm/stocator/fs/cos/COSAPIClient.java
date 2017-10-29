@@ -60,6 +60,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
@@ -522,6 +523,10 @@ public class COSAPIClient implements IStoreClient {
           }
         }
       }
+    } catch (AmazonS3Exception e) {
+      if (e.getStatusCode() == 403) {
+        throw new IOException(e);
+      }
     } catch (Exception e) {
       LOG.debug("Not found {}", path.toString());
       LOG.warn(e.getMessage());
@@ -530,19 +535,10 @@ public class COSAPIClient implements IStoreClient {
     throw new FileNotFoundException("Not found " + path.toString());
   }
 
-  private FileStatus getFileStatusKeyBased(String key, Path path) throws IOException {
+  private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception {
     LOG.trace("Get file status by key {}, path {}", key, path);
-    try {
-      ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
-      return createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
-    } catch (AmazonServiceException e) {
-      if (e.getStatusCode() != 404) {
-        throw new IOException("getFileStatus " + key, e);
-      }
-    } catch (AmazonClientException e) {
-      throw new IOException("getFileStatus " + key, e);
-    }
-    return null;
+    ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
+    return createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
   }
 
   private FileStatus getFileStatusObjSummaryBased(S3ObjectSummary objSummary,
