@@ -30,6 +30,9 @@ import java.net.URI;
 import java.util.Map;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +58,15 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.services.s3.model.UploadPartResult;
+import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -62,6 +74,7 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.amazonaws.services.s3.transfer.Upload;
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
@@ -75,6 +88,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import org.apache.hadoop.fs.InvalidRequestException;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.Path;
@@ -134,6 +148,21 @@ import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_SEND_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_PROPERTY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.cos.COSConstants.USER_AGENT_PREFIX;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_USER_AGENT_PREFIX;
+import static com.ibm.stocator.fs.cos.COSConstants.ENABLE_MULTI_DELETE;
+import static com.ibm.stocator.fs.cos.COSConstants.PURGE_EXISTING_MULTIPART;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_PURGE_EXISTING_MULTIPART;
+import static com.ibm.stocator.fs.cos.COSConstants.PURGE_EXISTING_MULTIPART_AGE;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_PURGE_EXISTING_MULTIPART_AGE;
+import static com.ibm.stocator.fs.cos.COSConstants.FAST_UPLOAD;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_FAST_UPLOAD;
+import static com.ibm.stocator.fs.cos.COSConstants.FAST_UPLOAD_BUFFER;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_FAST_UPLOAD_BUFFER;
+import static com.ibm.stocator.fs.cos.COSConstants.FAST_UPLOAD_ACTIVE_BLOCKS;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_FAST_UPLOAD_ACTIVE_BLOCKS;
+
+import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 
 public class COSAPIClient implements IStoreClient {
 
@@ -187,9 +216,16 @@ public class COSAPIClient implements IStoreClient {
   private long partSize;
   private long multiPartThreshold;
   private ListeningExecutorService threadPoolExecutor;
+  private ExecutorService unboundedThreadPool;
   private LocalDirAllocator directoryAllocator;
   private Path workingDir;
   private OnetimeInitialization singletoneInitTimeData;
+
+  private boolean enableMultiObjectsDelete;
+  private boolean blockUploadEnabled;
+  private String blockOutputBuffer;
+  private COSDataBlocks.BlockFactory blockFactory;
+  private int blockOutputActiveBlocks;
 
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
@@ -247,6 +283,13 @@ public class COSAPIClient implements IStoreClient {
         keepAliveTime, TimeUnit.SECONDS,
         "s3a-transfer-shared");
 
+    unboundedThreadPool = new ThreadPoolExecutor(
+        maxThreads, Integer.MAX_VALUE,
+        keepAliveTime, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        BlockingThreadPoolExecutorService.newDaemonThreadFactory(
+            "s3a-transfer-unbounded"));
+
     boolean secureConnections = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS,
         SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
     clientConf.setProtocol(secureConnections ?  Protocol.HTTPS : Protocol.HTTP);
@@ -297,7 +340,6 @@ public class COSAPIClient implements IStoreClient {
     }
 
     initConnectionSettings(conf,clientConf);
-
     if (mIsV2Signer) {
       clientConf.withSignerOverride("S3SignerType");
     }
@@ -384,6 +426,27 @@ public class COSAPIClient implements IStoreClient {
         LOG.error(e.getMessage());
         throw (e);
       }
+    }
+
+    initMultipartUploads(conf);
+    enableMultiObjectsDelete = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS,
+        ENABLE_MULTI_DELETE, true);
+
+    blockUploadEnabled = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS,
+        FAST_UPLOAD, DEFAULT_FAST_UPLOAD);
+
+    if (blockUploadEnabled) {
+      blockOutputBuffer = Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, FAST_UPLOAD_BUFFER,
+          DEFAULT_FAST_UPLOAD_BUFFER);
+      partSize = COSUtils.ensureOutputParameterInRange(MULTIPART_SIZE, partSize);
+      blockFactory = COSDataBlocks.createFactory(this, blockOutputBuffer);
+      blockOutputActiveBlocks = Utils.getInt(conf, FS_COS, FS_ALT_KEYS,
+          FAST_UPLOAD_ACTIVE_BLOCKS, DEFAULT_FAST_UPLOAD_ACTIVE_BLOCKS);
+      LOG.debug("Using COSBlockOutputStream with buffer = {}; block={};"
+          + " queue limit={}",
+          blockOutputBuffer, partSize, blockOutputActiveBlocks);
+    } else {
+      LOG.debug("Using COSOutputStream");
     }
   }
 
@@ -566,6 +629,23 @@ public class COSAPIClient implements IStoreClient {
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
     try {
+      String objNameWithoutBuket = objName;
+      if (objName.startsWith(mBucket + "/")) {
+        objNameWithoutBuket = objName.substring(mBucket.length() + 1);
+      }
+      if (blockUploadEnabled) {
+        return new FSDataOutputStream(
+            new COSBlockOutputStream(this,
+                objNameWithoutBuket,
+                new SemaphoredDelegatingExecutor(threadPoolExecutor,
+                    blockOutputActiveBlocks, true),
+                partSize,
+                blockFactory,
+                new WriteOperationHelper(objNameWithoutBuket)
+            ),
+            null);
+      }
+
       if (!contentType.equals(Constants.APPLICATION_DIRECTORY)) {
         return new FSDataOutputStream(new COSOutputStream(mBucket, objName,
             mClient, contentType, metadata, transfers, this), statistics);
@@ -611,6 +691,38 @@ public class COSAPIClient implements IStoreClient {
       LOG.error(e.getMessage());
       throw e;
     }
+  }
+
+  /**
+   * Create a putObject request.
+   * Adds the ACL and metadata
+   * @param key key of object
+   * @param metadata metadata header
+   * @param srcfile source file
+   * @return the request
+   */
+  public PutObjectRequest newPutObjectRequest(String key,
+      ObjectMetadata metadata, File srcfile) {
+    PutObjectRequest putObjectRequest = new PutObjectRequest(mBucket, key,
+        srcfile);
+    putObjectRequest.setMetadata(metadata);
+    return putObjectRequest;
+  }
+
+  /**
+   * Create a {@link PutObjectRequest} request.
+   * The metadata is assumed to have been configured with the size of the
+   * operation.
+   * @param key key of object
+   * @param metadata metadata header
+   * @param inputStream source data
+   * @return the request
+   */
+  private PutObjectRequest newPutObjectRequest(String key,
+      ObjectMetadata metadata, InputStream inputStream) {
+    PutObjectRequest putObjectRequest = new PutObjectRequest(mBucket, key,
+        inputStream, metadata);
+    return putObjectRequest;
   }
 
   public void setStocatorPath(StocatorPath sp) {
@@ -905,6 +1017,30 @@ public class COSAPIClient implements IStoreClient {
     return key;
   }
 
+  private void initMultipartUploads(Configuration conf) throws IOException {
+    boolean purgeExistingMultipart = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS,
+        PURGE_EXISTING_MULTIPART,
+        DEFAULT_PURGE_EXISTING_MULTIPART);
+    long purgeExistingMultipartAge = Utils.getLong(conf, FS_COS, FS_ALT_KEYS,
+        PURGE_EXISTING_MULTIPART_AGE, DEFAULT_PURGE_EXISTING_MULTIPART_AGE);
+
+    if (purgeExistingMultipart) {
+      Date purgeBefore =
+          new Date(new Date().getTime() - purgeExistingMultipartAge * 1000);
+
+      try {
+        transfers.abortMultipartUploads(mBucket, purgeBefore);
+      } catch (AmazonServiceException e) {
+        if (e.getStatusCode() == 403) {
+          LOG.debug("Failed to purging multipart uploads against {},"
+              + " FS may be read only", mBucket, e);
+        } else {
+          throw translateException("purging multipart uploads", mBucket, e);
+        }
+      }
+    }
+  }
+
   /**
    * Initializes connection management
    *
@@ -937,7 +1073,12 @@ public class COSAPIClient implements IStoreClient {
       clientConf.setSignerOverride(signerOverride);
     }
 
+    String userAgentPrefix = Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS,
+        USER_AGENT_PREFIX, DEFAULT_USER_AGENT_PREFIX);
     String userAgentName = singletoneInitTimeData.getUserAgentName();
+    if (!userAgentPrefix.equals(DEFAULT_USER_AGENT_PREFIX)) {
+      userAgentName = userAgentPrefix + " " + userAgentName;
+    }
     clientConf.setUserAgentPrefix(userAgentName);
   }
 
@@ -955,7 +1096,7 @@ public class COSAPIClient implements IStoreClient {
     transferConfiguration.setMultipartCopyPartSize(partSize);
     transferConfiguration.setMultipartCopyThreshold(multiPartThreshold);
 
-    transfers = new TransferManager(mClient, threadPoolExecutor);
+    transfers = new TransferManager(mClient, unboundedThreadPool);
     transfers.setConfiguration(transferConfiguration);
   }
 
@@ -969,6 +1110,251 @@ public class COSAPIClient implements IStoreClient {
       directoryAllocator = new LocalDirAllocator(bufferDir);
     }
     return directoryAllocator.createTmpFileForWrite(pathStr, size, conf);
+  }
+
+  /**
+   * Upload part of a multi-partition file.
+   * <i>Important: this call does not close any input stream in the request.</i>
+   * @param request request
+   * @return the result of the operation
+   * @throws AmazonClientException on problems
+   */
+  public UploadPartResult uploadPart(UploadPartRequest request)
+      throws AmazonClientException {
+    try {
+      UploadPartResult uploadPartResult = mClient.uploadPart(request);
+      return uploadPartResult;
+    } catch (AmazonClientException e) {
+      throw e;
+    }
+  }
+
+  final class WriteOperationHelper {
+    private final String key;
+
+    private WriteOperationHelper(String keyT) {
+      key = keyT;
+    }
+
+    /**
+     * Create a {@link PutObjectRequest} request.
+     * If {@code length} is set, the metadata is configured with the size of
+     * the upload.
+     * @param inputStream source data
+     * @param length size, if known. Use -1 for not known
+     * @return the request
+     */
+    PutObjectRequest newPutRequest(InputStream inputStream, long length) {
+      PutObjectRequest request = newPutObjectRequest(key,
+          newObjectMetadata(length), inputStream);
+      return request;
+    }
+
+    /**
+     * Create a {@link PutObjectRequest} request to upload a file.
+     * @param sourceFile source file
+     * @return the request
+     */
+    PutObjectRequest newPutRequest(File sourceFile) {
+      int length = (int) sourceFile.length();
+      PutObjectRequest request = newPutObjectRequest(key,
+          newObjectMetadata(length), sourceFile);
+      return request;
+    }
+
+    /**
+     * Callback on a successful write.
+     */
+    void writeSuccessful() {
+      LOG.debug("successful write");
+    }
+
+    /**
+     * A helper method to delete a list of keys on a s3-backend.
+     *
+     * @param keysToDelete collection of keys to delete on the s3-backend
+     *        if empty, no request is made of the object store.
+     * @param clearKeys clears the keysToDelete-list after processing the list
+     *            when set to true
+     * @param deleteFakeDir indicates whether this is for deleting fake dirs
+     * @throws InvalidRequestException if the request was rejected due to
+     * a mistaken attempt to delete the root directory
+     */
+    private void removeKeys(List<DeleteObjectsRequest.KeyVersion> keysToDelete,
+        boolean clearKeys, boolean deleteFakeDir)
+        throws AmazonClientException, InvalidRequestException {
+      if (keysToDelete.isEmpty()) {
+        // exit fast if there are no keys to delete
+        return;
+      }
+      for (DeleteObjectsRequest.KeyVersion keyVersion : keysToDelete) {
+        blockRootDelete(keyVersion.getKey());
+      }
+      if (enableMultiObjectsDelete) {
+        mClient.deleteObjects(new DeleteObjectsRequest(mBucket).withKeys(keysToDelete));
+      } else {
+        for (DeleteObjectsRequest.KeyVersion keyVersion : keysToDelete) {
+          String key = keyVersion.getKey();
+          blockRootDelete(key);
+          mClient.deleteObject(mBucket, key);
+        }
+      }
+      if (clearKeys) {
+        keysToDelete.clear();
+      }
+    }
+
+    /**
+     * Reject any request to delete an object where the key is root.
+     * @param key key to validate
+     * @throws InvalidRequestException if the request was rejected due to
+     * a mistaken attempt to delete the root directory
+     */
+    private void blockRootDelete(String key) throws InvalidRequestException {
+      if (key.isEmpty() || "/".equals(key)) {
+        throw new InvalidRequestException("Bucket " + mBucket
+            + " cannot be deleted");
+      }
+    }
+
+    /**
+     * Callback on a write failure.
+     * @param e Any exception raised which triggered the failure
+     */
+    void writeFailed(Exception e) {
+      LOG.debug("Write to {} failed", this, e);
+    }
+
+    /**
+     * Create a new object metadata instance.
+     * Any standard metadata headers are added here, for example:
+     * encryption
+     * @param length size, if known. Use -1 for not known
+     * @return a new metadata instance
+     */
+    public ObjectMetadata newObjectMetadata(long length) {
+      final ObjectMetadata om = new ObjectMetadata();
+      if (length >= 0) {
+        om.setContentLength(length);
+      }
+      return om;
+    }
+
+    /**
+     * Start the multipart upload process.
+     * @return the upload result containing the ID
+     * @throws IOException IO problem
+     */
+    String initiateMultiPartUpload() throws IOException {
+      LOG.debug("Initiating Multipart upload");
+      final InitiateMultipartUploadRequest initiateMPURequest =
+          new InitiateMultipartUploadRequest(mBucket,
+              key,
+              newObjectMetadata(-1));
+      try {
+        return mClient.initiateMultipartUpload(initiateMPURequest)
+            .getUploadId();
+      } catch (AmazonClientException ace) {
+        throw translateException("initiate MultiPartUpload", key, ace);
+      }
+    }
+
+    /**
+     * Complete a multipart upload operation.
+     * @param uploadId multipart operation Id
+     * @param partETags list of partial uploads
+     * @return the result
+     * @throws AmazonClientException on problems
+     */
+    CompleteMultipartUploadResult completeMultipartUpload(String uploadId,
+        List<PartETag> partETags) throws AmazonClientException {
+      LOG.debug("Completing multipart upload {} with {} parts",
+          uploadId, partETags.size());
+      return mClient.completeMultipartUpload(
+          new CompleteMultipartUploadRequest(mBucket,
+              key,
+              uploadId,
+              partETags));
+    }
+
+    /**
+     * Abort a multipart upload operation
+     * @param uploadId multipart operation Id
+     * @throws AmazonClientException on problems
+     */
+    void abortMultipartUpload(String uploadId) throws AmazonClientException {
+      LOG.debug("Aborting multipart upload {}", uploadId);
+      mClient.abortMultipartUpload(
+          new AbortMultipartUploadRequest(mBucket, key, uploadId));
+    }
+
+    /**
+     * Create and initialize a part request of a multipart upload.
+     * Exactly one of: {@code uploadStream} or {@code sourceFile}
+     * must be specified.
+     * @param uploadId ID of ongoing upload
+     * @param partNumber current part number of the upload
+     * @param size amount of data
+     * @param uploadStream source of data to upload
+     * @param sourceFile optional source file
+     * @return the request
+     */
+    UploadPartRequest newUploadPartRequest(String uploadId,
+        int partNumber, int size, InputStream uploadStream, File sourceFile) {
+      Preconditions.checkNotNull(uploadId);
+      // exactly one source must be set; xor verifies this
+      Preconditions.checkArgument((uploadStream != null) ^ (sourceFile != null),
+          "Data source");
+      Preconditions.checkArgument(size > 0, "Invalid partition size %s", size);
+      Preconditions.checkArgument(partNumber > 0 && partNumber <= 10000,
+          "partNumber must be between 1 and 10000 inclusive, but is %s",
+          partNumber);
+
+      LOG.debug("Creating part upload request for {} #{} size {}",
+          uploadId, partNumber, size);
+      UploadPartRequest request = new UploadPartRequest()
+          .withBucketName(mBucket)
+          .withKey(key)
+          .withUploadId(uploadId)
+          .withPartNumber(partNumber)
+          .withPartSize(size);
+      if (uploadStream != null) {
+        // there's an upload stream. Bind to it.
+        request.setInputStream(uploadStream);
+      } else {
+        request.setFile(sourceFile);
+      }
+      return request;
+    }
+
+    /**
+     * The toString method is intended to be used in logging/toString calls.
+     * @return a string description
+     */
+    @Override
+    public String toString() {
+      final StringBuilder sb = new StringBuilder(
+          "{bucket=").append(mBucket);
+      sb.append(", key='").append(key).append('\'');
+      sb.append('}');
+      return sb.toString();
+    }
+
+    /**
+     * PUT an object directly (i.e. not via the transfer manager).
+     * @param putObjectRequest the request
+     * @return the upload initiated
+     * @throws IOException on problems
+     */
+    PutObjectResult putObject(PutObjectRequest putObjectRequest)
+        throws IOException {
+      try {
+        PutObjectResult result = mClient.putObject(putObjectRequest);
+        return result;
+      } catch (AmazonClientException e) {
+        throw translateException("put", putObjectRequest.getKey(), e);
+      }
+    }
   }
 
 }
