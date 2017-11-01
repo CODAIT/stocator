@@ -146,7 +146,7 @@ You will need to build Stocator manually, for example using 1.0.10-ibm-sdk branc
 	git checkout -b 1.0.10-ibm-sdk origin/1.0.10-ibm-sdk
 	mvn clean install –DskipTests
 
-#####Configure Stocator
+##### Configure Stocator
 
 The next step if to configure Stocator with your COS credentials. The COS credentials is of the form
 
