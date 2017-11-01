@@ -202,7 +202,6 @@ public class COSAPIClient implements IStoreClient {
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
-    //if (!Utils.validSchema(filesystemURI)) {
     if (filesystemURI.toString().contains("@")) {
       String accessURL = Utils.extractAccessURL(filesystemURI.toString(), scheme);
       String dataRoot = Utils.extractDataRoot(filesystemURI.toString(),
