@@ -89,7 +89,8 @@ public final class ConfigurationHandler {
     Properties props = new Properties();
     props.setProperty(COS_BUCKET_PROPERTY, bucket);
     LOG.debug("bucket: {}, service: {}", bucket , service);
-    if (!Utils.validSchema(uri)) {
+    //if (!Utils.validSchema(uri)) {
+    if (uri.toString().contains("@")) {
       String accessKey = (String) props.setProperty(ACCESS_KEY_COS_PROPERTY,
           Utils.extractAccessKey(uri.toString()));
       Utils.updateProperty(conf, prefix, altPrefix, accessKey, props,
