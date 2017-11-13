@@ -188,6 +188,9 @@ Now you can use URI
 	cos://mybucket.myCos/myobject(s)
 
 
+An optional, it is possible to provide existing token instead of using API key.
+Instead of providing `fs.cos.myCos.iam.api.key`, Stocator supports `fs.cos.myCos.iam.api.token` that may contain value of the existing token. When token is expired, Stocator will throw `403` exception. It's the user responsibility to provide long activation token or re-create token outside of Stocator.
+
 #### COS Connector configuration without IAM
 
 The following is the list of the configuration keys. `<service>` can be any value, for example `myCOS`
