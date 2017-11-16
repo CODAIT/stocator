@@ -46,6 +46,7 @@ import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.OUTPUT_COMMITTER_TYPE;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 
@@ -448,6 +449,24 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public FileStatus[] globStatus(Path pathPattern, PathFilter filter) throws IOException {
     LOG.debug("Glob status {} with path filter {}",pathPattern.toString(), filter.toString());
     return new ObjectStoreGlobber(this, pathPattern, filter).glob();
+  }
+
+  @Override
+  public boolean exists(Path f) throws IOException {
+    LOG.trace("Object exists: {}", f);
+    String objName = f.toString();
+    if (f.toString().startsWith(hostNameScheme)) {
+      objName = f.toString().substring(hostNameScheme.length());
+    }
+    if (objName.contains(HADOOP_TEMPORARY)) {
+      LOG.debug("Exists on temp object {}. Return false", objName);
+      return false;
+    }
+    try {
+      return getFileStatus(f) != null;
+    } catch (FileNotFoundException e) {
+      return false;
+    }
   }
 
   /**
