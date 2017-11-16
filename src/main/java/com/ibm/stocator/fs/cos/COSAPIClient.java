@@ -497,13 +497,27 @@ public class COSAPIClient implements IStoreClient {
       throw new FileNotFoundException("Not found " + path.toString());
     }
     try {
-      FileStatus fileStatus = getFileStatusKeyBased(key, path);
+      FileStatus fileStatus = null;
+      try {
+        fileStatus = getFileStatusKeyBased(key, path);
+      } catch (AmazonS3Exception e) {
+        if (e.getStatusCode() != 404) {
+          throw new IOException(e);
+        }
+      }
       if (fileStatus != null) {
         return fileStatus;
       }
       if (!key.endsWith("/")) {
         String newKey = key + "/";
-        fileStatus = getFileStatusKeyBased(newKey, path);
+        try {
+          fileStatus = getFileStatusKeyBased(newKey, path);
+        } catch (AmazonS3Exception e) {
+          if (e.getStatusCode() != 404) {
+            throw new IOException(e);
+          }
+        }
+
         if (fileStatus != null) {
           return fileStatus;
         } else {

@@ -126,15 +126,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   }
 
   /**
-   * Check if the object exists.
-   */
-  @Override
-  public boolean exists(Path f) throws IOException {
-    LOG.debug("exists {}", f.toString());
-    return storageClient.exists(hostNameScheme, f);
-  }
-
-  /**
    * There is no "directories" in the object store
    * The general structure is "dataroot/object"
    * and "object" may contain nested structure
