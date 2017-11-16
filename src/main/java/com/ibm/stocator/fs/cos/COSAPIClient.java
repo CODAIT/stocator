@@ -85,13 +85,11 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.InvalidRequestException;
-import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.Path;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
-import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
 import static com.ibm.stocator.fs.cos.COSConstants.CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_ESTABLISH_TIMEOUT;
@@ -209,7 +207,7 @@ public class COSAPIClient implements IStoreClient {
   private long multiPartThreshold;
   private ListeningExecutorService threadPoolExecutor;
   private ExecutorService unboundedThreadPool;
-  private LocalDirAllocator directoryAllocator;
+  private COSLocalDirAllocator directoryAllocator;
   private Path workingDir;
   private OnetimeInitialization singletoneInitTimeData;
 
@@ -1069,16 +1067,22 @@ public class COSAPIClient implements IStoreClient {
     transfers.setConfiguration(transferConfiguration);
   }
 
-  synchronized File createTmpFileForWrite(String pathStr, long size) throws IOException {
-    LOG.trace("Create temp file for write {}. size {}", pathStr, size);
+  private synchronized File createTmpDirForWrite(String pathStr,
+      String tmpDirName) throws IOException {
+    LOG.trace("tmpDirName is {}", tmpDirName);
     if (directoryAllocator == null) {
-      String bufferDir = !Utils.getTrimmed(conf, FS_COS,
-          FS_ALT_KEYS, BUFFER_DIR, "").isEmpty()
-          ? BUFFER_DIR : "hadoop.tmp.dir";
+      String bufferDir = "hadoop.tmp.dir";
       LOG.trace("Local buffer directorykey is {}", bufferDir);
-      directoryAllocator = new LocalDirAllocator(bufferDir);
+      directoryAllocator = new COSLocalDirAllocator(conf, bufferDir);
     }
-    return directoryAllocator.createTmpFileForWrite(pathStr, size, conf);
+    return directoryAllocator.createTmpFileForWrite(pathStr,
+      COSLocalDirAllocator.SIZE_UNKNOWN, conf);
+  }
+
+  File createTmpFileForWrite(String pathStr) throws IOException {
+    String tmpDirName = conf.get("hadoop.tmp.dir") + "/stocator";
+    File tmpDir = createTmpDirForWrite(pathStr, tmpDirName);
+    return tmpDir;
   }
 
   /**
