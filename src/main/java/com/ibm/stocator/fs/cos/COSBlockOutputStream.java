@@ -155,7 +155,7 @@ class COSBlockOutputStream extends OutputStream {
             + COSConstants.MAX_MULTIPART_COUNT
             + " write may fail.");
       }
-      activeBlock = blockFactory.create(blockCount, blockSize);
+      activeBlock = blockFactory.create(key, blockCount, blockSize);
     }
     return activeBlock;
   }
