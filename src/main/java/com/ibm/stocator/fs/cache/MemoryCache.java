@@ -17,7 +17,7 @@
 
 package com.ibm.stocator.fs.cache;
 
-import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 
 import org.slf4j.Logger;
@@ -33,13 +33,13 @@ public class MemoryCache {
    * Logger
    */
   private static final Logger LOG = LoggerFactory.getLogger(MemoryCache.class);
-  private MemoryCache instance;
+  private static MemoryCache sInstance;
 
-  public MemoryCache getInstance() {
-    if (instance == null) {
-      instance = new MemoryCache();
+  public static MemoryCache getInstance() {
+    if (sInstance == null) {
+      sInstance = new MemoryCache();
     }
-    return instance;
+    return sInstance;
   }
 
   private MemoryCache() {
@@ -53,17 +53,17 @@ public class MemoryCache {
    *
    * @param objName object name
    * @return cached entry of the object
-   * @throws IOException if failed to parse time stamp
    */
-  public CachedObject get(String objName) throws IOException {
+  public CachedObject get(String objName) {
     LOG.trace("Get from cache  {} ", objName);
     CachedObject res = cache.get(objName);
     return res;
   }
 
-  public void put(String objNameKey, long contentLength, long lastModified) {
+  public void put(String objNameKey, long contentLength, Date lastModified) {
     LOG.trace("Add to cache  {} ", objNameKey);
-    cache.put(objNameKey, new CachedObject(contentLength, lastModified));
+    CachedObject co = new CachedObject(contentLength, lastModified);
+    cache.put(objNameKey, co);
   }
 
   public void remove(String objName) {

@@ -17,20 +17,22 @@
 
 package com.ibm.stocator.fs.cache;
 
+import java.util.Date;
+
 public class CachedObject {
   private final long contentLength;
-  private final long lastModified;
+  private  final Date lastModified;
 
-  public CachedObject(long objContentLength, long objLastModified) {
+  public CachedObject(long objContentLength, final Date objLastModified) {
     contentLength = objContentLength;
-    lastModified = objLastModified;
+    lastModified = new Date(objLastModified.getTime());
   }
 
   public long getContentLength() {
     return contentLength;
   }
 
-  public long getLastModified() {
+  public Date getLastModified() {
     return lastModified;
   }
 }
