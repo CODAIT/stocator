@@ -123,7 +123,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   protected void checkPath(Path path) {
-    LOG.debug("Check path: {}", path.toString());
+    LOG.debug("Check path: {}. Not implemented", path.toString());
   }
 
   /**
@@ -193,8 +193,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    * dataroot/objectname/_temporary/0/_temporary/attempt_201603131849_0000_m_000019_0/
    * part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv
    * will be transformed to
-   * PUT dataroot/object
-   * /201603131849_0000_m_000019_0-part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv
+   * PUT dataroot/objectname
+   * /part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv-attempt_201603131849_0000_m_000019_0
    *
    */
   public FSDataOutputStream create(Path f, FsPermission permission,
@@ -204,9 +204,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     String objNameModified = "";
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
+      // no need to add attempt id to the _SUCCESS
       objNameModified =  stocatorPath.getObjectNameRoot(f, false,
           storageClient.getDataRoot(), true);
     } else {
+      // add attempt id to the final name
       objNameModified = stocatorPath.getObjectNameRoot(f, true,
           storageClient.getDataRoot(), true);
     }
@@ -217,7 +219,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   public FSDataOutputStream append(Path f, int bufferSize,
       Progressable progress) throws IOException {
-    throw new IOException("Append is not supported");
+    throw new IOException("Append is not supported in the object store");
   }
 
   /**
@@ -295,17 +297,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public FileStatus[] listStatus(Path f,
       PathFilter filter) throws FileNotFoundException, IOException {
     return listStatus(f, filter, false);
-  }
-
-  @Override
-  public FileStatus[] listStatus(Path[] files,
-      PathFilter filter) throws FileNotFoundException, IOException {
-    return super.listStatus(files, filter);
-  }
-
-  @Override
-  public FileStatus[] listStatus(Path[] files) throws FileNotFoundException, IOException {
-    return super.listStatus(files);
   }
 
   @Override
@@ -454,12 +445,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean exists(Path f) throws IOException {
     LOG.trace("Object exists: {}", f);
-    String objName = f.toString();
-    if (f.toString().startsWith(hostNameScheme)) {
-      objName = f.toString().substring(hostNameScheme.length());
-    }
-    if (objName.contains(HADOOP_TEMPORARY)) {
-      LOG.debug("Exists on temp object {}. Return false", objName);
+    if (f.toString().contains(HADOOP_TEMPORARY)) {
+      LOG.debug("Exists on temp object {}. Return false", f.toString());
       return false;
     }
     try {
