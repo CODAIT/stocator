@@ -435,7 +435,7 @@ public class COSAPIClient implements IStoreClient {
   }
 
   @Override
-  public FileStatus getObjectMetadata(String hostName,
+  public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
     LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
     /*
@@ -575,7 +575,7 @@ public class COSAPIClient implements IStoreClient {
       return false;
     }
     try {
-      if (getObjectMetadata(hostName, path, "exists") != null) {
+      if (getFileStatus(hostName, path, "exists") != null) {
         return true;
       }
     } catch (FileNotFoundException e) {
@@ -709,7 +709,7 @@ public class COSAPIClient implements IStoreClient {
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     try {
-      getObjectMetadata(hostName, path, "delete");
+      getFileStatus(hostName, path, "delete");
     } catch (FileNotFoundException ex) {
       LOG.warn("Delete on {} not found. Nothing to delete");
       return false;
