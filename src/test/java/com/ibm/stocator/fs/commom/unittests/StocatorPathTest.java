@@ -410,4 +410,44 @@ public class StocatorPathTest {
     Assert.assertEquals("host name scheme shows incorrect result",
         expected, hostNameScheme);
   }
+
+  public void partitionsPathTest() throws Exception {
+
+    String input = "swift2d://a.service/aa/abc.parquet/"
+        + "_temporary/0/_temporary/attempt_20171115113432_0017_m_000076_0/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet";
+    String expectedResult = "a/aa/abc.parquet/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet"
+        + "-attempt_20171115113432_0017_m_000076_0";
+
+    String result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult, result);
+    input = "swift2d://a.service/aa/abc.parquet/"
+        + "_temporary/0/_temporary/attempt_20171115113432_0017_m_000076_0/"
+        + "YEAR=2003/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet";
+    expectedResult = "a/aa/abc.parquet/"
+        + "YEAR=2003/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet"
+        + "-attempt_20171115113432_0017_m_000076_0";
+
+    result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/aa/abc.parquet/"
+        + "_temporary/0/_temporary/attempt_20171115113432_0017_m_000076_0/"
+        + "D_DATE=2003-01-10 00%3A00%3A00/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet";
+    expectedResult = "a/aa/abc.parquet/"
+        + "D_DATE=2003-01-10 00%3A00%3A00/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet"
+        + "-attempt_20171115113432_0017_m_000076_0";
+
+    result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+            expectedResult, result);
+
+  }
 }
