@@ -242,7 +242,7 @@ public class SwiftAPIClientTest {
     mStoredObject.uploadObject(new byte[]{1, 2, 3});
 
     //test to see if correct length is returned
-    FileStatus fs = Whitebox.invokeMethod(mSwiftAPIClient, "getFileStatus",
+    FileStatus fs = Whitebox.invokeMethod(mSwiftAPIClient, "createFileStatus",
             mStoredObject, mContainer, hostName, new Path(pathName));
     Assert.assertEquals("getFileStatus() shows incorrect length",
             3, fs.getLen());

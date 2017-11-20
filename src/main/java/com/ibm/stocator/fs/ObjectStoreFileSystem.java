@@ -40,8 +40,9 @@ import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
-import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+import com.ibm.stocator.fs.common.Utils;
+//import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
@@ -308,7 +309,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased)
       throws FileNotFoundException, IOException {
-    LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
+    LOG.debug("listStatus: {},  prefix based {}",f.toString(), prefixBased);
     ArrayList<FileStatus> result = new ArrayList<>();
     if (stocatorPath.isTemporaryPathContain(f)) {
       return result.toArray(new FileStatus[0]);
@@ -317,24 +318,30 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     try {
       fileStatus = getFileStatus(f);
     } catch (FileNotFoundException e) {
-      LOG.trace("{} not found. Try to list", f.toString());
+      if (!prefixBased) {
+        throw e;
+      }
+    }
+    // we need this,since ObjectStoreGlobber may send prefix
+    // container/objectperfix* and objectperfix is not exists as an object or
+    // pseudo directory
+    if (fileStatus != null && !(prefixBased || fileStatus.isDirectory())) {
+      LOG.debug("listStatus: {} is not a directory. Adding as is and return", f.toString());
+      FileStatus[] stats = new FileStatus[1];
+      stats[0] = fileStatus;
+      return stats;
     }
 
-    if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
-      LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
-      FileStatus[] listing = storageClient.list(hostNameScheme, f, false, prefixBased);
-      if (filter == null) {
-        return listing;
-      } else {
-        for (FileStatus fs : listing) {
-          if (filter.accept(fs.getPath())) {
-            result.add(fs);
-          }
+    LOG.debug("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
+    FileStatus[] listing = storageClient.list(hostNameScheme, f, false, prefixBased);
+    if (filter == null) {
+      return listing;
+    } else {
+      for (FileStatus fs : listing) {
+        if (filter.accept(fs.getPath())) {
+          result.add(fs);
         }
       }
-    } else if (fileStatus != null) {
-      LOG.debug("{} is not directory. Adding without list", f);
-      result.add(fileStatus);
     }
     return result.toArray(new FileStatus[0]);
   }

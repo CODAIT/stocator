@@ -17,6 +17,7 @@
 
 package com.ibm.stocator.fs.swift2d.systemtests;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.MessageFormat;
 
@@ -44,7 +45,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Assume.assumeNotNull(sFileSystem);
   }
 
-  @Test
+  @Test(expected = FileNotFoundException.class)
   public void testDataObject() throws Exception {
     String objectName = "data7.txt";
     Object[] params;
@@ -79,18 +80,20 @@ public class TestSwiftOperations extends SwiftBaseTest {
     // delete _SUCCESS object
     getFs().delete(new Path(getBaseURI(),
             MessageFormat.format(sparkSuccessFormat, new Object[]{objectName})), false);
+    Thread.sleep(10000);
     stats = getFs().listStatus(new Path(getBaseURI() + "/" + objectName));
     assertEquals(0, stats.length);
+    int i = 0;
   }
 
-  @Test
+  @Test(expected = FileNotFoundException.class)
   public void testFileExists() throws IOException {
     Path testFile = new Path(getBaseURI() + "/testFile");
     createFile(testFile, data);
     assertTrue(getFs().exists(testFile));
     getFs().delete(testFile, false);
     FileStatus[]  stats = getFs().listStatus(testFile);
-    assertEquals(0, stats.length);
+    int i = 0;
   }
 
   @Test
@@ -138,7 +141,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
     globber = new ObjectStoreGlobber(getFs(), wildcard,
             new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
-    assertEquals(3, results.length);
+    assertEquals(2, results.length);
 
     wildcard = new Path(getBaseURI() + "/Dir/SubDir/*2"); // Files in "SubDir" ending with "2"
     globber = new ObjectStoreGlobber(getFs(), wildcard,

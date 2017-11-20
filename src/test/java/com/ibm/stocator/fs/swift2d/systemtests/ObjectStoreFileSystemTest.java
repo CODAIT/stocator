@@ -17,6 +17,7 @@
 
 package com.ibm.stocator.fs.swift2d.systemtests;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -157,6 +158,20 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
   public void listLocatedStatusTest() throws Exception {
     Assume.assumeNotNull(getFs());
     int count = 0;
+    RemoteIterator<LocatedFileStatus> stats = getFs().listLocatedStatus(new Path(getBaseURI()
+        + "/testFile01"));
+    while (stats.hasNext()) {
+      LocatedFileStatus stat = stats.next();
+      Assert.assertTrue(stat.getPath().getName().startsWith("testFile01"));
+      count++;
+    }
+    Assert.assertEquals(1, count);
+  }
+
+  @Test(expected = FileNotFoundException.class)
+  public void listLocatedStatusTestNotFound1() throws Exception {
+    Assume.assumeNotNull(getFs());
+    int count = 0;
     RemoteIterator<LocatedFileStatus> stats = getFs().listLocatedStatus(new Path(fileName));
     while (stats.hasNext()) {
       LocatedFileStatus stat = stats.next();
@@ -164,18 +179,13 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
       count++;
     }
     Assert.assertEquals(iterNum * 0, count);
+  }
 
-    count = 0;
-    stats = getFs().listLocatedStatus(new Path(getBaseURI() + "/testFile01"));
-    while (stats.hasNext()) {
-      LocatedFileStatus stat = stats.next();
-      Assert.assertTrue(stat.getPath().getName().startsWith("testFile01"));
-      count++;
-    }
-    Assert.assertEquals(1, count);
-
-    count = 0;
-    stats = getFs().listLocatedStatus(new Path(fileName + "0"));
+  @Test(expected = FileNotFoundException.class)
+  public void listLocatedStatusTestNotFound2() throws Exception {
+    Assume.assumeNotNull(getFs());
+    int count = 0;
+    RemoteIterator<LocatedFileStatus> stats = getFs().listLocatedStatus(new Path(fileName + "0"));
     while (stats.hasNext()) {
       LocatedFileStatus stat = stats.next();
       Assert.assertTrue(stat.getPath().getName().startsWith("testFile0"));
@@ -218,13 +228,11 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
     Assert.assertFalse(getFs().exists(modifiedInput));
   }
 
-  @Test
+  @Test(expected = FileNotFoundException.class)
   public void listStatusTest() throws Exception {
     Assume.assumeNotNull(getFs());
     Path testFile = new Path(getBaseURI() + "/testFile");
-    getFs().delete(testFile, false);
-    FileStatus[] stats = getFs().listStatus(testFile);
-    Assert.assertEquals(0, stats.length);
+    FileStatus[] stats = null;
 
     createFile(testFile, data);
     Assert.assertTrue(getFs().exists(testFile));
@@ -240,5 +248,10 @@ public class ObjectStoreFileSystemTest extends SwiftBaseTest {
     getFs().delete(testFile, false);
     stats = getFs().listStatus(testFile);
     Assert.assertEquals(0, stats.length);
+
+    getFs().delete(testFile, false);
+    stats = getFs().listStatus(testFile);
+    Assert.assertEquals(0, stats.length);
+
   }
 }
