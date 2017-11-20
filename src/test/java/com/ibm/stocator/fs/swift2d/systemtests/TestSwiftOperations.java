@@ -45,7 +45,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
     Assume.assumeNotNull(sFileSystem);
   }
 
-  @Test(expected = FileNotFoundException.class)
+  @Test
   public void testDataObject() throws Exception {
     String objectName = "data7.txt";
     Object[] params;
