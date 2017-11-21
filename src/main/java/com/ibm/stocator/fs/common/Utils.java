@@ -113,6 +113,8 @@ public class Utils {
 
   /**
    * Extracts service name from the container.service
+   * taking care of the fact that a container may have dots
+   * in his name.
    *
    * @param hostname hostname
    * @param defaultService default value
@@ -120,7 +122,7 @@ public class Utils {
    * @throws IOException if the hostname was invalid
    */
   public static String getServiceName(String hostname, String defaultService) throws IOException {
-    int i = hostname.indexOf(".");
+    int i = hostname.lastIndexOf(".");
     if (i <= 0) {
       throw badHostName(hostname);
     }
