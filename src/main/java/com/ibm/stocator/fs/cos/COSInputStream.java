@@ -136,6 +136,8 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
     }
     contentRangeStart = targetPos;
     contentRangeFinish = targetPos + Math.max(readahead, length) + threasholdRead;
+    LOG.trace("targetPos={} readahead={} length={} threasholdRead={} contentRangeFinish={}",
+        targetPos, readahead, length, threasholdRead, contentRangeFinish);
     if (negativeSeek < 0) {
       contentRangeFinish = targetPos + Math.abs(negativeSeek);
       negativeSeek = 0;
