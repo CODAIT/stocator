@@ -77,6 +77,7 @@ public final class ConfigurationHandler {
       service = Utils.getServiceName(host);
     } catch (IOException ex) {
       LOG.warn("Failed to extract service from the host {}", host);
+      throw new IOException(ex);
     }
     if (service == null) {
       service =  "service";
