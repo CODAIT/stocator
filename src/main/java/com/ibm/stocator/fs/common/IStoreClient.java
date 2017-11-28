@@ -60,7 +60,7 @@ public interface IStoreClient {
    * @throws IOException if connection error
    * @throws FileNotFoundException if path not found
    */
-  public FileStatus getObjectMetadata(String hostName,
+  public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException;
 
   /**

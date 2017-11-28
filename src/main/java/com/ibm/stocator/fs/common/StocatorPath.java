@@ -297,10 +297,22 @@ public class StocatorPath {
         //path matches pattern in javadoc
         objectName = noPrefix.substring(0, npIdx - 1);
         if (addTaskIdCompositeName) {
+          String objName = null;
           String taskAttempt = Utils.extractTaskID(path, HADOOP_ATTEMPT);
-          String objName = fullPath.getName();
+          if (taskAttempt != null) {
+            int fIndex = fullPath.toString().indexOf(taskAttempt + "/");
+            if (fIndex > 0) {
+              fIndex = fIndex + taskAttempt.length() + 1;
+            }
+            if (fIndex < fullPath.toString().length()) {
+              objName = fullPath.toString().substring(fIndex);
+            }
+          }
+          if (objName == null) {
+            objName = fullPath.getName();
+          }
           if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
-            objName = fullPath.getName() + "-" + taskAttempt;
+            objName = objName + "-" + taskAttempt;
           }
           objectName = objectName + "/" + objName;
         }

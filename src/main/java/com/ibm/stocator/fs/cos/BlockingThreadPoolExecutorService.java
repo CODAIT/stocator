@@ -1,21 +1,19 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
- *  or more contributor license agreements.  See the NOTICE file
- *  distributed with this work for additional information
- *  regarding copyright ownership.  The ASF licenses this file
- *  to you under the Apache License, Version 2.0 (the
- *  "License"); you may not use this file except in compliance
- *  with the License.  You may obtain a copy of the License at
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- *  (C) Copyright IBM Corp. 2015, 2016
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.ibm.stocator.fs.cos;
@@ -33,11 +31,17 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
+import org.apache.hadoop.classification.InterfaceAudience;
+
 /**
  * This ExecutorService blocks the submission of new tasks when its queue is
  * already full by using a semaphore. Task submissions require permits, task
  * completions release permits.
+ * <p>
+ * This is inspired by <a href="https://github.com/apache/incubator-s4/blob/master/subprojects/s4-comm/src/main/java/org/apache/s4/comm/staging/BlockingThreadPoolExecutorService.java">
+ * this s4 threadpool</a>
  */
+@InterfaceAudience.Private
 final class BlockingThreadPoolExecutorService
     extends SemaphoredDelegatingExecutor {
 
@@ -82,7 +86,7 @@ final class BlockingThreadPoolExecutorService
    * @return a thread factory that creates named, daemon threads with
    * the supplied exception handler and normal priority
    */
-  private static ThreadFactory newDaemonThreadFactory(final String prefix) {
+  static ThreadFactory newDaemonThreadFactory(final String prefix) {
     final ThreadFactory namedFactory = getNamedThreadFactory(prefix);
     return new ThreadFactory() {
       @Override
@@ -110,7 +114,7 @@ final class BlockingThreadPoolExecutorService
   /**
    * A thread pool that that blocks clients submitting additional tasks if
    * there are already {@code activeTasks} running threads and {@code
-   * waitingTasks} tasks waiting in its queue
+   * waitingTasks} tasks waiting in its queue.
    *
    * @param activeTasks maximum number of active tasks
    * @param waitingTasks maximum number of waiting tasks
@@ -124,16 +128,21 @@ final class BlockingThreadPoolExecutorService
       long keepAliveTime, TimeUnit unit,
       String prefixName) {
 
+    /* Although we generally only expect up to waitingTasks tasks in the
+    queue, we need to be able to buffer all tasks in case dequeueing is
+    slower than enqueueing. */
     final BlockingQueue<Runnable> workQueue =
         new LinkedBlockingQueue<>(waitingTasks + activeTasks);
     ThreadPoolExecutor eventProcessingExecutor =
         new ThreadPoolExecutor(activeTasks, activeTasks, keepAliveTime, unit,
             workQueue, newDaemonThreadFactory(prefixName),
-            new RejectedExecutionHandler() {
-            @Override
-            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-              LOG.error("Could not submit task to executor {}", executor.toString());
-            }
+              new RejectedExecutionHandler() {
+          @Override
+          public void rejectedExecution(Runnable r,
+              ThreadPoolExecutor executor) {
+            //This is not expected to happen.
+            LOG.error("Could not submit task to executor {}", executor.toString());
+          }
         });
     eventProcessingExecutor.allowCoreThreadTimeOut(true);
     return new BlockingThreadPoolExecutorService(waitingTasks + activeTasks,
@@ -141,8 +150,7 @@ final class BlockingThreadPoolExecutorService
   }
 
   /**
-   * Get the actual number of active threads
-   *
+   * Get the actual number of active threads.
    * @return the active thread count
    */
   int getActiveCount() {

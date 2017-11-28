@@ -139,7 +139,64 @@ Configure Stocator in `conf/core-site.xml`
 ### Configuration keys
 Stocator COS connector expose "fs.cos." keys prefix. For backward compatibility Stocator also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" has the highest priority and will overwrite other keys, if present.
 
-#### COS Connector configuration
+#### COS Connector configuration with IAM
+To work with IAM and provide `api key` please switch to the relevant `ibm-sdk` branch depends on the Stocator version you need. For example for Stocator 1.0.10 release, switch to `1.0.10-ibm-sdk`, for Stocator master 1.0.11-SNAPSHOT, switch to `1.0.11-SNAPSHOT-IBM-SDK` and so on.
+
+You will need to build Stocator manually, for example using 1.0.10-ibm-sdk branch:
+
+	git clone https://github.com/SparkTC/stocator
+	cd stocator
+	git fetch
+	git checkout -b 1.0.10-ibm-sdk origin/1.0.10-ibm-sdk
+	mvn clean install –DskipTests
+
+##### Configure Stocator
+
+The next step if to configure Stocator with your COS credentials. The COS credentials is of the form
+
+	{
+	  "apikey": "123",
+	  "endpoints": "https://cos-service.bluemix.net/endpoints",
+	  "iam_apikey_description": "Auto generated apikey during resource-key operation for Instance - abc",
+	  "iam_apikey_name": "auto-generated-apikey-123",
+	  "iam_role_crn": "role",
+	  "iam_serviceid_crn": "identity-123::serviceid:ServiceId-XYZ",
+	  "resource_instance_id": "abc"
+	}
+
+The following is the list of the Stocator configuration keys. `<service>` can be any value, for example `myCOS`
+
+| Key | Info | Mandatory | value |
+| --- | ------------ | ------------- | --------|
+|fs.cos.`<service>`.iam.api.key | API key  | mandatory | value of `apiKey`
+|fs.cos.`<service>`.iam.service.id  | Service ID | mandatory | Value of `iam_serviceid_crn`. In certain cases you need only value after `:serviceid:`
+|fs.cos.`<service>`.endpoint | COS endpoint | mandatory | Open link from `endpoints` and choose relevant endpoint. This endpoint should go here
+
+Example, configure `<service>` as `myCOS`:
+
+	<property>
+		<name>fs.cos.myCos.iam.api.key</name>
+		<value>123</value>
+	</property>
+	<property>
+		<name>fs.cos.myCos.endpoint</name>
+		<value>http://s3-api.us-geo.objectstorage.softlayer.net</value>
+	</property>
+	<property>
+		<name>fs.cos.myCos.iam.service.id</name>
+		<value>ServiceId-XYZ</value>
+	</property>
+
+Now you can use URI
+
+	cos://mybucket.myCos/myobject(s)
+
+
+An optional, it is possible to provide existing token instead of using API key.
+Instead of providing `fs.cos.myCos.iam.api.key`, Stocator supports `fs.cos.myCos.iam.api.token` that may contain value of the existing token. When token is expired, Stocator will throw `403` exception. It's the user responsibility to provide long activation token or re-create token outside of Stocator.
+
+#### COS Connector configuration without IAM
+
 The following is the list of the configuration keys. `<service>` can be any value, for example `myCOS`
 
 | Key | Info | Mandatory |
@@ -432,22 +489,23 @@ Follow
 
 	https://github.com/ehiggs/spark-terasort
 	
-You can run Terasort as follows (remember to change the word "SERVICE_NAME" with your Swift SERVICE_NAME name)
+Setup Stocator with COS as previosuly explained. In the example we use bucket `teradata` and service =`service`
+
 Step 1:
 	
 	export MAVEN_OPTS="-Xmx2g -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=512m"
 
 Step 2:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraGen /spark-terasort/target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.SERVICE_NAME/terasort_in
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraGen /spark-terasort/target/spark-terasort-1.1-SNAPSHOT-jar-with-dependencies.jar 1g cos://teradata.service/terasort_in
 	
 Step 3:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraSort /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar 1g swift2d://teradata.SERVICE_NAME/terasort_in swift2d://teradata.SERVICE_NAME/terasort_out
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraSort /target/spark-terasort-1.1-SNAPSHOT-jar-with-dependencies.jar 1g cos://teradata.service/terasort_in cos://teradata.service/terasort_out
 	
 Step 4:
 
-	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraValidate /target/spark-terasort-1.0-SNAPSHOT-jar-with-dependencies.jar swift2d://teradata.SERVICE_NAME/terasort_out swift2d://teradata.SERVICE_NAME/terasort_validate
+	./bin/spark-submit --driver-memory 2g --class com.github.ehiggs.spark.terasort.TeraValidate /target/spark-terasort-1.1-SNAPSHOT-jar-with-dependencies.jar cos://teradata.service/terasort_out cos://teradata.service/terasort_validate
 	
 ### Functional tests
 Copy 

@@ -323,7 +323,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public FileStatus getObjectMetadata(String hostName,
+  public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
     LOG.trace("Get object metadata ({}): {}, hostname: {}", msg, path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
@@ -418,7 +418,7 @@ public class SwiftAPIClient implements IStoreClient {
       return false;
     }
     try {
-      FileStatus status = getObjectMetadata(hostName, path, "exists");
+      FileStatus status = getFileStatus(hostName, path, "exists");
     } catch (FileNotFoundException e) {
       return false;
     }
@@ -558,7 +558,7 @@ public class SwiftAPIClient implements IStoreClient {
         }
         fs = null;
         if (previousElement.getContentLength() > 0 || fullListing) {
-          fs = getFileStatus(previousElement, cObj, hostName, path);
+          fs = createFileStatus(previousElement, cObj, hostName, path);
           objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
                   fs.getModificationTime());
           tmpResult.add(fs);
@@ -568,7 +568,7 @@ public class SwiftAPIClient implements IStoreClient {
     }
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
-      fs = getFileStatus(previousElement, cObj, hostName, path);
+      fs = createFileStatus(previousElement, cObj, hostName, path);
       objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
       tmpResult.add(fs);
     }
@@ -835,7 +835,7 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IllegalArgumentException if error
    * @throws IOException if error
    */
-  private FileStatus getFileStatus(StoredObject tmp, Container cObj,
+  private FileStatus createFileStatus(StoredObject tmp, Container cObj,
       String hostName, Path path) throws IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
     return new FileStatus(tmp.getContentLength(), false, 1, blockSize,

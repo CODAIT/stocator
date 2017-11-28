@@ -32,8 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.hadoop.fs.LocalDirAllocator;
-
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -68,7 +66,7 @@ public class COSOutputStream extends OutputStream {
   /*
    * Output stream
    */
-  private OutputStream mBackupOutputStream;
+  private final OutputStream mBackupOutputStream;
   /*
    * Temporal output file (output stream is buffered by it)
    */
@@ -115,10 +113,9 @@ public class COSOutputStream extends OutputStream {
     mContentType = contentType;
     mMetadata = metadata;
     try {
-      mBackupFile = fs.createTmpFileForWrite("output-",
-          LocalDirAllocator.SIZE_UNKNOWN);
-
-      LOG.debug("OutputStream for key '{}' writing to tempfile: {}", key, mBackupFile);
+      String tmpPrefix = key.replaceAll("/", "-");
+      mBackupFile = fs.createTmpFileForWrite("output-" + tmpPrefix);
+      LOG.trace("OutputStream for key '{}' writing to tempfile: {}", key, mBackupFile);
       mBackupOutputStream = new BufferedOutputStream(new FileOutputStream(mBackupFile), 32768);
     } catch (IOException e) {
       LOG.error(e.getMessage());

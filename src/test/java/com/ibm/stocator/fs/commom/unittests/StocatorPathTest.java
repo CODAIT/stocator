@@ -423,6 +423,7 @@ public class StocatorPathTest {
     String result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
+
     input = "swift2d://a.service/aa/abc.parquet/"
         + "_temporary/0/_temporary/attempt_20171115113432_0017_m_000076_0/"
         + "YEAR=2003/"
@@ -448,5 +449,7 @@ public class StocatorPathTest {
     result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
+
   }
+
 }
