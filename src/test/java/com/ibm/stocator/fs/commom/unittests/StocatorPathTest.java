@@ -448,6 +448,5 @@ public class StocatorPathTest {
     result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
-
   }
 }
