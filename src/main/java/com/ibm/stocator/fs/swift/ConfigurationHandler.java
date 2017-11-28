@@ -70,7 +70,7 @@ public final class ConfigurationHandler {
    * @throws ConfigurationParseException is failed to parse configuration
    */
   public static Properties initialize(URI uri, Configuration conf) throws IOException,
-  ConfigurationParseException {
+      ConfigurationParseException {
     String host = Utils.getHost(uri);
     Properties props = new Properties();
     if (!Utils.validSchema(uri)) {

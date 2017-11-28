@@ -19,6 +19,7 @@
  */
 
 package com.ibm.stocator.fs.swift.http;
+
 /**
  * HTTP Connection configuration
  *

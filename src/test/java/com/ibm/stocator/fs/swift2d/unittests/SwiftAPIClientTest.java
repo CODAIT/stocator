@@ -17,9 +17,10 @@
 
 package com.ibm.stocator.fs.swift2d.unittests;
 
-import org.javaswift.joss.model.StoredObject;
 import java.util.HashMap;
 import java.util.Locale;
+
+import org.javaswift.joss.model.StoredObject;
 
 import org.javaswift.joss.client.mock.ContainerMock;
 import org.javaswift.joss.client.mock.StoredObjectMock;
