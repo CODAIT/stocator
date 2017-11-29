@@ -82,7 +82,7 @@ public class Utils {
    */
   public static String getContainerName(String hostname,
       boolean serviceRequired) throws IOException {
-    int i = hostname.indexOf(".");
+    int i = hostname.lastIndexOf(".");
     if (i <= 0) {
       if (serviceRequired) {
         throw badHostName(hostname);
@@ -100,7 +100,7 @@ public class Utils {
    * @throws IOException if the hostname was invalid
    */
   public static String getServiceName(String hostname) throws IOException {
-    int i = hostname.indexOf(".");
+    int i = hostname.lastIndexOf(".");
     if (i <= 0) {
       throw badHostName(hostname);
     }
