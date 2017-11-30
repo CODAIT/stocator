@@ -284,7 +284,7 @@ public class Utils {
     if (result == notExistsValue) {
       result = -1;
       for (String alternativePrefix : altPrefix) {
-        result = conf.getLong(alternativePrefix + key, defValue);
+        result = stringToLong(conf.get(alternativePrefix + key), defValue);
       }
     }
     if (result == -1) {
@@ -482,4 +482,18 @@ public class Utils {
     }
   }
 
+  private static long stringToLong(String value, long defValue) {
+    long res = defValue;
+    if (value == null) {
+      return res;
+    }
+    try {
+      res = Long.valueOf(value);
+    } catch (NumberFormatException ex) {
+      if (value.endsWith("K")) {
+        res = Long.valueOf(value.substring(0, value.length() - 1)) * 1024;
+      }
+    }
+    return res;
+  }
 }
