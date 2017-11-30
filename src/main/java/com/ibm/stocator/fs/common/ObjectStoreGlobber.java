@@ -159,11 +159,17 @@ public class ObjectStoreGlobber {
       String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
+      LOG.trace("Glob filter {} pattern {}", rootPlaceholder.getPath(),
+          pathPatternString.toString());
       candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath())));
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
           LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
           results.add(candidate);
+        } else {
+          if (LOG.isTraceEnabled()) {
+            LOG.debug("Candidate rejected: {}", candidate.getPath().toString());
+          }
         }
       }
     } else {
