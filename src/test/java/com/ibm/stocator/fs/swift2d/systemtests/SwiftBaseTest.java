@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -73,7 +74,7 @@ public class SwiftBaseTest extends Assert {
 
     if (!containerName.isEmpty()) {
       sBaseURI = sBaseURI.replace(sBaseURI.substring(sBaseURI.indexOf("//") + 2,
-              sBaseURI.indexOf(".")), containerName);
+              sBaseURI.indexOf(".")), URLEncoder.encode(containerName, "UTF-8"));
       System.out.println("New uri is " + sBaseURI);
     }
 
