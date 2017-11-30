@@ -184,4 +184,7 @@ public class COSConstants {
       ".multipart.purge.age";
   public static final long DEFAULT_PURGE_EXISTING_MULTIPART_AGE = 86400;
 
+  public static final String FLAT_LISTING = ".flat.list";
+  public static final boolean DEFAULT_FLAT_LISTING = false;
+
 }
