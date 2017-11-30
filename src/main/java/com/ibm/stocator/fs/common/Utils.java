@@ -113,6 +113,8 @@ public class Utils {
 
   /**
    * Extracts service name from the container.service
+   * taking care of the fact that a container may have dots
+   * in his name.
    *
    * @param hostname hostname
    * @param defaultService default value
