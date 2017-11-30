@@ -48,7 +48,7 @@ import static com.ibm.stocator.fs.cos.COSUtils.objectRepresentsDirectory;
 import static com.ibm.stocator.fs.cos.COSUtils.stringify;
 
 /**
- * Place for the S3A listing classes; keeps all the small classes under control.
+ * Place for the COS listing classes; keeps all the small classes under control.
  */
 public class Listing {
 
@@ -184,7 +184,7 @@ public class Listing {
    * value.
    *
    * If the status value is null, the iterator declares that it has no data.
-   * This iterator is used to handle {@link S3AFileSystem#listStatus} calls
+   * This iterator is used to handle calls
    * where the path handed in refers to a file, not a directory: this is the
    * iterator returned.
    */
@@ -508,7 +508,7 @@ public class Listing {
    * instance.
    *
    * 2. Second and later invocations will continue the ongoing listing,
-   * calling {@link S3AFileSystem#continueListObjects} to request the next
+   * calling to request the next
    * batch of results.
    *
    * 3. The {@link #hasNext()} predicate returns true for the initial call,

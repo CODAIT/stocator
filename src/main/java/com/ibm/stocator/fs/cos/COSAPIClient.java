@@ -158,6 +158,10 @@ import static com.ibm.stocator.fs.cos.COSConstants.MAX_PAGING_KEYS;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_MAX_PAGING_KEYS;
 import static com.ibm.stocator.fs.cos.COSConstants.FLAT_LISTING;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_FLAT_LISTING;
+import static com.ibm.stocator.fs.cos.COSConstants.READAHEAD_RANGE;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_READAHEAD_RANGE;
+import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
+import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 import static com.ibm.stocator.fs.cos.Listing.ACCEPT_ALL;
@@ -227,6 +231,8 @@ public class COSAPIClient implements IStoreClient {
   private MemoryCache memoryCache;
   private int maxKeys;
   private boolean flatListingFlag;
+  private long readAhead;
+  private COSInputPolicy inputPolicy;
 
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
@@ -364,6 +370,11 @@ public class COSAPIClient implements IStoreClient {
         DEFAULT_MULTIPART_SIZE);
     multiPartThreshold = Utils.getLong(conf, FS_COS, FS_ALT_KEYS,
         MIN_MULTIPART_THRESHOLD, DEFAULT_MIN_MULTIPART_THRESHOLD);
+    readAhead = Utils.getLong(conf, FS_COS, FS_ALT_KEYS, READAHEAD_RANGE,
+        DEFAULT_READAHEAD_RANGE);
+    LOG.debug(READAHEAD_RANGE + ":" + readAhead);
+    inputPolicy = COSInputPolicy.getPolicy(
+        Utils.getTrimmed(conf,  FS_COS, FS_ALT_KEYS, INPUT_FADVISE, INPUT_FADV_NORMAL));
 
     initTransferManager();
     maxKeys = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
@@ -621,8 +632,17 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
+    LOG.debug("Opening '{}' for reading.", path);
     String key = pathToKey(hostName, path);
-    COSInputStream inputStream = new COSInputStream(mBucket, key, mBlockSize, mClient);
+    final FileStatus fileStatus = getFileStatus(hostName, path, "getObject");
+    if (fileStatus.isDirectory()) {
+      throw new FileNotFoundException("Can't open " + path
+          + " because it is a directory");
+    }
+
+    COSInputStream inputStream = new COSInputStream(mBucket, key,
+        fileStatus.getLen(), mClient, readAhead, inputPolicy);
+
     return new FSDataInputStream(inputStream);
   }
 

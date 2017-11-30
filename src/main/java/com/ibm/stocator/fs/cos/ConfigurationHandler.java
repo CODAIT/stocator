@@ -40,8 +40,6 @@ import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_POLICY;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_POLICY_COS_PROPERTY;
-import static com.ibm.stocator.fs.cos.COSConstants.READAHEAD_RANGE;
-import static com.ibm.stocator.fs.cos.COSConstants.READAHEAD_RANGE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.REGION;
 import static com.ibm.stocator.fs.cos.COSConstants.REGION_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
@@ -102,8 +100,6 @@ public final class ConfigurationHandler {
         V2_SIGNER_TYPE_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, INPUT_POLICY, props,
         INPUT_POLICY_COS_PROPERTY, false);
-    Utils.updateProperty(conf, prefix, altPrefix, READAHEAD_RANGE, props,
-        READAHEAD_RANGE_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, BLOCK_SIZE, props,
         BLOCK_SIZE_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, REGION, props,
