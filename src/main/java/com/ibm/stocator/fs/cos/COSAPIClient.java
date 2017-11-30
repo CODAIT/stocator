@@ -622,7 +622,8 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
     String key = pathToKey(hostName, path);
-    COSInputStream inputStream = new COSInputStream(mBucket, key, mBlockSize, mClient);
+    COSInputStream inputStream = new COSInputStream(mBucket, key,
+        Constants.DEFAULT_READAHEAD_RANGE, mClient);
     return new FSDataInputStream(inputStream);
   }
 
