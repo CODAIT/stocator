@@ -42,7 +42,7 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import com.ibm.stocator.fs.common.Utils;
-//import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+import com.ibm.stocator.fs.common.Globber;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
@@ -253,9 +253,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         recursive, objNameModified, hostNameScheme);
     boolean result = false;
     boolean deleteMainEntry = true;
-    if (stocatorPath.isTemporaryPathContain(objNameModified)) {
-      return true;
-    }
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true);
@@ -267,6 +264,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
     } else {
+      LOG.debug("delete: {} is not temporary path and not starts with HADOOP_ATTEMPT",
+          f.toString());
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
@@ -314,9 +313,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (stocatorPath.isTemporaryPathContain(f)) {
       return result.toArray(new FileStatus[0]);
     }
+    if (storageClient.isFlatListing()) {
+      LOG.debug("Flat listing requested via configuration flag for {}", f);
+      return storageClient.listNative(hostNameScheme, f);
+    }
+
     FileStatus fileStatus = null;
     try {
       fileStatus = getFileStatus(f);
+      LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
+          fileStatus.isDirectory());
     } catch (FileNotFoundException e) {
       if (!prefixBased) {
         throw e;
@@ -326,14 +332,18 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     // container/objectperfix* and objectperfix is not exists as an object or
     // pseudo directory
     if (fileStatus != null && !(prefixBased || fileStatus.isDirectory())) {
-      LOG.debug("listStatus: {} is not a directory. Adding as is and return", f.toString());
+      LOG.debug("listStatus: {} is not a directory, but a file. Return single result",
+          f.toString());
       FileStatus[] stats = new FileStatus[1];
       stats[0] = fileStatus;
       return stats;
     }
 
-    LOG.debug("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
+    LOG.debug("listStatus: {} is not exiists, prefix based listing set to {}. Perform list",
+        f.toString(), prefixBased);
     FileStatus[] listing = storageClient.list(hostNameScheme, f, false, prefixBased);
+    LOG.debug("listStatus: {} list completed with {} results", f.toString(),
+        listing.length);
     if (filter == null) {
       return listing;
     } else {
@@ -440,12 +450,18 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] globStatus(Path pathPattern) throws IOException {
     LOG.debug("Glob status: {}", pathPattern.toString());
+    if (storageClient.isFlatListing()) {
+      return new Globber(this, pathPattern, DEFAULT_FILTER).glob();
+    }
     return new ObjectStoreGlobber(this, pathPattern, DEFAULT_FILTER).glob();
   }
 
   @Override
   public FileStatus[] globStatus(Path pathPattern, PathFilter filter) throws IOException {
     LOG.debug("Glob status {} with path filter {}",pathPattern.toString(), filter.toString());
+    if (storageClient.isFlatListing()) {
+      return new Globber(this, pathPattern, filter).glob();
+    }
     return new ObjectStoreGlobber(this, pathPattern, filter).glob();
   }
 
@@ -454,6 +470,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.trace("Object exists: {}", f);
     if (f.toString().contains(HADOOP_TEMPORARY)) {
       LOG.debug("Exists on temp object {}. Return false", f.toString());
+      return false;
+    }
+    if (f.toString().contains("*")) {
+      LOG.debug("Exists on object {}. Return false", f.toString());
       return false;
     }
     try {

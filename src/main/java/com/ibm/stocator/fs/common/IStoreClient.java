@@ -101,6 +101,19 @@ public interface IStoreClient {
       boolean prefixBased) throws IOException;
 
   /**
+   * List the statuses of the files/directories in the given path if the path is
+   * a directory.
+   *
+   * @param hostName hostname
+   * @param f given path
+   * @return the statuses of the files/directories in the given patch
+   * @throws FileNotFoundException when the path does not exist;
+   *         IOException see specific implementation
+   */
+  public FileStatus[] listNative(String hostName, Path f) throws FileNotFoundException,
+    IOException ;
+
+  /**
    * Create object. Return output stream
    *
    * @param objName name of the object
@@ -169,5 +182,7 @@ public interface IStoreClient {
    * @param sp Stocator path
    */
   public void setStocatorPath(StocatorPath sp);
+
+  public boolean isFlatListing();
 
 }

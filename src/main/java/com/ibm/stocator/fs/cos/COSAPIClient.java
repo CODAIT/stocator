@@ -87,6 +87,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.InvalidRequestException;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.Path;
 
@@ -153,8 +154,13 @@ import static com.ibm.stocator.fs.cos.COSConstants.FAST_UPLOAD_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_FAST_UPLOAD_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.FAST_UPLOAD_ACTIVE_BLOCKS;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_FAST_UPLOAD_ACTIVE_BLOCKS;
+import static com.ibm.stocator.fs.cos.COSConstants.MAX_PAGING_KEYS;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_MAX_PAGING_KEYS;
+import static com.ibm.stocator.fs.cos.COSConstants.FLAT_LISTING;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_FLAT_LISTING;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
+import static com.ibm.stocator.fs.cos.Listing.ACCEPT_ALL;
 
 public class COSAPIClient implements IStoreClient {
 
@@ -212,13 +218,15 @@ public class COSAPIClient implements IStoreClient {
   private COSLocalDirAllocator directoryAllocator;
   private Path workingDir;
   private OnetimeInitialization singletoneInitTimeData;
-
+  private Listing listing;
   private boolean enableMultiObjectsDelete;
   private boolean blockUploadEnabled;
   private String blockOutputBuffer;
   private COSDataBlocks.BlockFactory blockFactory;
   private int blockOutputActiveBlocks;
   private MemoryCache memoryCache;
+  private int maxKeys;
+  private boolean flatListingFlag;
 
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
@@ -358,6 +366,10 @@ public class COSAPIClient implements IStoreClient {
         MIN_MULTIPART_THRESHOLD, DEFAULT_MIN_MULTIPART_THRESHOLD);
 
     initTransferManager();
+    maxKeys = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
+    flatListingFlag = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS, FLAT_LISTING,
+        DEFAULT_FLAT_LISTING);
+    listing = new Listing(this);
 
     if (autoCreateBucket) {
       try {
@@ -442,7 +454,7 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
-    LOG.trace("getFileStatus for {}, hostname: {}", path, hostName);
+    LOG.trace("getFileStatus(start) for {}, hostname: {}", path, hostName);
     /*
      * The requested path is equal to hostName. HostName is equal to
      * hostNameScheme, thus the container. Therefore we have no object to look
@@ -450,6 +462,7 @@ public class COSAPIClient implements IStoreClient {
      * lastModified.
      */
     if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
+      LOG.trace("getFileStatus(completed) {}", path);
       return new FileStatus(0L, true, 1, mBlockSize, 0L, path);
     }
     if (path.toString().contains(HADOOP_TEMPORARY)) {
@@ -457,7 +470,7 @@ public class COSAPIClient implements IStoreClient {
       throw new FileNotFoundException("Not found " + path.toString());
     }
     String key = pathToKey(hostName, path);
-    LOG.debug("getFileStatus: modified key is {}", key);
+    LOG.debug("getFileStatus: on original key {}", key);
     try {
       FileStatus fileStatus = null;
       try {
@@ -468,6 +481,7 @@ public class COSAPIClient implements IStoreClient {
         }
       }
       if (fileStatus != null) {
+        LOG.trace("getFileStatus(completed) {}", path);
         return fileStatus;
       }
       // means key returned not found. Trying to call get file status on key/
@@ -475,6 +489,7 @@ public class COSAPIClient implements IStoreClient {
       if (!key.endsWith("/")) {
         String newKey = key + "/";
         try {
+          LOG.debug("getFileStatus: original key not found. Alternative key {}", key);
           fileStatus = getFileStatusKeyBased(newKey, path);
         } catch (AmazonS3Exception e) {
           if (e.getStatusCode() != 404) {
@@ -483,12 +498,14 @@ public class COSAPIClient implements IStoreClient {
         }
 
         if (fileStatus != null) {
+          LOG.trace("getFileStatus(completed) {}", path);
           return fileStatus;
         } else {
           // if here: both key and key/ returned not found.
           // trying to see if pseudo directory of the form
-          // a/b/key/d/e
+          // a/b/key/d/e (a/b/key/ doesn't exists by itself)
           // perform listing on the key
+          LOG.debug("getFileStatus: Modifined key {} not found. Trying to lisr", key);
           key = maybeAddTrailingSlash(key);
           ListObjectsRequest request = new ListObjectsRequest();
           request.setBucketName(mBucket);
@@ -498,9 +515,11 @@ public class COSAPIClient implements IStoreClient {
 
           ObjectListing objects = mClient.listObjects(request);
           if (!objects.getCommonPrefixes().isEmpty() || !objects.getObjectSummaries().isEmpty()) {
+            LOG.trace("getFileStatus(completed) {}", path);
             return new FileStatus(0, true, 1, 0, 0, path);
           } else if (key.isEmpty()) {
             LOG.debug("Found root directory");
+            LOG.trace("getFileStatus(completed) {}", path);
             return new FileStatus(0, true, 1, 0, 0, path);
           }
         }
@@ -624,7 +643,8 @@ public class COSAPIClient implements IStoreClient {
                     blockOutputActiveBlocks, true),
                 partSize,
                 blockFactory,
-                new WriteOperationHelper(objNameWithoutBuket)
+                new WriteOperationHelper(objNameWithoutBuket),
+                metadata
             ),
             null);
       }
@@ -725,14 +745,16 @@ public class COSAPIClient implements IStoreClient {
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     try {
-      getFileStatus(hostName, path, "delete");
-    } catch (FileNotFoundException ex) {
-      LOG.warn("Delete on {} not found. Nothing to delete");
-      return false;
+      mClient.deleteObject(new DeleteObjectRequest(mBucket, obj));
+      memoryCache.remove(obj);
+      return true;
+    } catch (AmazonServiceException e) {
+      if (e.getStatusCode() != 404) {
+        throw new IOException(e);
+      }
     }
-    mClient.deleteObject(new DeleteObjectRequest(mBucket, obj));
-    memoryCache.remove(obj);
-    return true;
+    LOG.warn("Delete on {} not found. Nothing to delete");
+    return false;
   }
 
   public URI getAccessURI() throws IOException {
@@ -753,6 +775,23 @@ public class COSAPIClient implements IStoreClient {
     return workingDir;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * Prefix based
+   * Return everything that starts with the prefix
+   * Fill listing
+   * Return all objects, even zero size
+   * If fileStatus is null means the path is part of some name, neither object
+   * or pseudo directory. Was called by Globber
+   *
+   * @param hostName hostName
+   * @param path path
+   * @param fullListing Return all objects, even zero size
+   * @param prefixBased Return everything that starts with the prefix
+   * @return list
+   * @throws IOException if error
+   */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException {
     String key = pathToKey(hostName, path);
@@ -844,12 +883,62 @@ public class COSAPIClient implements IStoreClient {
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 
+  @Override
+  public FileStatus[] listNative(String hostName, Path path) throws FileNotFoundException,
+      IOException {
+    LOG.debug("Native list status for {}", path);
+    try {
+      String key = pathToKey(hostName, path);
+      LOG.debug("Native list inner status for path: {}, key {}", path, key);
+
+      List<FileStatus> result;
+      final FileStatus fileStatus =  getFileStatus(hostName, path, "innerList");
+
+      if (fileStatus.isDirectory()) {
+        if (!key.isEmpty()) {
+          key = key + '/';
+        }
+
+        ListObjectsRequest request = new ListObjectsRequest();
+        request.setBucketName(mBucket);
+        request.setMaxKeys(5000);
+        request.setPrefix(key);
+        request.setDelimiter("/");
+
+        LOG.debug("listStatus: doing listObjects for directory {}", key);
+
+        Listing.FileStatusListingIterator files =
+            listing.createFileStatusListingIterator(path,
+                request,
+                ACCEPT_ALL,
+                new Listing.AcceptAllButSelfAndS3nDirs(path));
+        result = new ArrayList<>(files.getBatchSize());
+        LOG.debug("List of {} completed with {}", path, files.getBatchSize());
+        while (files.hasNext()) {
+          FileStatus fs = files.next();
+          fs.setPath(new Path(hostName, fs.getPath()));
+          LOG.debug("Adding:  {}", fs.getPath());
+          result.add(fs);
+        }
+        return result.toArray(new FileStatus[result.size()]);
+      } else {
+        LOG.debug("Adding: rd (not a dir): {}", path);
+        FileStatus[] stats = new FileStatus[1];
+        stats[0] = fileStatus;
+        return stats;
+      }
+
+    } catch (AmazonClientException e) {
+      throw new IOException("listStatus", e);
+    }
+  }
+
   /**
    * Merge between two paths
    *
    * @param hostName
    * @param p path
-   * @param objectName
+   * @param objectKey
    * @return merged path
    */
   private String getMergedPath(String hostName, Path p, String objectKey) {
@@ -883,6 +972,10 @@ public class COSAPIClient implements IStoreClient {
     }
 
     return path.toUri().getPath().substring(1);
+  }
+
+  public Path keyToQualifiedPath(String hostName, String key) {
+    return new Path(hostName, key);
   }
 
   /**
@@ -972,7 +1065,7 @@ public class COSAPIClient implements IStoreClient {
    * @return boolean if object was created by Spark
    */
   private boolean isSparkOrigin(String objectKey) {
-    LOG.trace("check spark origin for {}", objectKey);
+    LOG.debug("check spark origin for {}", objectKey);
     if (mCachedSparkOriginated.containsKey(objectKey)) {
       return mCachedSparkOriginated.get(objectKey).booleanValue();
     }
@@ -989,6 +1082,7 @@ public class COSAPIClient implements IStoreClient {
       }
     }
     mCachedSparkOriginated.put(objectKey, sparkOriginated);
+    LOG.debug("spark origin for {} is {}", objectKey, sparkOriginated.booleanValue());
     return sparkOriginated.booleanValue();
   }
 
@@ -1345,6 +1439,59 @@ public class COSAPIClient implements IStoreClient {
         throw translateException("put", putObjectRequest.getKey(), e);
       }
     }
+  }
+
+  private String getFirstName(String p) {
+    if (p.startsWith("/")) {
+      p = p.substring(p.indexOf("/"));
+    }
+    if (p.indexOf("/") > 0) {
+      return p.substring(0, p.indexOf("/"));
+    }
+    return p;
+  }
+
+  /**
+   * Initiate a {@code listObjects} operation, incrementing metrics
+   * in the process.
+   * @param request request to initiate
+   * @return the results
+   */
+  protected ObjectListing listObjects(ListObjectsRequest request) {
+    return mClient.listObjects(request);
+  }
+
+  /**
+   * List the next set of objects.
+   * @param objects paged result
+   * @return the next result object
+   */
+  protected ObjectListing continueListObjects(ObjectListing objects) {
+    return mClient.listNextBatchOfObjects(objects);
+  }
+
+  /**
+   * Get the maximum key count.
+   * @return a value, valid after initialization
+   */
+  int getMaxKeys() {
+    return maxKeys;
+  }
+
+  /**
+   * Build a {@link LocatedFileStatus} from a {@link FileStatus} instance.
+   * @param status file status
+   * @return a located status with block locations set up from this FS
+   * @throws IOException IO Problems
+   */
+  LocatedFileStatus toLocatedFileStatus(FileStatus status)
+      throws IOException {
+    return new LocatedFileStatus(status, null);
+  }
+
+  @Override
+  public boolean isFlatListing() {
+    return flatListingFlag;
   }
 
 }

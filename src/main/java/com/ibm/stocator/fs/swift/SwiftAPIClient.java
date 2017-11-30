@@ -877,4 +877,15 @@ public class SwiftAPIClient implements IStoreClient {
     return directoryAllocator.createTmpFileForWrite(pathStr, size, conf);
   }
 
+  @Override
+  public FileStatus[] listNative(String hostName, Path f) throws FileNotFoundException,
+    IOException {
+    return null;
+  }
+
+  @Override
+  public boolean isFlatListing() {
+    return false;
+  }
+
 }
