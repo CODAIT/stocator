@@ -106,7 +106,7 @@ public interface IStoreClient {
    *
    * @param hostName hostname
    * @param path given path
-   * @param isDirect is direct Globber call
+   * @param isDirectory is direct Globber call
    * @return the statuses of the files/directories in the given patch
    * @throws FileNotFoundException when the path does not exist;
    *         IOException see specific implementation
