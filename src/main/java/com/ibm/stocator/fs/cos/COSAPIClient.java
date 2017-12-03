@@ -809,6 +809,7 @@ public class COSAPIClient implements IStoreClient {
    * @return list
    * @throws IOException if error
    */
+  /*
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException {
     String key = pathToKey(hostName, path);
@@ -899,10 +900,11 @@ public class COSAPIClient implements IStoreClient {
     }
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
-
+  */
   @Override
-  public FileStatus[] listNativeDirect(String hostName, Path path, Boolean isDirectory)
-      throws FileNotFoundException, IOException {
+  public FileStatus[] list(String hostName, Path path, boolean fullListing,
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing) throws FileNotFoundException, IOException {
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(hostName, path);
@@ -917,7 +919,9 @@ public class COSAPIClient implements IStoreClient {
     request.setBucketName(mBucket);
     request.setMaxKeys(5000);
     request.setPrefix(key);
-    request.setDelimiter("/");
+    if (!flatListing) {
+      request.setDelimiter("/");
+    }
 
     ObjectListing objectList = mClient.listObjects(request);
 
@@ -930,7 +934,7 @@ public class COSAPIClient implements IStoreClient {
         String objKey = obj.getKey();
         String unifiedObjectName = extractUnifiedObjectName(objKey);
         FileStatus fs = getFileStatusObjSummaryBased(obj, hostName, path);
-        if (fs.getLen() > 0) {
+        if (fs.getLen() > 0 || fullListing) {
           LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
           tmpResult.add(fs);
         } else {

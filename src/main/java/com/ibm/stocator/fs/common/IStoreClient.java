@@ -97,22 +97,27 @@ public interface IStoreClient {
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
+  /*
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException;
-
+  */
   /**
    * List the statuses of the files/directories in the given path if the path is
    * a directory.
    *
    * @param hostName hostname
    * @param path given path
+   * @param fullListing if true, return all the content, including 0 byte size objects
+   * @param prefixBased if set to true, container will be listed with prefix based query
    * @param isDirectory is direct Globber call
+   * @param flatListing is flat listing
    * @return the statuses of the files/directories in the given patch
    * @throws FileNotFoundException when the path does not exist;
    *         IOException see specific implementation
    */
-  public FileStatus[] listNativeDirect(String hostName, Path path,
-      Boolean isDirectory) throws FileNotFoundException, IOException;
+  public FileStatus[] list(String hostName, Path path, boolean fullListing,
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing) throws FileNotFoundException, IOException;
 
   /**
    * Create object. Return output stream

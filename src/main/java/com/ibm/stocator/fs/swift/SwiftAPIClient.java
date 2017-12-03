@@ -441,7 +441,7 @@ public class SwiftAPIClient implements IStoreClient {
         && !objName.contains(Constants.HADOOP_TEMPORARY)
         && !objName.contains(Constants.HADOOP_ATTEMPT)) {
       LOG.debug("get object {} on the non existing. Trying listing", objName);
-      FileStatus[] res = list(hostName, path, true, true);
+      FileStatus[] res = list(hostName, path, true, true, null, false);
       LOG.debug("Listing on {} returned {}", path.toString(), res.length);
       if (res.length == 1) {
         LOG.trace("Original name {}  modified to {}", objName, res[0].getPath());
@@ -482,7 +482,8 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException in case of network failure
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
-      boolean prefixBased) throws IOException {
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing) throws IOException {
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
@@ -880,12 +881,6 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public boolean isFlatListing() {
     return false;
-  }
-
-  @Override
-  public FileStatus[] listNativeDirect(String hostName, Path path, Boolean isDirectory) throws
-  FileNotFoundException, IOException {
-    return null;
   }
 
 }

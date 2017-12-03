@@ -254,7 +254,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     boolean deleteMainEntry = true;
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true,
+          null, false);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           if (fs.getPath().getName().endsWith(f.getName())) {
@@ -265,15 +266,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     } else {
       LOG.debug("delete: {} is not temporary path and not starts with HADOOP_ATTEMPT",
           f.toString());
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
+          Boolean.TRUE, recursive);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
-          LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
+          LOG.debug("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
           String pathToDelete = f.toString();
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
-          LOG.trace("Delete candidate {} ", fs.getPath().toString(), pathToDelete);
+          LOG.debug("Delete candidate {} ", fs.getPath().toString(), pathToDelete);
           if (fs.getPath().toString().equals(f.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
@@ -310,6 +312,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("listStatus: {},  prefix based {}. Globber is directory status {}",
         f.toString(), prefixBased, isDirectory);
     ArrayList<FileStatus> result = new ArrayList<>();
+    FileStatus[] listing = null;
     if (stocatorPath.isTemporaryPathContain(f)) {
       return result.toArray(new FileStatus[0]);
     }
@@ -317,10 +320,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (isDirectory == null) {
       try {
         fileStatus = getFileStatus(f);
-        LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
-            fileStatus.isDirectory());
-        if (fileStatus.isDirectory()) {
-          isDirectory = Boolean.TRUE;
+        if (fileStatus != null) {
+          LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
+              fileStatus.isDirectory());
+          if (fileStatus.isDirectory()) {
+            isDirectory = Boolean.TRUE;
+          }
         }
       } catch (FileNotFoundException e) {
         if (!prefixBased) {
@@ -328,39 +333,29 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
     }
-    if (!storageClient.isFlatListing()) {
-      LOG.debug("Using s3a style, non flat list. Requested via configuration flag for {}",
-          f);
-      return storageClient.listNativeDirect(hostNameScheme, f, isDirectory);
-    }
-
-    try {
-      fileStatus = getFileStatus(f);
-      LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
-          fileStatus.isDirectory());
-      if (isDirectory == null && fileStatus.isDirectory()) {
-        isDirectory = Boolean.TRUE;
-      }
-    } catch (FileNotFoundException e) {
-      if (!prefixBased) {
-        throw e;
-      }
-    }
-
     // we need this,since ObjectStoreGlobber may send prefix
     // container/objectperfix* and objectperfix is not exists as an object or
     // pseudo directory
-    if (fileStatus != null && !(prefixBased || fileStatus.isDirectory())) {
+    if (fileStatus != null && !(prefixBased || (isDirectory != null && isDirectory))) {
       LOG.debug("listStatus: {} is not a directory, but a file. Return single result",
           f.toString());
       FileStatus[] stats = new FileStatus[1];
       stats[0] = fileStatus;
       return stats;
     }
-
     LOG.debug("listStatus: {} is not exiists, prefix based listing set to {}. Perform list",
         f.toString(), prefixBased);
-    FileStatus[] listing = storageClient.list(hostNameScheme, f, false, prefixBased);
+
+    if (!storageClient.isFlatListing()) {
+      LOG.debug("Using s3a style, non flat list. Requested via configuration flag for {}",
+          f);
+      listing =  storageClient.list(hostNameScheme, f, false, prefixBased,
+          isDirectory, storageClient.isFlatListing());
+    } else {
+      listing = storageClient.list(hostNameScheme, f, false, prefixBased, isDirectory,
+          storageClient.isFlatListing());
+    }
+    //storageClient.list(hostNameScheme, f, false, prefixBased);
     LOG.debug("listStatus: {} list completed with {} results", f.toString(),
         listing.length);
     if (filter == null) {
