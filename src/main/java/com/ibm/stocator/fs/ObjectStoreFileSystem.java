@@ -42,7 +42,6 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import com.ibm.stocator.fs.common.Utils;
-import com.ibm.stocator.fs.common.Globber;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
@@ -296,7 +295,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] listStatus(Path f,
       PathFilter filter) throws FileNotFoundException, IOException {
-    return listStatus(f, filter, false);
+    return listStatus(f, filter, false, null);
   }
 
   @Override
@@ -306,28 +305,47 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   }
 
   @Override
-  public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased)
-      throws FileNotFoundException, IOException {
-    LOG.debug("listStatus: {},  prefix based {}",f.toString(), prefixBased);
+  public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased,
+      Boolean isDirectory) throws FileNotFoundException, IOException {
+    LOG.debug("listStatus: {},  prefix based {}. Globber is directory status {}",
+        f.toString(), prefixBased, isDirectory);
     ArrayList<FileStatus> result = new ArrayList<>();
     if (stocatorPath.isTemporaryPathContain(f)) {
       return result.toArray(new FileStatus[0]);
     }
+    FileStatus fileStatus = null;
+    if (isDirectory == null) {
+      try {
+        fileStatus = getFileStatus(f);
+        LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
+            fileStatus.isDirectory());
+        if (fileStatus.isDirectory()) {
+          isDirectory = Boolean.TRUE;
+        }
+      } catch (FileNotFoundException e) {
+        if (!prefixBased) {
+          throw e;
+        }
+      }
+    }
     if (storageClient.isFlatListing()) {
       LOG.debug("Flat listing requested via configuration flag for {}", f);
-      return storageClient.listNative(hostNameScheme, f);
+      return storageClient.listNativeDirect(hostNameScheme, f, isDirectory);
     }
 
-    FileStatus fileStatus = null;
     try {
       fileStatus = getFileStatus(f);
       LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
           fileStatus.isDirectory());
+      if (isDirectory == null && fileStatus.isDirectory()) {
+        isDirectory = Boolean.TRUE;
+      }
     } catch (FileNotFoundException e) {
       if (!prefixBased) {
         throw e;
       }
     }
+
     // we need this,since ObjectStoreGlobber may send prefix
     // container/objectperfix* and objectperfix is not exists as an object or
     // pseudo directory
@@ -450,18 +468,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] globStatus(Path pathPattern) throws IOException {
     LOG.debug("Glob status: {}", pathPattern.toString());
-    if (storageClient.isFlatListing()) {
-      return new Globber(this, pathPattern, DEFAULT_FILTER).glob();
-    }
     return new ObjectStoreGlobber(this, pathPattern, DEFAULT_FILTER).glob();
   }
 
   @Override
   public FileStatus[] globStatus(Path pathPattern, PathFilter filter) throws IOException {
     LOG.debug("Glob status {} with path filter {}",pathPattern.toString(), filter.toString());
-    if (storageClient.isFlatListing()) {
-      return new Globber(this, pathPattern, filter).glob();
-    }
     return new ObjectStoreGlobber(this, pathPattern, filter).glob();
   }
 
@@ -502,5 +514,13 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       return true;
     }
   };
+
+  @Override
+  public String getHostnameScheme() {
+    if (hostNameScheme.endsWith("/")) {
+      return hostNameScheme.substring(0, hostNameScheme.length() - 1);
+    }
+    return hostNameScheme;
+  }
 
 }

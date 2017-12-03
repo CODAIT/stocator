@@ -164,7 +164,6 @@ import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
-import static com.ibm.stocator.fs.cos.Listing.ACCEPT_ALL;
 
 public class COSAPIClient implements IStoreClient {
 
@@ -222,7 +221,6 @@ public class COSAPIClient implements IStoreClient {
   private COSLocalDirAllocator directoryAllocator;
   private Path workingDir;
   private OnetimeInitialization singletoneInitTimeData;
-  private Listing listing;
   private boolean enableMultiObjectsDelete;
   private boolean blockUploadEnabled;
   private String blockOutputBuffer;
@@ -380,7 +378,6 @@ public class COSAPIClient implements IStoreClient {
     maxKeys = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
     flatListingFlag = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS, FLAT_LISTING,
         DEFAULT_FLAT_LISTING);
-    listing = new Listing(this);
 
     if (autoCreateBucket) {
       try {
@@ -904,53 +901,63 @@ public class COSAPIClient implements IStoreClient {
   }
 
   @Override
-  public FileStatus[] listNative(String hostName, Path path) throws FileNotFoundException,
-      IOException {
-    LOG.debug("Native list status for {}", path);
-    try {
-      String key = pathToKey(hostName, path);
-      LOG.debug("Native list inner status for path: {}, key {}", path, key);
-
-      List<FileStatus> result;
-      final FileStatus fileStatus =  getFileStatus(hostName, path, "innerList");
-
-      if (fileStatus.isDirectory()) {
-        if (!key.isEmpty()) {
-          key = key + '/';
-        }
-
-        ListObjectsRequest request = new ListObjectsRequest();
-        request.setBucketName(mBucket);
-        request.setMaxKeys(5000);
-        request.setPrefix(key);
-        request.setDelimiter("/");
-
-        LOG.debug("listStatus: doing listObjects for directory {}", key);
-
-        Listing.FileStatusListingIterator files =
-            listing.createFileStatusListingIterator(path,
-                request,
-                ACCEPT_ALL,
-                new Listing.AcceptAllButSelfAndS3nDirs(path));
-        result = new ArrayList<>(files.getBatchSize());
-        LOG.debug("List of {} completed with {}", path, files.getBatchSize());
-        while (files.hasNext()) {
-          FileStatus fs = files.next();
-          fs.setPath(new Path(hostName, fs.getPath()));
-          LOG.debug("Adding:  {}", fs.getPath());
-          result.add(fs);
-        }
-        return result.toArray(new FileStatus[result.size()]);
-      } else {
-        LOG.debug("Adding: rd (not a dir): {}", path);
-        FileStatus[] stats = new FileStatus[1];
-        stats[0] = fileStatus;
-        return stats;
-      }
-
-    } catch (AmazonClientException e) {
-      throw new IOException("listStatus", e);
+  public FileStatus[] listNativeDirect(String hostName, Path path, Boolean isDirectory)
+      throws FileNotFoundException, IOException {
+    LOG.debug("Native direct list status for {}", path);
+    ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
+    String key = pathToKey(hostName, path);
+    if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")) {
+      key = key + "/";
+      LOG.debug("listNativeDirect modify key to {}", key);
     }
+
+    List<FileStatus> result;
+    Map<String, FileStatus> emptyObjects = new HashMap<String, FileStatus>();
+    ListObjectsRequest request = new ListObjectsRequest();
+    request.setBucketName(mBucket);
+    request.setMaxKeys(5000);
+    request.setPrefix(key);
+    request.setDelimiter("/");
+
+    ObjectListing objectList = mClient.listObjects(request);
+
+    List<S3ObjectSummary> objectSummaries = objectList.getObjectSummaries();
+    List<String> commonPrefixes = objectList.getCommonPrefixes();
+
+    boolean objectScanContinue = true;
+    while (objectScanContinue) {
+      for (S3ObjectSummary obj : objectSummaries) {
+        String objKey = obj.getKey();
+        String unifiedObjectName = extractUnifiedObjectName(objKey);
+        FileStatus fs = getFileStatusObjSummaryBased(obj, hostName, path);
+        if (fs.getLen() > 0) {
+          LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
+          tmpResult.add(fs);
+        } else {
+          emptyObjects.put(fs.getPath().toString(), fs);
+        }
+      }
+      boolean isTruncated = objectList.isTruncated();
+      if (isTruncated) {
+        objectList = mClient.listNextBatchOfObjects(objectList);
+        objectSummaries = objectList.getObjectSummaries();
+      } else {
+        objectScanContinue = false;
+      }
+    }
+
+    // get common prefixes
+    for (String comPrefix : commonPrefixes) {
+      LOG.debug("Common prefix is {}", comPrefix);
+      if (emptyObjects.containsKey(keyToQualifiedPath(hostName,
+          comPrefix).toString()) || emptyObjects.isEmpty()) {
+        FileStatus status = new COSFileStatus(true, false, keyToQualifiedPath(hostName,
+            comPrefix));
+        LOG.debug("Match between common prefix and empty object {}. Adding to result", comPrefix);
+        tmpResult.add(status);
+      }
+    }
+    return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 
   /**

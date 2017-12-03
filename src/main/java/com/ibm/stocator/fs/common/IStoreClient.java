@@ -105,13 +105,14 @@ public interface IStoreClient {
    * a directory.
    *
    * @param hostName hostname
-   * @param f given path
+   * @param path given path
+   * @param isDirect is direct Globber call
    * @return the statuses of the files/directories in the given patch
    * @throws FileNotFoundException when the path does not exist;
    *         IOException see specific implementation
    */
-  public FileStatus[] listNative(String hostName, Path f) throws FileNotFoundException,
-    IOException ;
+  public FileStatus[] listNativeDirect(String hostName, Path path,
+      Boolean isDirectory) throws FileNotFoundException, IOException;
 
   /**
    * Create object. Return output stream

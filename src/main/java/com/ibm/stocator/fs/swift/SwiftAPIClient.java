@@ -878,14 +878,14 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public FileStatus[] listNative(String hostName, Path f) throws FileNotFoundException,
-    IOException {
-    return null;
+  public boolean isFlatListing() {
+    return false;
   }
 
   @Override
-  public boolean isFlatListing() {
-    return false;
+  public FileStatus[] listNativeDirect(String hostName, Path path, Boolean isDirectory) throws
+  FileNotFoundException, IOException {
+    return null;
   }
 
 }

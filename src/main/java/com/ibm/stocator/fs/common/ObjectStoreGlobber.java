@@ -68,11 +68,11 @@ public class ObjectStoreGlobber {
     }
   }
 
-  private FileStatus[] listStatus(Path path) throws IOException {
+  private FileStatus[] listStatus(Path path, boolean isDirectory) throws IOException {
     try {
       if (fs != null) {
         //return fs.listStatus(new Path(path.toString() + "*"));
-        return fs.listStatus(path, filter, true);
+        return fs.listStatus(path, filter, true, isDirectory);
       } else {
         return fc.util().listStatus(path);
       }
@@ -144,10 +144,16 @@ public class ObjectStoreGlobber {
 
     String pathPatternString = pathPattern.toUri().getPath();
     String unescapePathString = unescapePathComponent(pathPatternString);
+    String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ArrayList<FileStatus> candidates;
-    ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
+    String prefix = new Path(fs.getHostnameScheme() + noWildCardPathPrefix).toString();
+    if (!prefix.endsWith("/")) {
+      prefix = prefix + "/";
+    }
+    ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString(),
+        prefix);
 
     if (pathPatternString.contains("?temp_url")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};
@@ -156,20 +162,21 @@ public class ObjectStoreGlobber {
 
     if (globFilter.hasPattern()) {
       // Get a list of FileStatuses and filter
-      String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
+      LOG.trace("Glob filter {} no wildcard prefix {}", pathPatternString, noWildCardPathPrefix);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
       LOG.trace("Glob filter {} pattern {}", rootPlaceholder.getPath(),
           pathPatternString.toString());
-      candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath())));
+      String pathToList = rootPlaceholder.getPath().toString();
+      candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath(),
+          noWildCardPathPrefix.endsWith("/"))));
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
           LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
           results.add(candidate);
         } else {
-          if (LOG.isTraceEnabled()) {
-            LOG.debug("Candidate rejected: {}", candidate.getPath().toString());
-          }
+          LOG.debug("Candidate rejected: {} Pattern {}", candidate.getPath().toString(),
+              rootPlaceholder.getPath());
         }
       }
     } else {

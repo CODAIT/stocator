@@ -27,7 +27,9 @@ import org.apache.hadoop.fs.PathFilter;
 
 public abstract class ExtendedFileSystem extends FileSystem {
 
-  public abstract FileStatus[] listStatus(Path f,
-      PathFilter filter, boolean prefixBased) throws FileNotFoundException, IOException;
+  public abstract FileStatus[] listStatus(Path f, PathFilter filter,
+      boolean prefixBased, Boolean isDirectory) throws FileNotFoundException, IOException;
+
+  public abstract String getHostnameScheme();
 
 }
