@@ -185,7 +185,7 @@ public class COSConstants {
   public static final long DEFAULT_PURGE_EXISTING_MULTIPART_AGE = 86400;
 
   public static final String FLAT_LISTING = ".flat.list";
-  public static final boolean DEFAULT_FLAT_LISTING = false;
+  public static final boolean DEFAULT_FLAT_LISTING = true;
 
   public static final String INPUT_FADVISE = "experimental.input.fadvise";
   public static final String INPUT_FADV_NORMAL = "normal";

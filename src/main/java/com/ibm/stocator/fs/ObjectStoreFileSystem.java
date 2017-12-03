@@ -328,8 +328,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
     }
-    if (storageClient.isFlatListing()) {
-      LOG.debug("Flat listing requested via configuration flag for {}", f);
+    if (!storageClient.isFlatListing()) {
+      LOG.debug("Using s3a style, non flat list. Requested via configuration flag for {}",
+          f);
       return storageClient.listNativeDirect(hostNameScheme, f, isDirectory);
     }
 
