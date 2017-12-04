@@ -353,22 +353,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       listing = storageClient.list(hostNameScheme, f, false, prefixBased, isDirectory,
           storageClient.isFlatListing(), filter);
     }
-    //storageClient.list(hostNameScheme, f, false, prefixBased);
     LOG.debug("listStatus: {} list completed with {} results", f.toString(),
         listing.length);
     return listing;
-    /*
-    if (filter == null) {
-      return listing;
-    } else {
-      for (FileStatus fs : listing) {
-        if (filter.accept(fs.getPath())) {
-          result.add(fs);
-        }
-      }
-    }
-    */
-    //return result.toArray(new FileStatus[0]);
   }
 
   @Override
