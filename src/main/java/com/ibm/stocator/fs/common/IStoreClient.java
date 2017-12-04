@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 
@@ -111,13 +112,14 @@ public interface IStoreClient {
    * @param prefixBased if set to true, container will be listed with prefix based query
    * @param isDirectory is direct Globber call
    * @param flatListing is flat listing
+   * @param filter PathFilter filter
    * @return the statuses of the files/directories in the given patch
    * @throws FileNotFoundException when the path does not exist;
    *         IOException see specific implementation
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
-      boolean flatListing) throws FileNotFoundException, IOException;
+      boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException;
 
   /**
    * Create object. Return output stream

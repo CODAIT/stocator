@@ -47,6 +47,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 
@@ -441,7 +442,7 @@ public class SwiftAPIClient implements IStoreClient {
         && !objName.contains(Constants.HADOOP_TEMPORARY)
         && !objName.contains(Constants.HADOOP_ATTEMPT)) {
       LOG.debug("get object {} on the non existing. Trying listing", objName);
-      FileStatus[] res = list(hostName, path, true, true, null, false);
+      FileStatus[] res = list(hostName, path, true, true, null, false, null);
       LOG.debug("Listing on {} returned {}", path.toString(), res.length);
       if (res.length == 1) {
         LOG.trace("Original name {}  modified to {}", objName, res[0].getPath());
@@ -483,7 +484,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
-      boolean flatListing) throws IOException {
+      boolean flatListing, PathFilter filter) throws IOException {
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
@@ -570,8 +571,12 @@ public class SwiftAPIClient implements IStoreClient {
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = createFileStatus(previousElement, cObj, hostName, path);
-      objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
-      tmpResult.add(fs);
+      if (filter != null && filter.accept(fs.getPath())) {
+        objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
+        tmpResult.add(fs);
+      } else {
+        LOG.trace("{} rejected by path filter during list", fs.getPath());
+      }
     }
     LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);

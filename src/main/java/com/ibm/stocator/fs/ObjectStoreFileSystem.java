@@ -20,7 +20,6 @@ package com.ibm.stocator.fs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -255,7 +254,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true,
-          null, false);
+          null, false, null);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           if (fs.getPath().getName().endsWith(f.getName())) {
@@ -267,7 +266,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("delete: {} is not temporary path and not starts with HADOOP_ATTEMPT",
           f.toString());
       FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
-          Boolean.TRUE, recursive);
+          Boolean.TRUE, recursive, null);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           LOG.debug("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
@@ -311,10 +310,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       Boolean isDirectory) throws FileNotFoundException, IOException {
     LOG.debug("listStatus: {},  prefix based {}. Globber is directory status {}",
         f.toString(), prefixBased, isDirectory);
-    ArrayList<FileStatus> result = new ArrayList<>();
     FileStatus[] listing = null;
     if (stocatorPath.isTemporaryPathContain(f)) {
-      return result.toArray(new FileStatus[0]);
+      return new FileStatus[]{new FileStatus()};
     }
     FileStatus fileStatus = null;
     if (isDirectory == null) {
@@ -350,14 +348,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("Using s3a style, non flat list. Requested via configuration flag for {}",
           f);
       listing =  storageClient.list(hostNameScheme, f, false, prefixBased,
-          isDirectory, storageClient.isFlatListing());
+          isDirectory, storageClient.isFlatListing(), filter);
     } else {
       listing = storageClient.list(hostNameScheme, f, false, prefixBased, isDirectory,
-          storageClient.isFlatListing());
+          storageClient.isFlatListing(), filter);
     }
     //storageClient.list(hostNameScheme, f, false, prefixBased);
     LOG.debug("listStatus: {} list completed with {} results", f.toString(),
         listing.length);
+    return listing;
+    /*
     if (filter == null) {
       return listing;
     } else {
@@ -367,7 +367,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
     }
-    return result.toArray(new FileStatus[0]);
+    */
+    //return result.toArray(new FileStatus[0]);
   }
 
   @Override

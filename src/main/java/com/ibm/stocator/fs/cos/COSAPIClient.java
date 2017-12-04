@@ -90,6 +90,7 @@ import org.apache.hadoop.fs.InvalidRequestException;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
@@ -905,7 +906,7 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
-      boolean flatListing) throws FileNotFoundException, IOException {
+      boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(hostName, path);
@@ -937,7 +938,14 @@ public class COSAPIClient implements IStoreClient {
         FileStatus fs = getFileStatusObjSummaryBased(obj, hostName, path);
         if (fs.getLen() > 0 || fullListing) {
           LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
-          tmpResult.add(fs);
+          if (filter == null) {
+            tmpResult.add(fs);
+          } else if (filter != null && filter.accept(fs.getPath())) {
+            tmpResult.add(fs);
+          } else {
+            LOG.trace("{} rejected by path filter during list. Filter {}",
+                fs.getPath(), filter);
+          }
         } else {
           emptyObjects.put(fs.getPath().toString(), fs);
         }
@@ -959,7 +967,14 @@ public class COSAPIClient implements IStoreClient {
         FileStatus status = new COSFileStatus(true, false, keyToQualifiedPath(hostName,
             comPrefix));
         LOG.debug("Match between common prefix and empty object {}. Adding to result", comPrefix);
-        tmpResult.add(status);
+        if (filter == null) {
+          tmpResult.add(status);
+        } else if (filter != null && filter.accept(status.getPath())) {
+          tmpResult.add(status);
+        } else {
+          LOG.trace("Common prefix {} rejected by path filter during list. Filter {}",
+              status.getPath(), filter);
+        }
       }
     }
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
