@@ -631,14 +631,15 @@ public class COSAPIClient implements IStoreClient {
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
     LOG.debug("Opening '{}' for reading.", path);
     String key = pathToKey(hostName, path);
+    /*
     final FileStatus fileStatus = getFileStatus(hostName, path, "getObject");
     if (fileStatus.isDirectory()) {
       throw new FileNotFoundException("Can't open " + path
           + " because it is a directory");
     }
-
+    */
     COSInputStream inputStream = new COSInputStream(mBucket, key,
-        fileStatus.getLen(), mClient, readAhead, inputPolicy);
+        getBlockSize(), mClient, readAhead, inputPolicy);
 
     return new FSDataInputStream(inputStream);
   }
