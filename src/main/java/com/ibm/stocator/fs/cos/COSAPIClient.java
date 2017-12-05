@@ -552,7 +552,15 @@ public class COSAPIClient implements IStoreClient {
       return createFileStatus(co.getContentLength(), key, co.getLastModified(), path);
     }
     ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
-    memoryCache.put(key, meta.getContentLength(), meta.getLastModified());
+    String sparkOrigin = meta.getUserMetaDataOf("data-origin");
+    boolean stocatorCreated = false;
+    if (sparkOrigin != null) {
+      String tmp = (String) sparkOrigin;
+      if (tmp.equals("stocator")) {
+        stocatorCreated = true;
+      }
+    }
+    memoryCache.put(key, meta.getContentLength(), meta.getLastModified(), stocatorCreated);
     return createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
   }
 
@@ -913,7 +921,6 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("listNativeDirect modify key to {}", key);
     }
 
-    List<FileStatus> result;
     Map<String, FileStatus> emptyObjects = new HashMap<String, FileStatus>();
     ListObjectsRequest request = new ListObjectsRequest();
     request.setBucketName(mBucket);
@@ -929,11 +936,52 @@ public class COSAPIClient implements IStoreClient {
     List<String> commonPrefixes = objectList.getCommonPrefixes();
 
     boolean objectScanContinue = true;
+    S3ObjectSummary prevObj = null;
+    // start FTA logic
+    boolean stocatorOrigin = isSparkOrigin(key);
+    if (stocatorOrigin) {
+      LOG.debug("Stocator origin is true for {}", key);
+      if (!isJobSuccessful(key)) {
+        LOG.debug("{} created by failed Spark job. Skipped", key);
+        return new FileStatus[0];
+      }
+    }
     while (objectScanContinue) {
       for (S3ObjectSummary obj : objectSummaries) {
+        if (prevObj == null) {
+          prevObj = obj;
+          continue;
+        }
         String objKey = obj.getKey();
         String unifiedObjectName = extractUnifiedObjectName(objKey);
-        FileStatus fs = getFileStatusObjSummaryBased(obj, hostName, path);
+        LOG.debug("list candidate {}, unified name {}", objKey, unifiedObjectName);
+        if (stocatorOrigin && !fullListing) {
+          LOG.trace("{} created by Spark", unifiedObjectName);
+          if (!isJobSuccessful(unifiedObjectName)) {
+            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
+            if (fModeAutomaticDelete) {
+              delete(hostName, new Path(objKey), true);
+            }
+
+            continue;
+          } else {
+            // if we here - data created by spark and job completed
+            // successfully
+            // however there be might parts of failed tasks that
+            // were not aborted
+            // we need to make sure there are no failed attempts
+            if (nameWithoutTaskID(objKey).equals(nameWithoutTaskID(prevObj.getKey()))) {
+              // found failed that was not aborted.
+              LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
+              if (prevObj.getSize() < obj.getSize()) {
+                LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
+                prevObj = obj;
+              }
+              continue;
+            }
+          }
+        }
+        FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
         if (fs.getLen() > 0 || fullListing) {
           LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
           if (filter == null) {
@@ -947,6 +995,7 @@ public class COSAPIClient implements IStoreClient {
         } else {
           emptyObjects.put(fs.getPath().toString(), fs);
         }
+        prevObj = obj;
       }
       boolean isTruncated = objectList.isTruncated();
       if (isTruncated) {
@@ -954,6 +1003,24 @@ public class COSAPIClient implements IStoreClient {
         objectSummaries = objectList.getObjectSummaries();
       } else {
         objectScanContinue = false;
+      }
+    }
+
+    if (prevObj != null) {
+      FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
+      LOG.debug("Adding the last object from the list {}", fs.getPath());
+      if (fs.getLen() > 0 || fullListing) {
+        LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
+        if (filter == null) {
+          tmpResult.add(fs);
+        } else if (filter != null && filter.accept(fs.getPath())) {
+          tmpResult.add(fs);
+        } else {
+          LOG.trace("{} rejected by path filter during list. Filter {}",
+              fs.getPath(), filter);
+        }
+      } else if (!fs.getPath().getName().equals(HADOOP_SUCCESS)) {
+        emptyObjects.put(fs.getPath().toString(), fs);
       }
     }
 
@@ -1031,16 +1098,19 @@ public class COSAPIClient implements IStoreClient {
    * @return boolean if job is successful
    */
   private boolean isJobSuccessful(String objectKey) {
+    LOG.trace("isJobSuccessful: for {}", objectKey);
     if (mCachedSparkJobsStatus.containsKey(objectKey)) {
+      LOG.debug("isJobSuccessful: {} found cached", objectKey);
       return mCachedSparkJobsStatus.get(objectKey).booleanValue();
     }
     String key = getRealKey(objectKey);
-    String statusKey = String.format("%s/%s", key, HADOOP_SUCCESS);
-    ObjectMetadata statusMetadata = getObjectMetadata(statusKey);
+    Path p = new Path(key, HADOOP_SUCCESS);
+    ObjectMetadata statusMetadata = getObjectMetadata(p.toString());
     Boolean isJobOK = Boolean.FALSE;
     if (statusMetadata != null) {
       isJobOK = Boolean.TRUE;
     }
+    LOG.debug("isJobSuccessful: not cached {}. Status is {}", objectKey, isJobOK);
     mCachedSparkJobsStatus.put(objectKey, isJobOK);
     return isJobOK.booleanValue();
   }
@@ -1111,8 +1181,23 @@ public class COSAPIClient implements IStoreClient {
    */
   private boolean isSparkOrigin(String objectKey) {
     LOG.debug("check spark origin for {}", objectKey);
+    if (!objectKey.endsWith("/")) {
+      LOG.debug("Key {} has no slash. Return false", objectKey);
+      return false;
+    } else {
+      objectKey = objectKey.substring(0, objectKey.length() - 1);
+    }
+
     if (mCachedSparkOriginated.containsKey(objectKey)) {
-      return mCachedSparkOriginated.get(objectKey).booleanValue();
+      boolean res = mCachedSparkOriginated.get(objectKey).booleanValue();
+      LOG.debug("found cached for spark origin for {}. Status {}", objectKey, res);
+      return res;
+    }
+    CachedObject co = memoryCache.get(objectKey);
+    if (co != null) {
+      if (co.isStocatorOrigin()) {
+        return true;
+      }
     }
     String key = getRealKey(objectKey);
     Boolean sparkOriginated = Boolean.FALSE;
@@ -1127,7 +1212,7 @@ public class COSAPIClient implements IStoreClient {
       }
     }
     mCachedSparkOriginated.put(objectKey, sparkOriginated);
-    LOG.debug("spark origin for {} is {}", objectKey, sparkOriginated.booleanValue());
+    LOG.debug("spark origin for {} is {} non cached", objectKey, sparkOriginated.booleanValue());
     return sparkOriginated.booleanValue();
   }
 
