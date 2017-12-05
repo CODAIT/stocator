@@ -228,13 +228,14 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
-    LOG.debug("rename from {} to {}", src.toString(), dst.toString());
+    LOG.debug("rename from {} to {}", src, dst);
     if (stocatorPath.isTemporaryPathContain(src)) {
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
-    if (exists(src)) {
-      LOG.debug("Source {} exists", src);
+    if (src == null || dst == null || !exists(src)) {
+      LOG.debug("Source {} does not exists. Exit", src);
+      return false;
     }
     return storageClient.rename(hostNameScheme, src.toString(), dst.toString());
   }
