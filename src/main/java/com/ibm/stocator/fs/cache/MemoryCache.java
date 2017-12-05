@@ -60,9 +60,10 @@ public class MemoryCache {
     return res;
   }
 
-  public void put(String objNameKey, long contentLength, Date lastModified) {
+  public void put(String objNameKey, long contentLength, Date lastModified,
+      boolean stocatorOrigin) {
     LOG.trace("Add to cache  {} ", objNameKey);
-    CachedObject co = new CachedObject(contentLength, lastModified);
+    CachedObject co = new CachedObject(contentLength, lastModified, stocatorOrigin);
     cache.put(objNameKey, co);
   }
 

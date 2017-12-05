@@ -22,10 +22,13 @@ import java.util.Date;
 public class CachedObject {
   private final long contentLength;
   private  final Date lastModified;
+  private final boolean stocatorOrigin;
 
-  public CachedObject(long objContentLength, final Date objLastModified) {
+  public CachedObject(long objContentLength, final Date objLastModified,
+      boolean stocatorOriginT) {
     contentLength = objContentLength;
     lastModified = new Date(objLastModified.getTime());
+    stocatorOrigin = stocatorOriginT;
   }
 
   public long getContentLength() {
@@ -34,5 +37,9 @@ public class CachedObject {
 
   public Date getLastModified() {
     return lastModified;
+  }
+
+  public boolean  isStocatorOrigin() {
+    return stocatorOrigin;
   }
 }
