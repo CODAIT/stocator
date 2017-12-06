@@ -943,6 +943,9 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("Stocator origin is true for {}", key);
       if (!isJobSuccessful(key)) {
         LOG.debug("{} created by failed Spark job. Skipped", key);
+        if (fModeAutomaticDelete) {
+          delete(hostName, new Path(key), true);
+        }
         return new FileStatus[0];
       }
     }
@@ -957,28 +960,19 @@ public class COSAPIClient implements IStoreClient {
         LOG.debug("list candidate {}, unified name {}", objKey, unifiedObjectName);
         if (stocatorOrigin && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
-            if (fModeAutomaticDelete) {
-              delete(hostName, new Path(objKey), true);
+          // if we here - data created by spark and job completed
+          // successfully
+          // however there be might parts of failed tasks that
+          // were not aborted
+          // we need to make sure there are no failed attempts
+          if (nameWithoutTaskID(objKey).equals(nameWithoutTaskID(prevObj.getKey()))) {
+            // found failed that was not aborted.
+            LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
+            if (prevObj.getSize() < obj.getSize()) {
+              LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
+              prevObj = obj;
             }
-
             continue;
-          } else {
-            // if we here - data created by spark and job completed
-            // successfully
-            // however there be might parts of failed tasks that
-            // were not aborted
-            // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(objKey).equals(nameWithoutTaskID(prevObj.getKey()))) {
-              // found failed that was not aborted.
-              LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
-              if (prevObj.getSize() < obj.getSize()) {
-                LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
-                prevObj = obj;
-              }
-              continue;
-            }
           }
         }
         FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
