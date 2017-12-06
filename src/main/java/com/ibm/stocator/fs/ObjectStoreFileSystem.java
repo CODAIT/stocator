@@ -229,6 +229,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
     LOG.debug("rename from {} to {}", src, dst);
+    if (src == null || dst == null) {
+      LOG.debug("Source path and dest path can not be null");
+      return false;
+    }
     if (stocatorPath.isTemporaryPathContain(src)) {
       return true;
     }
