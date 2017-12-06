@@ -522,13 +522,20 @@ public class SwiftAPIClient implements IStoreClient {
           continue;
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+        LOG.trace("{} Matching {}", unifiedObjectName, obj);
         if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
             && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
           // JOSS returns all objects that start with the prefix of obj.
           // These may include other unrelated objects.
           LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
           continue;
+        } else if (isDirectory && !unifiedObjectName.equals(obj)
+            && !unifiedObjectName.startsWith(obj + "/")) {
+          LOG.trace("directory {}. {} does not match {}. Skipped", isDirectory,
+              unifiedObjectName, obj);
+          continue;
         }
+
         LOG.trace("Unified name: {}, path {}", unifiedObjectName, tmp.getName());
         if (!unifiedObjectName.equals(tmp.getName()) && isSparkOrigin(unifiedObjectName)
             && !fullListing) {
@@ -656,11 +663,17 @@ public class SwiftAPIClient implements IStoreClient {
       obj = getObjName(hostName, path);
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
-    StoredObject so = mJossAccount.getAccount().getContainer(container)
-        .getObject(obj);
-    if (so.exists()) {
-      so.delete();
-      objectCache.remove(obj);
+    try {
+      StoredObject so = mJossAccount.getAccount().getContainer(container)
+          .getObject(obj);
+      if (so.exists()) {
+        so.delete();
+        objectCache.remove(obj);
+      }
+    } catch (Exception e) {
+      LOG.warn(e.getMessage());
+      LOG.warn("Delete on {} resulted in FileNotFound exception", path);
+      return false;
     }
     return true;
   }
