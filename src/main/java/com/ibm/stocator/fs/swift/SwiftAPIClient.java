@@ -571,7 +571,10 @@ public class SwiftAPIClient implements IStoreClient {
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
       fs = createFileStatus(previousElement, cObj, hostName, path);
-      if (filter != null && filter.accept(fs.getPath())) {
+      if (filter == null) {
+        objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
+        tmpResult.add(fs);
+      } else if (filter != null && filter.accept(fs.getPath())) {
         objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
         tmpResult.add(fs);
       } else {
