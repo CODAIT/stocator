@@ -84,6 +84,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public void initialize(URI fsuri, Configuration conf) throws IOException {
+    LOG.trace("uri {}", fsuri);
     super.initialize(fsuri, conf);
     LOG.trace("Initialize for {}", fsuri);
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {

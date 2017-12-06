@@ -99,8 +99,15 @@ public final class ConfigurationHandler {
     props.setProperty(COS_BUCKET_PROPERTY, bucket);
     Utils.updateProperty(conf, prefix, altPrefix, ACCESS_KEY, props,
         ACCESS_KEY_COS_PROPERTY, false);
-    Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN, props,
-        IAM_TOKEN_PROPERTY, false);
+    if (uri.toString().contains("%3Ftoken=")) {
+      String token;
+      token = Utils.extractTokenFromUri(uri);
+      Utils.updateProperty(conf, prefix, altPrefix, ".newapitoken", props,
+          token, false);         //added by PC
+    } else {
+      Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN, props,
+          IAM_TOKEN_PROPERTY, false);
+    }   //added by PC
     Utils.updateProperty(conf, prefix, altPrefix, SECRET_KEY, props,
         SECRET_KEY_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, ENDPOINT_URL, props,
@@ -128,4 +135,32 @@ public final class ConfigurationHandler {
     return props;
   }
 
+  /**
+   * Parse configuration properties from the core-site.xml and initialize
+   * COS configuration
+   * @param uri uri of the file system
+   * @param conf configuration
+   * @param scheme connector supposed scheme
+   * @param token the IAM token
+   * @return parsed configuration for the COS driver
+   * @throws IOException if the configuration is invalid
+   */
+  public static Properties updateToken(URI uri, Configuration conf,
+      String scheme, String token, Properties props) throws IOException {
+    String host = Utils.getHost(uri);
+    //String bucket = Utils.getContainerName(host, false);
+    String service = null;
+    try {
+      service = Utils.getServiceName(host);
+    } catch (IOException ex) {
+      LOG.warn("Failed to extract service from the host {}", host);
+    }
+    if (service == null) {
+      service =  "service";
+    }
+    String prefix = COS_SERVICE_PREFIX + service;
+    String tokenKey = prefix + IAM_TOKEN;
+    props.setProperty(tokenKey, token);
+    return props;
+  }
 }

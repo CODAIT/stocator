@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.http.conn.util.InetAddressUtils;
 import org.slf4j.Logger;
@@ -208,17 +209,20 @@ public class Utils {
    * @param required if the key is mandatory
    * @throws ConfigurationParseException if there was no match for the key
    */
-
   public static void updateProperty(Configuration conf, String prefix, String[] altPrefix,
       String key, Properties props, String propsKey,
       boolean required) throws ConfigurationParseException {
     String val = conf.get(prefix + key);
-    if (val == null) {
+    if (val == null && !key.equals(".newapitoken")) {
       // try alternative key
       for (String alternativePrefix : altPrefix) {
         val = conf.get(alternativePrefix + key);
         LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
       }
+    }
+    if (key.equals(".newapitoken")) {
+      props.setProperty("fs.cos.iam.token", propsKey.trim());
+      return;
     }
     if (required && val == null) {
       throw new ConfigurationParseException("Missing mandatory configuration: " + key);
@@ -419,6 +423,94 @@ public class Utils {
         LOG.debug("Ignore failure in closing the Closeable", ex);
       }
     }
+  }
+
+  /**
+   * Removes ?token=aabbcc from cos://container.service/object?token=aabbcc
+   *
+   * Also removes ?token=aabbcc from cos://container.service/object?token=aabbcc/_SUCCESS,
+   * cos://container.service/object?token=aabbcc/_temporary/0/_temporary/attempt-0000
+   *
+   * @param path path
+   * @return the path without the IAM token
+   */
+  public static String removeTokenFromString(String path) {
+    String objNamePart = path.substring(0,  path.indexOf("?"));
+    String objNamePartEnd = path.substring(path.indexOf("?"));
+    if (objNamePartEnd.indexOf("/") >= 0) {
+      objNamePartEnd = objNamePartEnd.substring(objNamePartEnd.indexOf("/"));
+      path = objNamePart + objNamePartEnd;
+      return path;
+    } else {
+      path = path.substring(0, path.indexOf("?"));
+      return path;
+    }
+  }
+
+  /**
+   * Removes ?token=aabbcc from cos://container.service/object?token=aabbcc
+   *
+   * Also removes ?token=aabbcc from cos://container.service/object?token=aabbcc/_SUCCESS,
+   * cos://container.service/object?token=aabbcc/_temporary/0/_temporary/attempt-0000
+   *
+   * @param path path
+   * @return the path without the IAM token
+   */
+  public static Path removeTokenFromPath(Path path) {
+    String strPath = path.toString();
+    String objNamePart = strPath.substring(0,  strPath.indexOf("?"));
+    String objNamePartEnd = strPath.substring(strPath.indexOf("?"));
+    if (objNamePartEnd.indexOf("/") >= 0) {
+      objNamePartEnd = objNamePartEnd.substring(objNamePartEnd.indexOf("/"));
+      strPath = objNamePart + objNamePartEnd;
+      path = new Path(strPath);
+      return path;
+    } else {
+      strPath = strPath.substring(0, strPath.indexOf("?"));
+      path = new Path(strPath);
+      return path;
+    }
+  }
+
+  /**
+   * Removes ?token=aabbcc from cos://container.service/object?token=aabbcc
+   *
+   * Also removes ?token=aabbcc from cos://container.service/object?token=aabbcc/_SUCCESS,
+   * cos://container.service/object?token=aabbcc/_temporary/0/_temporary/attempt-0000
+   *
+   * @param uri uri
+   * @return the path without the IAM token
+   * @throws URISyntaxException if failed to parse uri
+   */
+  public static URI removeTokenFromURI(URI uri) throws URISyntaxException {
+    String uriString = uri.toString();
+    uriString = uriString.substring(0, uriString.indexOf("%3Ftoken="));
+    uri = new URI(uriString);
+    return uri;
+  }
+
+  /**
+   *  Extracts aaaa from http://container.service/object?token=aaaa
+   *
+   *  @param path containing the IAM token
+   *  @return the token value
+   */
+  public static String extractToken(Path path) {
+    String token = path.toString();
+    token = token.substring(token.lastIndexOf("?token=") + 7, token.length());
+    return token;
+  }
+
+  /**
+   *  Extracts aaaa from http://container.service/object?token=aaaa
+   *
+   *  @param uri containing the IAM token
+   *  @return the token value
+   */
+  public static String extractTokenFromUri(URI uri) {
+    String token = uri.toString();
+    token = token.substring(token.lastIndexOf("%3Ftoken=") + 9, token.length());
+    return token;
   }
 
   public static boolean shouldAbort() {

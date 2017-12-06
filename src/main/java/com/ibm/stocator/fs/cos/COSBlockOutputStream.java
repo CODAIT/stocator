@@ -506,7 +506,8 @@ class COSBlockOutputStream extends OutputStream {
         } catch (AmazonClientException e) {
           lastException = e;
         }
-      } while (shouldRetry(operation, lastException, retryCount++));
+      }
+      while (shouldRetry(operation, lastException, retryCount++));
       // this point is only reached if the operation failed more than
       // the allowed retry count
       throw translateException(operation, key, lastException);
@@ -529,7 +530,8 @@ class COSBlockOutputStream extends OutputStream {
         } catch (AmazonClientException e) {
           lastException = e;
         }
-      } while (shouldRetry(operation, lastException, retryCount++));
+      }
+      while (shouldRetry(operation, lastException, retryCount++));
       // this point is only reached if the operation failed more than
       // the allowed retry count
       LOG.warn("Unable to abort multipart upload, you may need to purge  "

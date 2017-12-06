@@ -266,6 +266,7 @@ public class StocatorPath {
     }
     return path;
   }
+
   /**
    * Extract object name from path. If addTaskIdCompositeName=true then
    * schema://tone1.lvm/aa/bb/cc/one3.txt/_temporary/0/_temporary/

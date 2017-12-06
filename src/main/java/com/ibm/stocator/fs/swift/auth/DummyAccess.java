@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Dummy access is used to access public urls
  */
-public class DummyAccess implements Access{
+public class DummyAccess implements Access {
 
   /*
    * Logger

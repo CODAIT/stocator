@@ -232,6 +232,8 @@ public class COSAPIClient implements IStoreClient {
 
   private StocatorPath stocatorPath;
 
+  Properties props = new Properties();  //added by PC
+
   public COSAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
     filesystemURI = pFilesystemURI;
     conf = pConf;
@@ -244,7 +246,7 @@ public class COSAPIClient implements IStoreClient {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
-    Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
+    props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);   //edited by PC
     // Set bucket name property
     mBucket = props.getProperty(COS_BUCKET_PROPERTY);
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
@@ -480,13 +482,19 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getObjectMetadata(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
+    if (path.toString().contains("?token=")) {
+      String token = Utils.extractToken(path);
+      props = ConfigurationHandler.updateToken(
+          filesystemURI, conf, schemaProvided, token, props);   //edited by PC
+      path = Utils.removeTokenFromPath(path);
+    }
     LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
-    /*
-     * The requested path is equal to hostName. HostName is equal to
-     * hostNameScheme, thus the container. Therefore we have no object to look
-     * for and we return the FileStatus as a directory. Containers have to
-     * lastModified.
-     */
+  /*
+   * The requested path is equal to hostName. HostName is equal to
+   * hostNameScheme, thus the container. Therefore we have no object to look
+   * for and we return the FileStatus as a directory. Containers have to
+   * lastModified.
+   */
     if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
       return new FileStatus(0L, true, 1, mBlockSize, 0L, path);
     }
@@ -638,6 +646,9 @@ public class COSAPIClient implements IStoreClient {
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
+    if (objName.contains("?token=")) {
+      objName = Utils.removeTokenFromString(objName);
+    }
     try {
       String objNameWithoutBuket = objName;
       if (objName.startsWith(mBucket + "/")) {
