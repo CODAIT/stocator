@@ -463,6 +463,11 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
+    FileStatus res = null;
+    FileStatus cached = memoryCache.getFileStatus(path.toString());
+    if (cached != null) {
+      return cached;
+    }
     LOG.trace("getFileStatus(start) for {}, hostname: {}", path, hostName);
     /*
      * The requested path is equal to hostName. HostName is equal to
@@ -472,7 +477,9 @@ public class COSAPIClient implements IStoreClient {
      */
     if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
       LOG.trace("getFileStatus(completed) {}", path);
-      return new FileStatus(0L, true, 1, mBlockSize, 0L, path);
+      res = new FileStatus(0L, true, 1, mBlockSize, 0L, path);
+      memoryCache.putFileStatus(path.toString(), res);
+      return res;
     }
     if (path.toString().contains(HADOOP_TEMPORARY)) {
       LOG.debug("getFileStatus on temp object {}. Return not found", path.toString());
@@ -491,6 +498,7 @@ public class COSAPIClient implements IStoreClient {
       }
       if (fileStatus != null) {
         LOG.trace("getFileStatus(completed) {}", path);
+        memoryCache.putFileStatus(path.toString(), fileStatus);
         return fileStatus;
       }
       // means key returned not found. Trying to call get file status on key/
@@ -508,6 +516,7 @@ public class COSAPIClient implements IStoreClient {
 
         if (fileStatus != null) {
           LOG.trace("getFileStatus(completed) {}", path);
+          memoryCache.putFileStatus(path.toString(), fileStatus);
           return fileStatus;
         } else {
           // if here: both key and key/ returned not found.
@@ -525,11 +534,15 @@ public class COSAPIClient implements IStoreClient {
           ObjectListing objects = mClient.listObjects(request);
           if (!objects.getCommonPrefixes().isEmpty() || !objects.getObjectSummaries().isEmpty()) {
             LOG.trace("getFileStatus(completed) {}", path);
-            return new FileStatus(0, true, 1, 0, 0, path);
+            res = new FileStatus(0, true, 1, 0, 0, path);
+            memoryCache.putFileStatus(path.toString(), res);
+            return res;
           } else if (key.isEmpty()) {
             LOG.debug("Found root directory");
             LOG.trace("getFileStatus(completed) {}", path);
-            return new FileStatus(0, true, 1, 0, 0, path);
+            res = new FileStatus(0, true, 1, 0, 0, path);
+            memoryCache.putFileStatus(path.toString(), res);
+            return res;
           }
         }
       }
@@ -640,7 +653,10 @@ public class COSAPIClient implements IStoreClient {
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
     LOG.debug("Opening '{}' for reading.", path);
     String key = pathToKey(hostName, path);
-    final FileStatus fileStatus = getFileStatus(hostName, path, "getObject");
+    FileStatus fileStatus = memoryCache.getFileStatus(path.toString());
+    if (fileStatus == null) {
+      fileStatus = getFileStatus(hostName, path, "getObject");
+    }
     if (fileStatus.isDirectory()) {
       throw new FileNotFoundException("Can't open " + path
           + " because it is a directory");
@@ -772,6 +788,7 @@ public class COSAPIClient implements IStoreClient {
     try {
       mClient.deleteObject(new DeleteObjectRequest(mBucket, obj));
       memoryCache.remove(obj);
+      memoryCache.removeFileStatus(path.toString());
       return true;
     } catch (AmazonServiceException e) {
       if (e.getStatusCode() != 404) {
@@ -1006,8 +1023,10 @@ public class COSAPIClient implements IStoreClient {
       if (fs.getLen() > 0 || fullListing) {
         LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
         if (filter == null) {
+          memoryCache.putFileStatus(fs.getPath().toString(), fs);
           tmpResult.add(fs);
         } else if (filter != null && filter.accept(fs.getPath())) {
+          memoryCache.putFileStatus(fs.getPath().toString(), fs);
           tmpResult.add(fs);
         } else {
           LOG.trace("{} rejected by path filter during list. Filter {}",
@@ -1027,8 +1046,10 @@ public class COSAPIClient implements IStoreClient {
             comPrefix));
         LOG.debug("Match between common prefix and empty object {}. Adding to result", comPrefix);
         if (filter == null) {
+          memoryCache.putFileStatus(status.getPath().toString(), status);
           tmpResult.add(status);
         } else if (filter != null && filter.accept(status.getPath())) {
+          memoryCache.putFileStatus(status.getPath().toString(), status);
           tmpResult.add(status);
         } else {
           LOG.trace("Common prefix {} rejected by path filter during list. Filter {}",

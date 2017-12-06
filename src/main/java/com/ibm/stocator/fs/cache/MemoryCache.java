@@ -19,9 +19,15 @@ package com.ibm.stocator.fs.cache;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
  * Wrapper class adding an internal cache layer for objects metadata,
@@ -29,6 +35,8 @@ import org.slf4j.LoggerFactory;
  */
 public class MemoryCache {
   private HashMap<String, CachedObject> cache;
+  Cache<String, FileStatus> fsCache;
+
   /**
    * Logger
    */
@@ -44,6 +52,9 @@ public class MemoryCache {
 
   private MemoryCache() {
     cache = new HashMap<>();
+    fsCache = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .expireAfterWrite(30, TimeUnit.SECONDS).build();
   }
 
   /**
@@ -60,6 +71,30 @@ public class MemoryCache {
     return res;
   }
 
+  public void putFileStatus(String path, FileStatus fs) {
+    fsCache.put(path, fs);
+  }
+
+  public void removeFileStatus(String path) {
+    fsCache.invalidate(path);
+  }
+
+  public FileStatus getFileStatus(final String path) {
+    LOG.debug("Guava cache, GET for {}", path);
+    try {
+      return fsCache.get(path, new Callable<FileStatus>() {
+        @Override
+        public FileStatus call() throws Exception {
+          LOG.debug("Guava cache {} return null", path);
+          return null;
+        }
+      });
+    } catch (Exception e) {
+      LOG.debug(e.getMessage());
+    }
+    return null;
+  }
+
   public void put(String objNameKey, long contentLength, Date lastModified,
       boolean stocatorOrigin) {
     LOG.trace("Add to cache  {} ", objNameKey);
@@ -72,5 +107,9 @@ public class MemoryCache {
     if (cache.containsKey(objName)) {
       cache.remove(objName);
     }
+  }
+
+  public boolean containsKey(String objName) {
+    return cache.containsKey(objName);
   }
 }
