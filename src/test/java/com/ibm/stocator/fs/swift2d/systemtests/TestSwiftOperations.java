@@ -111,7 +111,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
     assertEquals(0, results.length);
   }
 
-  @Test
   public void testAsteriskWildcard() throws Exception {
     String[] objectNames = {"Dir/SubDir/File1", "Dir/SubDir/File2", "Dir/File1"};
     for (String name : objectNames) {
@@ -123,6 +122,9 @@ public class TestSwiftOperations extends SwiftBaseTest {
     ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
             new ObjectStoreGlobFilter(wildcard.toString()));
     FileStatus[] results = globber.glob();
+    for (FileStatus res: results) {
+      System.out.println(res.getPath());
+    }
     assertEquals(3, results.length);
 
     wildcard = new Path(getBaseURI() + "/Dir/*"); // Files in "Dir" directory
@@ -148,8 +150,7 @@ public class TestSwiftOperations extends SwiftBaseTest {
             new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
     assertEquals(1, results.length);
-
-    wildcard = new Path(getBaseURI() + "/Dir/*/File1"); // Files called File1 in a SubDir
+    wildcard = new Path(getBaseURI() + "/Dir/*/File1");
     globber = new ObjectStoreGlobber(getFs(), wildcard,
             new ObjectStoreGlobFilter(wildcard.toString()));
     results = globber.glob();
