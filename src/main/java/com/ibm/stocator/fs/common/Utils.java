@@ -82,7 +82,7 @@ public class Utils {
    */
   public static String getContainerName(String hostname,
       boolean serviceRequired) throws IOException {
-    int i = hostname.indexOf(".");
+    int i = hostname.lastIndexOf(".");
     if (i <= 0) {
       if (serviceRequired) {
         throw badHostName(hostname);
@@ -100,7 +100,7 @@ public class Utils {
    * @throws IOException if the hostname was invalid
    */
   public static String getServiceName(String hostname) throws IOException {
-    int i = hostname.indexOf(".");
+    int i = hostname.lastIndexOf(".");
     if (i <= 0) {
       throw badHostName(hostname);
     }
@@ -120,7 +120,7 @@ public class Utils {
    * @throws IOException if the hostname was invalid
    */
   public static String getServiceName(String hostname, String defaultService) throws IOException {
-    int i = hostname.indexOf(".");
+    int i = hostname.lastIndexOf(".");
     if (i <= 0) {
       throw badHostName(hostname);
     }
@@ -141,7 +141,7 @@ public class Utils {
     LOG.trace("Checking schema {}", uri.toString());
     String hostName = Utils.getHost(uri);
     LOG.trace("Got hostname as {}", hostName);
-    int i = hostName.indexOf(".");
+    int i = hostName.lastIndexOf(".");
     if (i < 0) {
       return false;
     }
@@ -284,7 +284,7 @@ public class Utils {
     if (result == notExistsValue) {
       result = -1;
       for (String alternativePrefix : altPrefix) {
-        result = conf.getLong(alternativePrefix + key, defValue);
+        result = stringToLong(conf.get(alternativePrefix + key), defValue);
       }
     }
     if (result == -1) {
@@ -482,4 +482,18 @@ public class Utils {
     }
   }
 
+  private static long stringToLong(String value, long defValue) {
+    long res = defValue;
+    if (value == null) {
+      return res;
+    }
+    try {
+      res = Long.valueOf(value);
+    } catch (NumberFormatException ex) {
+      if (value.endsWith("K")) {
+        res = Long.valueOf(value.substring(0, value.length() - 1)) * 1024;
+      }
+    }
+    return res;
+  }
 }

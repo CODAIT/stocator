@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
@@ -79,9 +81,16 @@ class COSBlockOutputStream extends OutputStream {
   /**
    * Retry policy for multipart commits; not all AWS SDK versions retry that.
    */
+
   private final RetryPolicy retryPolicy =
       RetryPolicies.retryUpToMaximumCountWithProportionalSleep(5, 2000,
       TimeUnit.MILLISECONDS);
+
+  /*
+   * Object`s metadata
+   */
+  private Map<String, String> mMetadata;
+
   /**
    * Factory for blocks.
    */
@@ -118,17 +127,20 @@ class COSBlockOutputStream extends OutputStream {
    * @param blockSizeT size of a single block
    * @param blockFactoryT factory for creating stream destinations
    * @param writeOperationHelperT state of the write operation
+   * @param metadata Map<String, String> metadata
    * @throws IOException on any problem
    */
   COSBlockOutputStream(COSAPIClient fsT, String keyT, ExecutorService executorServiceT,
       long blockSizeT,
       COSDataBlocks.BlockFactory blockFactoryT,
-      COSAPIClient.WriteOperationHelper writeOperationHelperT)
+      COSAPIClient.WriteOperationHelper writeOperationHelperT,
+      Map<String, String> metadata)
       throws IOException {
     fs = fsT;
     key = keyT;
     blockFactory = blockFactoryT;
     blockSize = (int) blockSizeT;
+    mMetadata = metadata;
     writeOperationHelper = writeOperationHelperT;
     Preconditions.checkArgument(blockSize >= COSConstants.MULTIPART_MIN_SIZE,
         "Block size is too small: %d", blockSize);
@@ -155,7 +167,7 @@ class COSBlockOutputStream extends OutputStream {
             + COSConstants.MAX_MULTIPART_COUNT
             + " write may fail.");
       }
-      activeBlock = blockFactory.create(blockCount, blockSize);
+      activeBlock = blockFactory.create(key, blockCount, blockSize);
     }
     return activeBlock;
   }
@@ -252,7 +264,7 @@ class COSBlockOutputStream extends OutputStream {
     int written = block.write(source, offset, len);
     int remainingCapacity = block.remainingCapacity();
     if (written < len) {
-      // not everything was written —the block has run out
+      // not everything was written, the block has run out
       // of capacity
       // Trigger an upload then process the remainder.
       LOG.debug("writing more data than block has capacity -triggering upload");
@@ -359,6 +371,10 @@ class COSBlockOutputStream extends OutputStream {
     final PutObjectRequest putObjectRequest = uploadData.hasFile()
         ? writeOperationHelper.newPutRequest(uploadData.getFile())
         : writeOperationHelper.newPutRequest(uploadData.getUploadStream(), size);
+
+    final ObjectMetadata om = new ObjectMetadata();
+    om.setUserMetadata(mMetadata);
+    putObjectRequest.setMetadata(om);
     ListenableFuture<PutObjectResult> putObjectResult =
         executorService.submit(new Callable<PutObjectResult>() {
           @Override

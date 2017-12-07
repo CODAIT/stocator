@@ -158,16 +158,18 @@ final class COSDataBlocks {
     /**
      * Create a temp file and a {@link DiskBlock} instance to manage it.
      *
+     * @param key = a string containing the partition number, task number,
+     *              attempt number, and timestamp
      * @param index block index
      * @param limit limit of the block
      * @return the new block
      * @throws IOException IO problems
      */
     @Override
-    DataBlock create(long index, int limit) throws IOException {
+    DataBlock create(String key, long index, int limit) throws IOException {
+      String tmpPrefix = key.replaceAll("/", "-");
       File destFile = getOwner()
-          .createTmpFileForWrite(String.format("cosblock-%04d-", index),
-              limit);
+          .createTmpFileForWrite(String.format("cosblock-%04d-" + tmpPrefix, index));
       return new DiskBlock(destFile, limit, index);
     }
   }
@@ -249,7 +251,7 @@ final class COSDataBlocks {
           break;
 
         case Upload:
-          LOG.debug("Block[{}]: Buffer file {} exists —close upload stream",
+          LOG.debug("Block[{}]: Buffer file {} exists close upload stream",
               index, bufferFile);
           break;
 
@@ -339,7 +341,7 @@ final class COSDataBlocks {
      * @param statistics stats to work with
      * @return a new block
      */
-    abstract DataBlock create(long index, int limit)
+    abstract DataBlock create(String key, long index, int limit)
         throws IOException;
 
   }
