@@ -103,7 +103,7 @@ public final class ConfigurationHandler {
       String token;
       token = Utils.extractToken(uri);
       Utils.updateProperty(conf, prefix, altPrefix, ".newapitoken", props,
-          token, false);         //added by PC
+          token, false);
     } else {
       Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN, props,
           IAM_TOKEN_PROPERTY, false);
