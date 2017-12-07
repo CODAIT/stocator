@@ -101,7 +101,7 @@ public final class ConfigurationHandler {
         ACCESS_KEY_COS_PROPERTY, false);
     if (uri.toString().contains("%3Ftoken=")) {
       String token;
-      token = Utils.extractTokenFromUri(uri);
+      token = Utils.extractToken(uri);
       Utils.updateProperty(conf, prefix, altPrefix, ".newapitoken", props,
           token, false);         //added by PC
     } else {

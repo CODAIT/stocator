@@ -486,7 +486,7 @@ public class COSAPIClient implements IStoreClient {
       String token = Utils.extractToken(path);
       props = ConfigurationHandler.updateToken(
           filesystemURI, conf, schemaProvided, token, props);   //edited by PC
-      path = Utils.removeTokenFromPath(path);
+      path = Utils.removeToken(path);
     }
     LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
   /*
@@ -647,7 +647,7 @@ public class COSAPIClient implements IStoreClient {
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
     if (objName.contains("?token=")) {
-      objName = Utils.removeTokenFromString(objName);
+      objName = Utils.removeToken(objName);
     }
     try {
       String objNameWithoutBuket = objName;

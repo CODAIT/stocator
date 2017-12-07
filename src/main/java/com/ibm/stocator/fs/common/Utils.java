@@ -434,7 +434,7 @@ public class Utils {
    * @param path path
    * @return the path without the IAM token
    */
-  public static String removeTokenFromString(String path) {
+  public static String removeToken(String path) {
     String objNamePart = path.substring(0,  path.indexOf("?"));
     String objNamePartEnd = path.substring(path.indexOf("?"));
     if (objNamePartEnd.indexOf("/") >= 0) {
@@ -456,7 +456,7 @@ public class Utils {
    * @param path path
    * @return the path without the IAM token
    */
-  public static Path removeTokenFromPath(Path path) {
+  public static Path removeToken(Path path) {
     String strPath = path.toString();
     String objNamePart = strPath.substring(0,  strPath.indexOf("?"));
     String objNamePartEnd = strPath.substring(strPath.indexOf("?"));
@@ -470,23 +470,6 @@ public class Utils {
       path = new Path(strPath);
       return path;
     }
-  }
-
-  /**
-   * Removes ?token=aabbcc from cos://container.service/object?token=aabbcc
-   *
-   * Also removes ?token=aabbcc from cos://container.service/object?token=aabbcc/_SUCCESS,
-   * cos://container.service/object?token=aabbcc/_temporary/0/_temporary/attempt-0000
-   *
-   * @param uri uri
-   * @return the path without the IAM token
-   * @throws URISyntaxException if failed to parse uri
-   */
-  public static URI removeTokenFromURI(URI uri) throws URISyntaxException {
-    String uriString = uri.toString();
-    uriString = uriString.substring(0, uriString.indexOf("%3Ftoken="));
-    uri = new URI(uriString);
-    return uri;
   }
 
   /**
@@ -507,7 +490,7 @@ public class Utils {
    *  @param uri containing the IAM token
    *  @return the token value
    */
-  public static String extractTokenFromUri(URI uri) {
+  public static String extractToken(URI uri) {
     String token = uri.toString();
     token = token.substring(token.lastIndexOf("%3Ftoken=") + 9, token.length());
     return token;
