@@ -232,7 +232,7 @@ public class COSAPIClient implements IStoreClient {
 
   private StocatorPath stocatorPath;
 
-  Properties props = new Properties();  //added by PC
+  Properties props = new Properties();
 
   public COSAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
     filesystemURI = pFilesystemURI;
@@ -246,7 +246,7 @@ public class COSAPIClient implements IStoreClient {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
-    props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);   //edited by PC
+    props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
     mBucket = props.getProperty(COS_BUCKET_PROPERTY);
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
@@ -485,7 +485,7 @@ public class COSAPIClient implements IStoreClient {
     if (path.toString().contains("?token=")) {
       String token = Utils.extractToken(path);
       props = ConfigurationHandler.updateToken(
-          filesystemURI, conf, schemaProvided, token, props);   //edited by PC
+          filesystemURI, conf, schemaProvided, token, props);
       path = Utils.removeToken(path);
     }
     LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);

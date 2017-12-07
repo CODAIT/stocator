@@ -107,7 +107,7 @@ public final class ConfigurationHandler {
     } else {
       Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN, props,
           IAM_TOKEN_PROPERTY, false);
-    }   //added by PC
+    }
     Utils.updateProperty(conf, prefix, altPrefix, SECRET_KEY, props,
         SECRET_KEY_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, ENDPOINT_URL, props,
