@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
 
-import com.ibm.stocator.fs.cache.CachedObject;
 import com.ibm.stocator.fs.cache.MemoryCache;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -560,9 +559,9 @@ public class COSAPIClient implements IStoreClient {
 
   private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception {
     LOG.trace("internal method - get file status by key {}, path {}", key, path);
-    CachedObject co = memoryCache.get(key);
-    if (co != null) {
-      return createFileStatus(co.getContentLength(), key, co.getLastModified(), path);
+    FileStatus cachedFS = memoryCache.getFileStatus(path.toString());
+    if (cachedFS != null) {
+      return cachedFS;
     }
     ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
     String sparkOrigin = meta.getUserMetaDataOf("data-origin");
@@ -573,11 +572,13 @@ public class COSAPIClient implements IStoreClient {
         stocatorCreated = true;
       }
     }
-    memoryCache.put(key, meta.getContentLength(), meta.getLastModified(), stocatorCreated);
-    return createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
+    mCachedSparkOriginated.put(key, Boolean.valueOf(stocatorCreated));
+    FileStatus fs = createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
+    memoryCache.putFileStatus(path.toString(), fs);
+    return fs;
   }
 
-  private FileStatus getFileStatusObjSummaryBased(S3ObjectSummary objSummary,
+  private FileStatus createFileStatus(S3ObjectSummary objSummary,
       String hostName, Path path)
       throws IllegalArgumentException, IOException {
     String objKey = objSummary.getKey();
@@ -787,7 +788,6 @@ public class COSAPIClient implements IStoreClient {
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     try {
       mClient.deleteObject(new DeleteObjectRequest(mBucket, obj));
-      memoryCache.remove(obj);
       memoryCache.removeFileStatus(path.toString());
       return true;
     } catch (AmazonServiceException e) {
@@ -955,7 +955,7 @@ public class COSAPIClient implements IStoreClient {
     boolean objectScanContinue = true;
     S3ObjectSummary prevObj = null;
     // start FTA logic
-    boolean stocatorOrigin = isSparkOrigin(key);
+    boolean stocatorOrigin = isSparkOrigin(key, path.toString());
     if (stocatorOrigin) {
       LOG.debug("Stocator origin is true for {}", key);
       if (!isJobSuccessful(key)) {
@@ -992,7 +992,7 @@ public class COSAPIClient implements IStoreClient {
             continue;
           }
         }
-        FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
+        FileStatus fs = createFileStatus(prevObj, hostName, path);
         if (fs.getLen() > 0 || fullListing) {
           LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
           if (filter == null) {
@@ -1018,7 +1018,7 @@ public class COSAPIClient implements IStoreClient {
     }
 
     if (prevObj != null) {
-      FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
+      FileStatus fs = createFileStatus(prevObj, hostName, path);
       LOG.debug("Adding the last object from the list {}", fs.getPath());
       if (fs.getLen() > 0 || fullListing) {
         LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
@@ -1191,10 +1191,11 @@ public class COSAPIClient implements IStoreClient {
    * Checks if container/object exists and verifies that it contains
    * Data-Origin=stocator metadata If so, object was created by Spark.
    *
-   * @param objectName
+   * @param objectKey the key of the object
+   * @param path the object path
    * @return boolean if object was created by Spark
    */
-  private boolean isSparkOrigin(String objectKey) {
+  private boolean isSparkOrigin(String objectKey, String path) {
     LOG.debug("check spark origin for {}", objectKey);
     if (!objectKey.endsWith("/")) {
       LOG.debug("Key {} has no slash. Return false", objectKey);
@@ -1208,12 +1209,6 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("found cached for spark origin for {}. Status {}", objectKey, res);
       return res;
     }
-    CachedObject co = memoryCache.get(objectKey);
-    if (co != null) {
-      if (co.isStocatorOrigin()) {
-        return true;
-      }
-    }
     String key = getRealKey(objectKey);
     Boolean sparkOriginated = Boolean.FALSE;
     ObjectMetadata objMetadata = getObjectMetadata(key);
@@ -1226,7 +1221,7 @@ public class COSAPIClient implements IStoreClient {
         }
       }
     }
-    mCachedSparkOriginated.put(objectKey, sparkOriginated);
+    mCachedSparkOriginated.put(key, sparkOriginated);
     LOG.debug("spark origin for {} is {} non cached", objectKey, sparkOriginated.booleanValue());
     return sparkOriginated.booleanValue();
   }

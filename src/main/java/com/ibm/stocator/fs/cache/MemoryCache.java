@@ -17,8 +17,6 @@
 
 package com.ibm.stocator.fs.cache;
 
-import java.util.Date;
-import java.util.HashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +32,6 @@ import com.google.common.cache.CacheBuilder;
  * This cache is populated by the list function and on-the-fly requests for objects.
  */
 public class MemoryCache {
-  private HashMap<String, CachedObject> cache;
   Cache<String, FileStatus> fsCache;
 
   /**
@@ -51,36 +48,23 @@ public class MemoryCache {
   }
 
   private MemoryCache() {
-    cache = new HashMap<>();
     fsCache = CacheBuilder.newBuilder()
         .maximumSize(1000)
         .expireAfterWrite(30, TimeUnit.SECONDS).build();
   }
 
-  /**
-   * The get function will first search for the object in the cache.
-   * If not found will issue a HEAD request for the object metadata
-   * and add the object to the cache.
-   *
-   * @param objName object name
-   * @return cached entry of the object
-   */
-  public CachedObject get(String objName) {
-    LOG.trace("Get from cache  {} ", objName);
-    CachedObject res = cache.get(objName);
-    return res;
-  }
-
   public void putFileStatus(String path, FileStatus fs) {
+    LOG.debug("Guava - add to cache {}", path);
     fsCache.put(path, fs);
   }
 
   public void removeFileStatus(String path) {
+    LOG.debug("Guava - remove from cache {}", path);
     fsCache.invalidate(path);
   }
 
   public FileStatus getFileStatus(final String path) {
-    LOG.debug("Guava cache, GET for {}", path);
+    LOG.debug("Guava - get from cache {}", path);
     try {
       return fsCache.get(path, new Callable<FileStatus>() {
         @Override
@@ -90,26 +74,8 @@ public class MemoryCache {
         }
       });
     } catch (Exception e) {
-      LOG.debug(e.getMessage());
+      LOG.debug("Guava - " + e.getMessage());
     }
     return null;
-  }
-
-  public void put(String objNameKey, long contentLength, Date lastModified,
-      boolean stocatorOrigin) {
-    LOG.trace("Add to cache  {} ", objNameKey);
-    CachedObject co = new CachedObject(contentLength, lastModified, stocatorOrigin);
-    cache.put(objNameKey, co);
-  }
-
-  public void remove(String objName) {
-    LOG.trace("Remove from cache  {} ", objName);
-    if (cache.containsKey(objName)) {
-      cache.remove(objName);
-    }
-  }
-
-  public boolean containsKey(String objName) {
-    return cache.containsKey(objName);
   }
 }
