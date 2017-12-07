@@ -298,6 +298,7 @@
               <artifactId>maven-shade-plugin</artifactId>
               <version>3.1.0</version>
               <configuration>
+        			<createDependencyReducedPom>false</createDependencyReducedPom>
                  <artifactSet>
                       <includes>
                           <include>com.google.guava:*</include>
