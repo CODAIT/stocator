@@ -1,6 +1,6 @@
-##Release notes
+## Release notes
 
-###Version 1.0.11
+### Version 1.0.11
 1. Improve object read flows
 2. Allign list with Hadoop connectors. New configuration flag defines previous flat listing or new nested listing
 3. Introduce Guava caching for frequent objects. This greatly reduces number of HEAD calls
