@@ -293,6 +293,33 @@
             </plugins>
         </pluginManagement>
         <plugins>
+     <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-shade-plugin</artifactId>
+              <version>2.4.3</version>
+              <configuration>
+                 <artifactSet>
+                      <includes>
+                          <include>com.google.guava:*</include>
+                      </includes>
+                  </artifactSet>
+                   <relocations>
+                        <relocation>
+                            <pattern>com.google.guava</pattern>
+                            <shadedPattern>com.google.guava.shade</shadedPattern>
+                        </relocation>
+                   </relocations>
+               </configuration>
+               <executions>
+                   <execution>
+                      <phase>package</phase>
+                       <goals>
+                           <goal>shade</goal>
+                       </goals>
+                   </execution>
+               </executions>
+           </plugin>
+           
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
