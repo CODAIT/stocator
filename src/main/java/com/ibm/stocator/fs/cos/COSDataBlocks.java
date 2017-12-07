@@ -251,7 +251,7 @@ final class COSDataBlocks {
           break;
 
         case Upload:
-          LOG.debug("Block[{}]: Buffer file {} exists —close upload stream",
+          LOG.debug("Block[{}]: Buffer file {} exists close upload stream",
               index, bufferFile);
           break;
 

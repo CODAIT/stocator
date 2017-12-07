@@ -264,7 +264,7 @@ class COSBlockOutputStream extends OutputStream {
     int written = block.write(source, offset, len);
     int remainingCapacity = block.remainingCapacity();
     if (written < len) {
-      // not everything was written —the block has run out
+      // not everything was written, the block has run out
       // of capacity
       // Trigger an upload then process the remainder.
       LOG.debug("writing more data than block has capacity -triggering upload");
