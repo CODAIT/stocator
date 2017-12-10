@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
+import com.ibm.stocator.fs.cos.COSAPIClient;
 
 /**
  * Pickup correct object store implementation
@@ -110,9 +111,14 @@ public class ObjectStoreVisitor {
         IStoreClient storeClient;
         try {
           LOG.debug("Load implementation class {}", implementation);
-          Class<?> aClass = classLoader.loadClass(implementation);
-          storeClient = (IStoreClient) aClass.getConstructor(URI.class,
-              Configuration.class).newInstance(fsuri, conf);
+          if (fsSchema.equals("cos") || fsSchema.equals("swift")) {
+            LOG.debug("Load implementation: direct init for COSAPIClient");
+            storeClient = new COSAPIClient(fsuri, conf);
+          } else {
+            Class<?> aClass = classLoader.loadClass(implementation);
+            storeClient = (IStoreClient) aClass.getConstructor(URI.class,
+                Configuration.class).newInstance(fsuri, conf);
+          }
         } catch (InstantiationException | IllegalAccessException
             | InvocationTargetException | NoSuchMethodException
             | SecurityException | ClassNotFoundException e) {
