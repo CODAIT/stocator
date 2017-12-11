@@ -69,14 +69,14 @@
         <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
-        <ibm.sdk.version>1.0.1</ibm.sdk.version>
+        <ibm.sdk.version>1.0.2</ibm.sdk.version>
         <google.guava.version>23.5-jre</google.guava.version>
     </properties>
 
     <dependencies>
         <dependency>
            <groupId>com.ibm.cos</groupId>
-           <artifactId>ibm-cos-java-sdk-bundle</artifactId>
+           <artifactId>ibm-cos-java-sdk</artifactId>
            <type>pom</type>
            <version>${ibm.sdk.version}</version>
         </dependency>
