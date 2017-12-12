@@ -111,8 +111,8 @@ public class ObjectStoreVisitor {
         IStoreClient storeClient;
         try {
           LOG.debug("Load implementation class {}", implementation);
-          if (fsSchema.equals("cos") || fsSchema.equals("swift")) {
-            LOG.debug("Load implementation: direct init for COSAPIClient");
+          if (fsSchema.equals("cos") || fsSchema.equals("s3d")) {
+            LOG.debug("Load direct init for COSAPIClient. Overwrite {}", implementation);
             storeClient = new COSAPIClient(fsuri, conf);
           } else {
             Class<?> aClass = classLoader.loadClass(implementation);
