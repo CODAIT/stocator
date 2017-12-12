@@ -317,7 +317,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         f.toString(), prefixBased, isDirectory);
     FileStatus[] listing = null;
     if (stocatorPath.isTemporaryPathContain(f)) {
-      return new FileStatus[]{new FileStatus()};
+      LOG.debug("{} temporary. Return empty result", f);
+      FileStatus[] result = {};
+      return result;
     }
     FileStatus fileStatus = null;
     if (isDirectory == null) {
