@@ -115,6 +115,7 @@ class COSBlockOutputStream extends OutputStream {
    * Write operation helper; encapsulation of the filesystem operations.
    */
   private final COSAPIClient.WriteOperationHelper writeOperationHelper;
+  private String contentType;
 
   /**
    * An COS output stream which uploads partitions in a separate pool of
@@ -126,6 +127,7 @@ class COSBlockOutputStream extends OutputStream {
    * @param executorServiceT the executor service to use to schedule work
    * @param blockSizeT size of a single block
    * @param blockFactoryT factory for creating stream destinations
+   * @param contentTypeT contentType
    * @param writeOperationHelperT state of the write operation
    * @param metadata Map<String, String> metadata
    * @throws IOException on any problem
@@ -133,12 +135,14 @@ class COSBlockOutputStream extends OutputStream {
   COSBlockOutputStream(COSAPIClient fsT, String keyT, ExecutorService executorServiceT,
       long blockSizeT,
       COSDataBlocks.BlockFactory blockFactoryT,
+      String contentTypeT,
       COSAPIClient.WriteOperationHelper writeOperationHelperT,
       Map<String, String> metadata)
       throws IOException {
     fs = fsT;
     key = keyT;
     blockFactory = blockFactoryT;
+    contentType = contentTypeT;
     blockSize = (int) blockSizeT;
     mMetadata = metadata;
     writeOperationHelper = writeOperationHelperT;
@@ -374,6 +378,11 @@ class COSBlockOutputStream extends OutputStream {
 
     final ObjectMetadata om = new ObjectMetadata();
     om.setUserMetadata(mMetadata);
+    if (contentType != null && !contentType.isEmpty()) {
+      om.setContentType(contentType);
+    } else {
+      om.setContentType("application/octet-stream");
+    }
     putObjectRequest.setMetadata(om);
     ListenableFuture<PutObjectResult> putObjectResult =
         executorService.submit(new Callable<PutObjectResult>() {
