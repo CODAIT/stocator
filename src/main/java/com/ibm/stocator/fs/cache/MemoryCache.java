@@ -40,16 +40,17 @@ public class MemoryCache {
   private static final Logger LOG = LoggerFactory.getLogger(MemoryCache.class);
   private static MemoryCache sInstance;
 
-  public static MemoryCache getInstance() {
+  public static MemoryCache getInstance(int cacheSize) {
     if (sInstance == null) {
-      sInstance = new MemoryCache();
+      sInstance = new MemoryCache(cacheSize);
     }
     return sInstance;
   }
 
-  private MemoryCache() {
+  private MemoryCache(int cacheSize) {
+    LOG.debug("Guava initiated with size {} expiration 30 secods", cacheSize);
     fsCache = CacheBuilder.newBuilder()
-        .maximumSize(1000)
+        .maximumSize(cacheSize)
         .expireAfterWrite(30, TimeUnit.SECONDS).build();
   }
 
