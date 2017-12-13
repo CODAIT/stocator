@@ -99,6 +99,8 @@ import org.apache.hadoop.fs.PathFilter;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.CACHE_SIZE;
+import static com.ibm.stocator.fs.common.Constants.GUAVA_CACHE_SIZE_DEFAULT;
 import static com.ibm.stocator.fs.cos.COSConstants.CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_ESTABLISH_TIMEOUT;
@@ -241,6 +243,7 @@ public class COSAPIClient implements IStoreClient {
   private boolean flatListingFlag;
   private long readAhead;
   private COSInputPolicy inputPolicy;
+  private int cacheSize;
 
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
@@ -257,10 +260,11 @@ public class COSAPIClient implements IStoreClient {
   public void initiate(String scheme) throws IOException, ConfigurationParseException {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
-    memoryCache = MemoryCache.getInstance();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
+    int cacheSize = conf.getInt(CACHE_SIZE, GUAVA_CACHE_SIZE_DEFAULT);
+    memoryCache = MemoryCache.getInstance(cacheSize);
     mBucket = props.getProperty(COS_BUCKET_PROPERTY);
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
         getWorkingDirectory());
@@ -727,6 +731,7 @@ public class COSAPIClient implements IStoreClient {
                     blockOutputActiveBlocks, true),
                 partSize,
                 blockFactory,
+                contentType,
                 new WriteOperationHelper(objNameWithoutBuket),
                 metadata
             ),
