@@ -304,7 +304,7 @@ public class SwiftTestUtils extends org.junit.Assert {
     try {
       if (fileSystem != null) {
         // Clean up generated files
-        Path rootDir = new Path(BaseUri);
+        Path rootDir = new Path(BaseUri + "/");
         FileStatus[] files = fileSystem.listStatus(rootDir);
         for (FileStatus file : files) {
           fileSystem.delete(file.getPath(), false);

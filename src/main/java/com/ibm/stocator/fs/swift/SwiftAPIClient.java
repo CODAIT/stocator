@@ -47,6 +47,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 
@@ -323,7 +324,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public FileStatus getObjectMetadata(String hostName,
+  public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
     LOG.trace("Get object metadata ({}): {}, hostname: {}", msg, path, hostName);
     Container cont = mJossAccount.getAccount().getContainer(container);
@@ -418,7 +419,7 @@ public class SwiftAPIClient implements IStoreClient {
       return false;
     }
     try {
-      FileStatus status = getObjectMetadata(hostName, path, "exists");
+      FileStatus status = getFileStatus(hostName, path, "exists");
     } catch (FileNotFoundException e) {
       return false;
     }
@@ -441,7 +442,7 @@ public class SwiftAPIClient implements IStoreClient {
         && !objName.contains(Constants.HADOOP_TEMPORARY)
         && !objName.contains(Constants.HADOOP_ATTEMPT)) {
       LOG.debug("get object {} on the non existing. Trying listing", objName);
-      FileStatus[] res = list(hostName, path, true, true);
+      FileStatus[] res = list(hostName, path, true, true, null, false, null);
       LOG.debug("Listing on {} returned {}", path.toString(), res.length);
       if (res.length == 1) {
         LOG.trace("Original name {}  modified to {}", objName, res[0].getPath());
@@ -482,7 +483,8 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IOException in case of network failure
    */
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
-      boolean prefixBased) throws IOException {
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing, PathFilter filter) throws IOException {
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
     Container cObj = mJossAccount.getAccount().getContainer(container);
@@ -520,13 +522,20 @@ public class SwiftAPIClient implements IStoreClient {
           continue;
         }
         String unifiedObjectName = extractUnifiedObjectName(tmp.getName());
+        LOG.trace("{} Matching {}", unifiedObjectName, obj);
         if (!prefixBased && !obj.equals("") && !path.toString().endsWith("/")
             && !unifiedObjectName.equals(obj) && !unifiedObjectName.startsWith(obj + "/")) {
           // JOSS returns all objects that start with the prefix of obj.
           // These may include other unrelated objects.
           LOG.trace("{} does not match {}. Skipped", unifiedObjectName, obj);
           continue;
+        } else if (isDirectory && !unifiedObjectName.equals(obj)
+            && !unifiedObjectName.startsWith(obj + "/")) {
+          LOG.trace("directory {}. {} does not match {}. Skipped", isDirectory,
+              unifiedObjectName, obj);
+          continue;
         }
+
         LOG.trace("Unified name: {}, path {}", unifiedObjectName, tmp.getName());
         if (!unifiedObjectName.equals(tmp.getName()) && isSparkOrigin(unifiedObjectName)
             && !fullListing) {
@@ -558,7 +567,7 @@ public class SwiftAPIClient implements IStoreClient {
         }
         fs = null;
         if (previousElement.getContentLength() > 0 || fullListing) {
-          fs = getFileStatus(previousElement, cObj, hostName, path);
+          fs = createFileStatus(previousElement, cObj, hostName, path);
           objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(),
                   fs.getModificationTime());
           tmpResult.add(fs);
@@ -568,9 +577,16 @@ public class SwiftAPIClient implements IStoreClient {
     }
     if (previousElement != null && (previousElement.getContentLength() > 0 || fullListing)) {
       LOG.trace("Adding {} to the list", previousElement.getPath());
-      fs = getFileStatus(previousElement, cObj, hostName, path);
-      objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
-      tmpResult.add(fs);
+      fs = createFileStatus(previousElement, cObj, hostName, path);
+      if (filter == null) {
+        objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
+        tmpResult.add(fs);
+      } else if (filter != null && filter.accept(fs.getPath())) {
+        objectCache.put(getObjName(hostName, fs.getPath()), fs.getLen(), fs.getModificationTime());
+        tmpResult.add(fs);
+      } else {
+        LOG.trace("{} rejected by path filter during list", fs.getPath());
+      }
     }
     LOG.debug("Listing of {} completed with {} results", path.toString(), tmpResult.size());
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
@@ -647,11 +663,17 @@ public class SwiftAPIClient implements IStoreClient {
       obj = getObjName(hostName, path);
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
-    StoredObject so = mJossAccount.getAccount().getContainer(container)
-        .getObject(obj);
-    if (so.exists()) {
-      so.delete();
-      objectCache.remove(obj);
+    try {
+      StoredObject so = mJossAccount.getAccount().getContainer(container)
+          .getObject(obj);
+      if (so.exists()) {
+        so.delete();
+        objectCache.remove(obj);
+      }
+    } catch (Exception e) {
+      LOG.warn(e.getMessage());
+      LOG.warn("Delete on {} resulted in FileNotFound exception", path);
+      return false;
     }
     return true;
   }
@@ -835,7 +857,7 @@ public class SwiftAPIClient implements IStoreClient {
    * @throws IllegalArgumentException if error
    * @throws IOException if error
    */
-  private FileStatus getFileStatus(StoredObject tmp, Container cObj,
+  private FileStatus createFileStatus(StoredObject tmp, Container cObj,
       String hostName, Path path) throws IllegalArgumentException, IOException {
     String newMergedPath = getMergedPath(hostName, path, tmp.getName());
     return new FileStatus(tmp.getContentLength(), false, 1, blockSize,
@@ -875,6 +897,11 @@ public class SwiftAPIClient implements IStoreClient {
       directoryAllocator = new LocalDirAllocator(bufferTargetDir);
     }
     return directoryAllocator.createTmpFileForWrite(pathStr, size, conf);
+  }
+
+  @Override
+  public boolean isFlatListing() {
+    return false;
   }
 
 }

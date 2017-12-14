@@ -20,7 +20,6 @@ package com.ibm.stocator.fs;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,8 +39,8 @@ import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
-import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
+import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.ExtendedFileSystem;
 
@@ -123,7 +122,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   protected void checkPath(Path path) {
-    LOG.debug("Check path: {}", path.toString());
+    LOG.debug("Check path: {}. Not implemented", path.toString());
   }
 
   /**
@@ -193,8 +192,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    * dataroot/objectname/_temporary/0/_temporary/attempt_201603131849_0000_m_000019_0/
    * part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv
    * will be transformed to
-   * PUT dataroot/object
-   * /201603131849_0000_m_000019_0-part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv
+   * PUT dataroot/objectname
+   * /part-r-00019-a08dcbab-8a34-4d80-a51c-368a71db90aa.csv-attempt_201603131849_0000_m_000019_0
    *
    */
   public FSDataOutputStream create(Path f, FsPermission permission,
@@ -204,9 +203,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     String objNameModified = "";
     // check if request is dataroot/objectname/_SUCCESS
     if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
+      // no need to add attempt id to the _SUCCESS
       objNameModified =  stocatorPath.getObjectNameRoot(f, false,
           storageClient.getDataRoot(), true);
     } else {
+      // add attempt id to the final name
       objNameModified = stocatorPath.getObjectNameRoot(f, true,
           storageClient.getDataRoot(), true);
     }
@@ -217,7 +218,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   public FSDataOutputStream append(Path f, int bufferSize,
       Progressable progress) throws IOException {
-    throw new IOException("Append is not supported");
+    throw new IOException("Append is not supported in the object store");
   }
 
   /**
@@ -227,13 +228,18 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
-    LOG.debug("rename from {} to {}", src.toString(), dst.toString());
+    LOG.debug("rename from {} to {}", src, dst);
+    if (src == null || dst == null) {
+      LOG.debug("Source path and dest path can not be null");
+      return false;
+    }
     if (stocatorPath.isTemporaryPathContain(src)) {
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
-    if (exists(src)) {
-      LOG.debug("Source {} exists", src);
+    if (src == null || dst == null || !exists(src)) {
+      LOG.debug("Source {} does not exists. Exit", src);
+      return false;
     }
     return storageClient.rename(hostNameScheme, src.toString(), dst.toString());
   }
@@ -250,12 +256,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         recursive, objNameModified, hostNameScheme);
     boolean result = false;
     boolean deleteMainEntry = true;
-    if (stocatorPath.isTemporaryPathContain(objNameModified)) {
-      return true;
-    }
     Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true);
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true,
+          null, false, null);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           if (fs.getPath().getName().endsWith(f.getName())) {
@@ -264,10 +268,13 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
         }
       }
     } else {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true);
+      LOG.debug("delete: {} is not temporary path and not starts with HADOOP_ATTEMPT",
+          f.toString());
+      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
+          Boolean.TRUE, recursive, null);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
-          LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
+          LOG.debug("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
           String pathToDelete;
           if (f.toString().contains("?token=")) {
             f = new Path(Utils.removeToken(f.toString()));
@@ -278,7 +285,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
-          LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), pathToDelete);
+          LOG.debug("Delete candidate {} path {}", fs.getPath().toString(), pathToDelete);
           if (fs.getPath().toString().equals(f.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
@@ -300,18 +307,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] listStatus(Path f,
       PathFilter filter) throws FileNotFoundException, IOException {
-    return listStatus(f, filter, false);
-  }
-
-  @Override
-  public FileStatus[] listStatus(Path[] files,
-      PathFilter filter) throws FileNotFoundException, IOException {
-    return super.listStatus(files, filter);
-  }
-
-  @Override
-  public FileStatus[] listStatus(Path[] files) throws FileNotFoundException, IOException {
-    return super.listStatus(files);
+    return listStatus(f, filter, false, null);
   }
 
   @Override
@@ -321,37 +317,58 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   }
 
   @Override
-  public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased)
-      throws FileNotFoundException, IOException {
-    LOG.debug("list status: {},  prefix based {}",f.toString(), prefixBased);
-    ArrayList<FileStatus> result = new ArrayList<>();
+  public FileStatus[] listStatus(Path f, PathFilter filter, boolean prefixBased,
+      Boolean isDirectory) throws FileNotFoundException, IOException {
+    LOG.debug("listStatus: {},  prefix based {}. Globber is directory status {}",
+        f.toString(), prefixBased, isDirectory);
+    FileStatus[] listing = null;
     if (stocatorPath.isTemporaryPathContain(f)) {
-      return result.toArray(new FileStatus[0]);
+      LOG.debug("{} temporary. Return empty result", f);
+      FileStatus[] result = {};
+      return result;
     }
     FileStatus fileStatus = null;
-    try {
-      fileStatus = getFileStatus(f);
-    } catch (FileNotFoundException e) {
-      LOG.trace("{} not found. Try to list", f.toString());
-    }
-
-    if ((fileStatus != null && fileStatus.isDirectory()) || (fileStatus == null && prefixBased)) {
-      LOG.trace("{} is directory, prefix based listing set to {}", f.toString(), prefixBased);
-      FileStatus[] listing = storageClient.list(hostNameScheme, f, false, prefixBased);
-      if (filter == null) {
-        return listing;
-      } else {
-        for (FileStatus fs : listing) {
-          if (filter.accept(fs.getPath())) {
-            result.add(fs);
+    if (isDirectory == null) {
+      try {
+        fileStatus = getFileStatus(f);
+        if (fileStatus != null) {
+          LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
+              fileStatus.isDirectory());
+          if (fileStatus.isDirectory()) {
+            isDirectory = Boolean.TRUE;
           }
         }
+      } catch (FileNotFoundException e) {
+        if (!prefixBased) {
+          throw e;
+        }
       }
-    } else if (fileStatus != null) {
-      LOG.debug("{} is not directory. Adding without list", f);
-      result.add(fileStatus);
     }
-    return result.toArray(new FileStatus[0]);
+    // we need this,since ObjectStoreGlobber may send prefix
+    // container/objectperfix* and objectperfix is not exists as an object or
+    // pseudo directory
+    if (fileStatus != null && !(prefixBased || (isDirectory != null && isDirectory))) {
+      LOG.debug("listStatus: {} is not a directory, but a file. Return single result",
+          f.toString());
+      FileStatus[] stats = new FileStatus[1];
+      stats[0] = fileStatus;
+      return stats;
+    }
+    LOG.debug("listStatus: {} is not exiists, prefix based listing set to {}. Perform list",
+        f.toString(), prefixBased);
+
+    if (!storageClient.isFlatListing()) {
+      LOG.debug("Using s3a style, non flat list. Requested via configuration flag for {}",
+          f);
+      listing =  storageClient.list(hostNameScheme, f, false, prefixBased,
+          isDirectory, storageClient.isFlatListing(), filter);
+    } else {
+      listing = storageClient.list(hostNameScheme, f, false, prefixBased, isDirectory,
+          storageClient.isFlatListing(), filter);
+    }
+    LOG.debug("listStatus: {} list completed with {} results", f.toString(),
+        listing.length);
+    return listing;
   }
 
   @Override
@@ -417,7 +434,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     LOG.debug("get file status: {}", f.toString());
-    return storageClient.getObjectMetadata(hostNameScheme, f, "fileStatus");
+    return storageClient.getFileStatus(hostNameScheme, f, "fileStatus");
   }
 
   @Override
@@ -460,12 +477,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean exists(Path f) throws IOException {
     LOG.trace("Object exists: {}", f);
-    String objName = f.toString();
-    if (f.toString().startsWith(hostNameScheme)) {
-      objName = f.toString().substring(hostNameScheme.length());
+    if (f.toString().contains(HADOOP_TEMPORARY)) {
+      LOG.debug("Exists on temp object {}. Return false", f.toString());
+      return false;
     }
-    if (objName.contains(HADOOP_TEMPORARY)) {
-      LOG.debug("Exists on temp object {}. Return false", objName);
+    if (f.toString().contains("*")) {
+      LOG.debug("Exists on object {}. Return false", f.toString());
       return false;
     }
     try {
@@ -494,5 +511,13 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       return true;
     }
   };
+
+  @Override
+  public String getHostnameScheme() {
+    if (hostNameScheme.endsWith("/")) {
+      return hostNameScheme.substring(0, hostNameScheme.length() - 1);
+    }
+    return hostNameScheme;
+  }
 
 }

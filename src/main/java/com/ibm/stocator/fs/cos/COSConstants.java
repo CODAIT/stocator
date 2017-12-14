@@ -83,7 +83,7 @@ public class COSConstants {
   public static final String INPUT_POLICY_COS_PROPERTY = FS_COS + INPUT_POLICY;
 
   public static final String READAHEAD_RANGE = ".readahead.range";
-  public static final String READAHEAD_RANGE_COS_PROPERTY = FS_COS + READAHEAD_RANGE;
+  public static final long DEFAULT_READAHEAD_RANGE = 64 * 1024;
 
   public static final String SOCKET_TIMEOUT = ".connection.timeout";
   public static final int DEFAULT_SOCKET_TIMEOUT = 800000;
@@ -195,5 +195,13 @@ public class COSConstants {
   public static final String PURGE_EXISTING_MULTIPART_AGE =
       ".multipart.purge.age";
   public static final long DEFAULT_PURGE_EXISTING_MULTIPART_AGE = 86400;
+
+  public static final String FLAT_LISTING = ".flat.list";
+  public static final boolean DEFAULT_FLAT_LISTING = true;
+
+  public static final String INPUT_FADVISE = "experimental.input.fadvise";
+  public static final String INPUT_FADV_NORMAL = "normal";
+  public static final String INPUT_FADV_SEQUENTIAL = "sequential";
+  public static final String INPUT_FADV_RANDOM = "random";
 
 }

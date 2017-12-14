@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.11-SNAPSHOT-IBM-SDK</version>
+    <version>1.0.13-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -69,7 +69,8 @@
         <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
         <powermock.version>1.6.1</powermock.version>
         <mockito.version>1.10.8</mockito.version>
-        <ibm.sdk.version>1.0.1</ibm.sdk.version>
+        <amazon.sdk.version>1.11.59</amazon.sdk.version>
+        <google.guava.version>23.5-jre</google.guava.version>
     </properties>
 
     <dependencies>
@@ -106,6 +107,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+          <version>${google.guava.version}</version>
+        </dependency>        
         <dependency>
 	        <groupId>com.googlecode.json-simple</groupId>
 	        <artifactId>json-simple</artifactId>
@@ -154,7 +160,7 @@
             <groupId>commons-validator</groupId>
             <artifactId>commons-validator</artifactId>
             <version>1.6</version>
-	</dependency>
+	   </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -243,7 +249,7 @@
                    <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.2</version>
+                    <version>3.7.0</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
@@ -257,7 +263,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.14</version>
+                    <version>2.20.1</version>
                     <configuration>
                         <argLine>-Djava.net.preferIPv4Stack=true
                             -Djava.security.krb5.realm= -Djava.security.krb5.kdc=</argLine>
@@ -267,7 +273,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.0.2</version>
                     <configuration>
                         <archive>
                             <manifest>
@@ -282,62 +288,22 @@
             </plugins>
         </pluginManagement>
         <plugins>
-           <plugin>
+        <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-shade-plugin</artifactId>
-              <version>2.4.3</version>
+              <version>3.1.0</version>
               <configuration>
+        			<createDependencyReducedPom>false</createDependencyReducedPom>
                  <artifactSet>
                       <includes>
-                          <include>com.ibm.cos:*</include>
-                          <include>com.amazonaws:*</include>
-                          <include>org.javaswift:*</include>
-                          <include>joda-time:joda-time</include>
-                          <include>com.fasterxml.jackson.core:*</include>
-                          <include>com.fasterxml.jackson.dataformat:jackson-dataformat-cbor</include>
-                          <include>org.apache.httpcomponents:*</include>
-                          <include>commons-codec:commons-codec</include>
-                          <include>software.amazon.ion:ion-java</include>
-                          <include>commons-logging:commons-logging</include>
+                          <include>com.google.guava:*</include>
                       </includes>
                   </artifactSet>
                    <relocations>
                         <relocation>
-                            <pattern>org.javaswift.joss</pattern>
-                            <shadedPattern>org.javaswift.joss.shade</shadedPattern>
+                            <pattern>com.google.guava</pattern>
+                            <shadedPattern>com.google.guava.shade</shadedPattern>
                         </relocation>
-                        <relocation>
-                            <pattern>org.joda</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.joda</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.fasterxml.jackson</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.jackson</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.apache.http</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.http</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.apache.commons.codec</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.codec</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>software.amazon.ion</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.ion</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.apache.commons.logging</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.logging</shadedPattern>
-                        </relocation>
-                       <relocation>
-                           <pattern>com.amazonaws</pattern>
-                           <shadedPattern>com.amazonaws.shade</shadedPattern>
-                       </relocation>
-                       <relocation>
-                           <pattern>com.ibm.oauth</pattern>
-                           <shadedPattern>com.ibm.oauth.shade</shadedPattern>
-                       </relocation>
                    </relocations>
                </configuration>
                <executions>
@@ -349,16 +315,17 @@
                    </execution>
                </executions>
            </plugin>
+           
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>2.5.3</version>
             </plugin>
             <!-- FindBugs -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.2</version>
+                <version>3.0.5</version>
                 <configuration>
                     <excludeFilterFile>${findbugs.path}/findbugs-exclude.xml</excludeFilterFile>
                     <effort>Max</effort>
