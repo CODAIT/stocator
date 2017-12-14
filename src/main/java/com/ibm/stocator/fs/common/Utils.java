@@ -213,16 +213,12 @@ public class Utils {
       String key, Properties props, String propsKey,
       boolean required) throws ConfigurationParseException {
     String val = conf.get(prefix + key);
-    if (val == null && !key.equals(".newapitoken")) {
+    if (val == null) {
       // try alternative key
       for (String alternativePrefix : altPrefix) {
         val = conf.get(alternativePrefix + key);
         LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
       }
-    }
-    if (key.equals(".newapitoken")) {
-      props.setProperty("fs.cos.iam.token", propsKey.trim());
-      return;
     }
     if (required && val == null) {
       throw new ConfigurationParseException("Missing mandatory configuration: " + key);
@@ -435,39 +431,14 @@ public class Utils {
    * @return the path without the IAM token
    */
   public static String removeToken(String path) {
-    String objNamePart = path.substring(0,  path.indexOf("?"));
-    String objNamePartEnd = path.substring(path.indexOf("?"));
+    String objNamePart = path.substring(0,  path.indexOf("?token="));
+    String objNamePartEnd = path.substring(path.indexOf("?token="));
     if (objNamePartEnd.indexOf("/") >= 0) {
       objNamePartEnd = objNamePartEnd.substring(objNamePartEnd.indexOf("/"));
       path = objNamePart + objNamePartEnd;
       return path;
     } else {
-      path = path.substring(0, path.indexOf("?"));
-      return path;
-    }
-  }
-
-  /**
-   * Removes ?token=aabbcc from cos://container.service/object?token=aabbcc
-   *
-   * Also removes ?token=aabbcc from cos://container.service/object?token=aabbcc/_SUCCESS,
-   * cos://container.service/object?token=aabbcc/_temporary/0/_temporary/attempt-0000
-   *
-   * @param path path
-   * @return the path without the IAM token
-   */
-  public static Path removeToken(Path path) {
-    String strPath = path.toString();
-    String objNamePart = strPath.substring(0,  strPath.indexOf("?"));
-    String objNamePartEnd = strPath.substring(strPath.indexOf("?"));
-    if (objNamePartEnd.indexOf("/") >= 0) {
-      objNamePartEnd = objNamePartEnd.substring(objNamePartEnd.indexOf("/"));
-      strPath = objNamePart + objNamePartEnd;
-      path = new Path(strPath);
-      return path;
-    } else {
-      strPath = strPath.substring(0, strPath.indexOf("?"));
-      path = new Path(strPath);
+      path = path.substring(0, path.indexOf("?token="));
       return path;
     }
   }
@@ -481,18 +452,9 @@ public class Utils {
   public static String extractToken(Path path) {
     String token = path.toString();
     token = token.substring(token.lastIndexOf("?token=") + 7, token.length());
-    return token;
-  }
-
-  /**
-   *  Extracts aaaa from http://container.service/object?token=aaaa
-   *
-   *  @param uri containing the IAM token
-   *  @return the token value
-   */
-  public static String extractToken(URI uri) {
-    String token = uri.toString();
-    token = token.substring(token.lastIndexOf("%3Ftoken=") + 9, token.length());
+    if (token.contains("/")) {
+      token = token.substring(0, token.indexOf("/"));
+    }
     return token;
   }
 

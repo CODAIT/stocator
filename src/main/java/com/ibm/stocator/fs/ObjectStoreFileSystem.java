@@ -84,7 +84,6 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public void initialize(URI fsuri, Configuration conf) throws IOException {
-    LOG.trace("uri {}", fsuri);
     super.initialize(fsuri, conf);
     LOG.trace("Initialize for {}", fsuri);
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
@@ -269,11 +268,17 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
-          String pathToDelete = f.toString();
+          String pathToDelete;
+          if (f.toString().contains("?token=")) {
+            f = new Path(Utils.removeToken(f.toString()));
+            pathToDelete = f.toString();
+          } else {
+            pathToDelete = f.toString();
+          }
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
-          LOG.trace("Delete candidate {} ", fs.getPath().toString(), pathToDelete);
+          LOG.trace("Delete candidate {} path {}", fs.getPath().toString(), pathToDelete);
           if (fs.getPath().toString().equals(f.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
