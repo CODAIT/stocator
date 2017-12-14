@@ -351,7 +351,7 @@ final class COSDataBlocks {
    */
   abstract static class DataBlock implements Closeable {
 
-    enum DestState {Writing, Upload, Closed}
+    enum DestState { Writing, Upload, Closed }
 
     private volatile DestState state = Writing;
     protected final long index;

@@ -30,6 +30,12 @@ import org.slf4j.LoggerFactory;
 
 import static com.ibm.stocator.fs.cos.COSConstants.ACCESS_KEY;
 import static com.ibm.stocator.fs.cos.COSConstants.ACCESS_KEY_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.API_KEY;
+import static com.ibm.stocator.fs.cos.COSConstants.API_KEY_IAM_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_ENDPOINT;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_ENDPOINT_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_SERVICE_INSTANCE_ID;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_SERVICE_INSTANCE_ID_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL;
@@ -48,6 +54,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.S3_D_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_PROPERTY;
 
 /**
  * Integrates Hadoop configuration with the COS client implementation
@@ -90,6 +98,8 @@ public final class ConfigurationHandler {
     props.setProperty(COS_BUCKET_PROPERTY, bucket);
     Utils.updateProperty(conf, prefix, altPrefix, ACCESS_KEY, props,
         ACCESS_KEY_COS_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN, props,
+        IAM_TOKEN_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, SECRET_KEY, props,
         SECRET_KEY_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, ENDPOINT_URL, props,
@@ -104,8 +114,14 @@ public final class ConfigurationHandler {
         BLOCK_SIZE_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, REGION, props,
         REGION_COS_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, API_KEY, props,
+        API_KEY_IAM_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, IAM_ENDPOINT, props,
+        IAM_ENDPOINT_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, IAM_SERVICE_INSTANCE_ID, props,
+        IAM_SERVICE_INSTANCE_ID_PROPERTY, false);
+
     LOG.debug("Initialize completed successfully");
     return props;
   }
-
 }

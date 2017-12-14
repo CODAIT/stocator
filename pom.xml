@@ -75,15 +75,10 @@
 
     <dependencies>
         <dependency>
-           <groupId>com.amazonaws</groupId>
-           <artifactId>aws-java-sdk</artifactId>
-           <version>${amazon.sdk.version}</version>
-           <exclusions>
-                <exclusion>
-                    <artifactId>org.apache.httpcomponents</artifactId>
-                    <groupId>httpclient</groupId>
-                </exclusion>
-            </exclusions>
+           <groupId>com.ibm.cos</groupId>
+           <artifactId>ibm-cos-java-sdk-bundle</artifactId>
+           <type>pom</type>
+           <version>${ibm.sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -251,7 +246,7 @@
     
         <pluginManagement>
             <plugins>
-                <plugin>
+                   <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.7.0</version>
@@ -293,7 +288,7 @@
             </plugins>
         </pluginManagement>
         <plugins>
-     <plugin>
+        <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-shade-plugin</artifactId>
               <version>3.1.0</version>

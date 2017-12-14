@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
 
+import com.ibm.oauth.BasicIBMOAuthCredentials;
 import com.ibm.stocator.fs.cache.MemoryCache;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -46,12 +47,15 @@ import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.cos.ConfigurationHandler;
 import com.ibm.stocator.fs.cos.OnetimeInitialization;
+import com.ibm.stocator.fs.cos.auth.CustomTokenManager;
 import com.ibm.stocator.fs.cos.COSInputStream;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -76,6 +80,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
+import com.amazonaws.SDKGlobalConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +136,9 @@ import static com.ibm.stocator.fs.cos.COSConstants.PROXY_WORKSTATION;
 import static com.ibm.stocator.fs.cos.COSConstants.REQUEST_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.AUTO_BUCKET_CREATE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ACCESS_KEY_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.API_KEY_IAM_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_ENDPOINT_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_SERVICE_INSTANCE_ID_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
@@ -143,6 +151,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.SIGNING_ALGORITHM;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_RECV_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_SEND_BUFFER;
 import static com.ibm.stocator.fs.cos.COSConstants.SOCKET_TIMEOUT;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_PROPERTY;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.cos.COSConstants.USER_AGENT_PREFIX;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_USER_AGENT_PREFIX;
 import static com.ibm.stocator.fs.cos.COSConstants.ENABLE_MULTI_DELETE;
@@ -239,6 +249,17 @@ public class COSAPIClient implements IStoreClient {
 
   private StocatorPath stocatorPath;
 
+  String serviceInstanceID;
+  BasicIBMOAuthCredentials creds = null;
+  CustomTokenManager customToken;
+  ClientConfiguration clientConf;
+  AWSStaticCredentialsProvider credProvider = null;
+  String serviceUrl;
+  String iamEndpoint;
+  AmazonS3ClientBuilder clientBuilder;
+
+  Properties props = new Properties();
+
   public COSAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
     filesystemURI = pFilesystemURI;
     conf = pConf;
@@ -251,7 +272,7 @@ public class COSAPIClient implements IStoreClient {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
-    Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
+    props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
     int cacheSize = conf.getInt(CACHE_SIZE, GUAVA_CACHE_SIZE_DEFAULT);
     memoryCache = MemoryCache.getInstance(cacheSize);
@@ -265,17 +286,17 @@ public class COSAPIClient implements IStoreClient {
     // Define COS client
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
     String secretKey = props.getProperty(SECRET_KEY_COS_PROPERTY);
+    String apiKey = props.getProperty(API_KEY_IAM_PROPERTY);
+    String token = props.getProperty(IAM_TOKEN_PROPERTY);
 
-    if (accessKey == null) {
+    if (apiKey == null && accessKey == null && token == null) {
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
     }
-    if (secretKey == null) {
+    if (apiKey == null && secretKey == null && token == null) {
       throw new ConfigurationParseException("Secret KEY is empty. Please provide valid secret key");
     }
 
-    BasicAWSCredentials creds =
-        new BasicAWSCredentials(accessKey, secretKey);
-    ClientConfiguration clientConf = new ClientConfiguration();
+    clientConf = new ClientConfiguration();
 
     int maxThreads = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_THREADS,
         DEFAULT_MAX_THREADS);
@@ -353,13 +374,43 @@ public class COSAPIClient implements IStoreClient {
     if (mIsV2Signer) {
       clientConf.withSignerOverride("S3SignerType");
     }
-    mClient = new AmazonS3Client(creds, clientConf);
-
-    final String serviceUrl = props.getProperty(ENDPOINT_URL_COS_PROPERTY);
-    if (serviceUrl != null && !serviceUrl.equals(amazonDefaultEndpoint)) {
-      mClient.setEndpoint(serviceUrl);
+    if (apiKey != null || token != null) {
+      serviceInstanceID = props.getProperty(IAM_SERVICE_INSTANCE_ID_PROPERTY);
+      iamEndpoint = props.getProperty(IAM_ENDPOINT_PROPERTY);
+      if (iamEndpoint != null) {
+        LOG.debug("Setting custom IAM endpoint to {}", iamEndpoint);
+        SDKGlobalConfiguration.IAM_ENDPOINT = iamEndpoint;
+      }
+      if (apiKey != null) {
+        LOG.debug("Using API key ");
+        creds = new BasicIBMOAuthCredentials(apiKey, serviceInstanceID);
+      } else if (token != null) {
+        LOG.debug("Setting custom token");
+        customToken = new CustomTokenManager(token);
+        creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
+      }
+      credProvider = new AWSStaticCredentialsProvider(creds);
+    } else {
+      BasicAWSCredentials creds =
+          new BasicAWSCredentials(accessKey, secretKey);
+      credProvider = new AWSStaticCredentialsProvider(creds);
     }
-    mClient.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
+    serviceUrl = props.getProperty(ENDPOINT_URL_COS_PROPERTY);
+
+    clientBuilder = AmazonS3ClientBuilder.standard()
+        .withClientConfiguration(clientConf)
+        .withPathStyleAccessEnabled(true)
+        .withCredentials(credProvider);
+
+    if (serviceUrl != null && !serviceUrl.equals(amazonDefaultEndpoint)) {
+      EndpointConfiguration endpointConfiguration = new EndpointConfiguration(serviceUrl,
+          Regions.DEFAULT_REGION.getName());
+      clientBuilder.withEndpointConfiguration(endpointConfiguration);
+
+    } else {
+      clientBuilder.withRegion(Regions.DEFAULT_REGION);
+    }
+    mClient = clientBuilder.build();
 
     // Set block size property
     String mBlockSizeString = props.getProperty(BLOCK_SIZE_COS_PROPERTY, "128");
@@ -466,18 +517,23 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
+    LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
+  /*
+   * The requested path is equal to hostName. HostName is equal to
+   * hostNameScheme, thus the container. Therefore we have no object to look
+   * for and we return the FileStatus as a directory. Containers have to
+   * lastModified.
+   */
     FileStatus res = null;
     FileStatus cached = memoryCache.getFileStatus(path.toString());
     if (cached != null) {
       return cached;
     }
     LOG.trace("getFileStatus(start) for {}, hostname: {}", path, hostName);
-    /*
-     * The requested path is equal to hostName. HostName is equal to
-     * hostNameScheme, thus the container. Therefore we have no object to look
-     * for and we return the FileStatus as a directory. Containers have to
-     * lastModified.
-     */
     if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
       LOG.trace("getFileStatus(completed) {}", path);
       res = new FileStatus(0L, true, 1, mBlockSize, 0L, path);
@@ -562,11 +618,15 @@ public class COSAPIClient implements IStoreClient {
   }
 
   private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception {
+    LOG.trace("Get file status by key {}, path {}", key, path);
+    if (key.contains("?token=")) {
+      key = Utils.removeToken(key);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
     LOG.trace("internal method - get file status by key {}, path {}", key, path);
     FileStatus cachedFS = memoryCache.getFileStatus(path.toString());
     if (cachedFS != null) {
       return cachedFS;
-    }
     ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
     String sparkOrigin = meta.getUserMetaDataOf("data-origin");
     boolean stocatorCreated = false;
@@ -593,6 +653,11 @@ public class COSAPIClient implements IStoreClient {
 
   private FileStatus createFileStatus(long contentlength, String key,
       Date lastModified, Path path) {
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
+    }
+    LOG.debug("key {}", key);
+    LOG.debug("contentlength {}", contentlength);
     if (objectRepresentsDirectory(key, contentlength)) {
       LOG.debug("Found exact file: fake directory {}", path.toString());
       return new FileStatus(0, true, 1, 0, 0, path);
@@ -676,6 +741,10 @@ public class COSAPIClient implements IStoreClient {
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
+    if (objName.contains("?token=")) {
+      checkCreds(new Path(objName));
+      objName = Utils.removeToken(objName);
+    }
     try {
       String objNameWithoutBuket = objName;
       if (objName.startsWith(mBucket + "/")) {
@@ -719,6 +788,9 @@ public class COSAPIClient implements IStoreClient {
           objName = objName + "/";
         }*/
         LOG.debug("bucket: {}, key {}", mBucket, objName);
+
+        refreshTransferManager();
+
         PutObjectRequest putObjectRequest = new PutObjectRequest(mBucket, objName, im, om);
         Upload upload = transfers.upload(putObjectRequest);
         upload.waitForUploadResult();
@@ -842,6 +914,10 @@ public class COSAPIClient implements IStoreClient {
   /*
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException {
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
     String key = pathToKey(hostName, path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     ListObjectsRequest request = new ListObjectsRequest().withBucketName(mBucket).withPrefix(key);
@@ -855,6 +931,10 @@ public class COSAPIClient implements IStoreClient {
       curObj = path.toString().substring(hostName.length());
     } else {
       curObj = path.toString();
+    }
+
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
     }
 
     ObjectListing objectList = mClient.listObjects(request);
@@ -1323,6 +1403,35 @@ public class COSAPIClient implements IStoreClient {
     transfers.setConfiguration(transferConfiguration);
   }
 
+  private void refreshTransferManager() {
+    int maxThreads = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_THREADS,
+              DEFAULT_MAX_THREADS);
+    if (maxThreads < 2) {
+      LOG.warn(MAX_THREADS + " must be at least 2: forcing to 2.");
+      maxThreads = 2;
+    }
+    int totalTasks = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_TOTAL_TASKS,
+        DEFAULT_MAX_TOTAL_TASKS);
+    long keepAliveTime = Utils.getLong(conf, FS_COS, FS_ALT_KEYS, KEEPALIVE_TIME,
+        DEFAULT_KEEPALIVE_TIME);
+    threadPoolExecutor = BlockingThreadPoolExecutorService.newInstance(
+        maxThreads,
+        maxThreads + totalTasks,
+        keepAliveTime, TimeUnit.SECONDS,
+        "s3a-transfer-shared");
+
+    unboundedThreadPool = new ThreadPoolExecutor(
+        maxThreads, Integer.MAX_VALUE,
+        keepAliveTime, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        BlockingThreadPoolExecutorService.newDaemonThreadFactory(
+            "s3a-transfer-unbounded"));
+
+    initTransferManager();
+  }
+
+  synchronized File createTmpFileForWrite(String pathStr, long size) throws IOException {
+    LOG.trace("Create temp file for write {}. size {}", pathStr, size);
   private synchronized File createTmpDirForWrite(String pathStr,
       String tmpDirName) throws IOException {
     LOG.trace("tmpDirName is {}", tmpDirName);
@@ -1356,6 +1465,31 @@ public class COSAPIClient implements IStoreClient {
     } catch (AmazonClientException e) {
       throw e;
     }
+  }
+
+  private void checkCreds(Path path) {
+    String token = Utils.extractToken(path);
+    customToken = new CustomTokenManager(token);
+    creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
+
+    clientConf = new ClientConfiguration();
+    credProvider = new AWSStaticCredentialsProvider(creds);
+
+    clientBuilder = AmazonS3ClientBuilder.standard()
+        .withClientConfiguration(clientConf)
+        .withPathStyleAccessEnabled(true)
+        .withCredentials(credProvider);
+
+    if (serviceUrl != null && !serviceUrl.equals(amazonDefaultEndpoint)) {
+      EndpointConfiguration endpointConfiguration = new EndpointConfiguration(serviceUrl,
+          Regions.DEFAULT_REGION.getName());
+      clientBuilder.withEndpointConfiguration(endpointConfiguration);
+
+    } else {
+      clientBuilder.withRegion(Regions.DEFAULT_REGION);
+    }
+    mClient = clientBuilder.build();
+
   }
 
   final class WriteOperationHelper {
@@ -1584,6 +1718,7 @@ public class COSAPIClient implements IStoreClient {
         throw translateException("put", putObjectRequest.getKey(), e);
       }
     }
+
   }
 
   private String getFirstName(String p) {

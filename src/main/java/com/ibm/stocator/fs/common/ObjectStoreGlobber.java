@@ -186,7 +186,9 @@ public class ObjectStoreGlobber {
       if (candidates.isEmpty()) {
         return new FileStatus[0];
       }
+      LOG.debug("About to loop over candidates");
       for (FileStatus candidate : candidates) {
+        LOG.trace("Loop over");
         if (filter.accept(candidate.getPath())
             && (candidate.getPath().toString().startsWith(pathPattern.toString() + "/")
                 || (candidate.getPath().toString().equals(pathPattern.toString())))) {
