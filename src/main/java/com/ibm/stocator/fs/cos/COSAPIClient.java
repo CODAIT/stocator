@@ -232,14 +232,14 @@ public class COSAPIClient implements IStoreClient {
 
   private StocatorPath stocatorPath;
 
-  String serviceInstanceID; //added by PC
-  BasicIBMOAuthCredentials creds = null;    //added by PC
-  CustomTokenManager customToken;   //added by PC
-  ClientConfiguration clientConf;   //added by PC
-  AWSStaticCredentialsProvider credProvider = null; //added by PC
-  String serviceUrl; //added by PC
-  String iamEndpoint; //added by PC
-  AmazonS3ClientBuilder clientBuilder; //added by PC
+  String serviceInstanceID;
+  BasicIBMOAuthCredentials creds = null;
+  CustomTokenManager customToken;
+  ClientConfiguration clientConf;
+  AWSStaticCredentialsProvider credProvider = null;
+  String serviceUrl;
+  String iamEndpoint;
+  AmazonS3ClientBuilder clientBuilder;
 
   Properties props = new Properties();
 
@@ -355,7 +355,6 @@ public class COSAPIClient implements IStoreClient {
     if (mIsV2Signer) {
       clientConf.withSignerOverride("S3SignerType");
     }
-    //AWSStaticCredentialsProvider credProvider = null;
     if (apiKey != null || token != null) {
       serviceInstanceID = props.getProperty(IAM_SERVICE_INSTANCE_ID_PROPERTY);
       iamEndpoint = props.getProperty(IAM_ENDPOINT_PROPERTY);
@@ -710,7 +709,6 @@ public class COSAPIClient implements IStoreClient {
         refreshTransferManager();
 
         PutObjectRequest putObjectRequest = new PutObjectRequest(mBucket, objName, im, om);
-        PutObjectResult reponse = mClient.putObject(putObjectRequest);
         Upload upload = transfers.upload(putObjectRequest);
         upload.waitForUploadResult();
         OutputStream fakeStream = new OutputStream() {
@@ -816,7 +814,6 @@ public class COSAPIClient implements IStoreClient {
       checkCreds(path);
       path = new Path(Utils.removeToken(path.toString()));
     }
-    LOG.debug("PC List path {}", path);
     String key = pathToKey(hostName, path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     ListObjectsRequest request = new ListObjectsRequest().withBucketName(mBucket).withPrefix(key);
