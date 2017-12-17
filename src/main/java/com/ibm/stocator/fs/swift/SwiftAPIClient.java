@@ -636,12 +636,10 @@ public class SwiftAPIClient implements IStoreClient {
 
     // When overwriting an object, cached metadata will be outdated
     String cachedName = getObjName(container + "/", objName);
-    if (objectCache.get(cachedName) != null) {
-      objectCache.remove(cachedName);
-    }
+    objectCache.remove(cachedName);
 
     try {
-      OutputStream  sos;
+      OutputStream sos;
       if (nonStreamingUpload) {
         sos = new SwiftNoStreamingOutputStream(mJossAccount, url, contentType,
             metadata, swiftConnectionManager, this);
@@ -697,9 +695,8 @@ public class SwiftAPIClient implements IStoreClient {
     // Current approach is similar to the hadoop-openstack logic that generates working folder
     // We should re-consider another approach
     String username = System.getProperty("user.name");
-    Path path = new Path("/user", username)
+    return new Path("/user", username)
         .makeQualified(filesystemURI, new Path(username));
-    return path;
   }
 
   /**
