@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.11-IBM-SDK</version>
+    <version>1.0.13-SNAPSHOT-IBM-SDK</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -288,7 +288,7 @@
             </plugins>
         </pluginManagement>
         <plugins>
-        <plugin>
+           <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-shade-plugin</artifactId>
               <version>3.1.0</version>
@@ -311,8 +311,32 @@
                   </artifactSet>
                    <relocations>
                         <relocation>
-                            <pattern>com.google.guava</pattern>
-                            <shadedPattern>com.google.guava.shade</shadedPattern>
+                            <pattern>org.javaswift.joss</pattern>
+                            <shadedPattern>org.javaswift.joss.shade</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.joda</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.joda</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.fasterxml.jackson</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.jackson</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.http</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.http</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons.codec</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.codec</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>software.amazon.ion</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.ion</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons.logging</pattern>
+                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.logging</shadedPattern>
                         </relocation>
                        <relocation>
                            <pattern>com.amazonaws</pattern>
@@ -337,7 +361,6 @@
                    </execution>
                </executions>
            </plugin>
-           
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>

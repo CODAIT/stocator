@@ -627,6 +627,7 @@ public class COSAPIClient implements IStoreClient {
     FileStatus cachedFS = memoryCache.getFileStatus(path.toString());
     if (cachedFS != null) {
       return cachedFS;
+    }
     ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
     String sparkOrigin = meta.getUserMetaDataOf("data-origin");
     boolean stocatorCreated = false;
@@ -1015,6 +1016,10 @@ public class COSAPIClient implements IStoreClient {
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
       boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(hostName, path);
@@ -1430,8 +1435,6 @@ public class COSAPIClient implements IStoreClient {
     initTransferManager();
   }
 
-  synchronized File createTmpFileForWrite(String pathStr, long size) throws IOException {
-    LOG.trace("Create temp file for write {}. size {}", pathStr, size);
   private synchronized File createTmpDirForWrite(String pathStr,
       String tmpDirName) throws IOException {
     LOG.trace("tmpDirName is {}", tmpDirName);
