@@ -40,7 +40,8 @@ public class CommonUtilsTest {
       "cos://abc.service/a/b",
       "cos://abc.service",
       "cos://abc.service/",
-      "cos://bucket"};
+      "cos://bucket",
+      "cos://a.b.c.service"};
 
   private static final String[] HOST_LIST_INVALID = {"cos://abc.service/a/b",
       "cos://ab.service",
@@ -91,14 +92,20 @@ public class CommonUtilsTest {
       String container = Utils.getContainerName(host);
       exception.expect(InvalidContainerNameException.class);
       Utils.validContainer(container);
+
       host = Utils.getHost(new URI(HOST_LIST_INVALID[1]));
       container = Utils.getContainerName(host);
       exception.expect(InvalidContainerNameException.class);
       Utils.validContainer(container);
+
       host = Utils.getHost(new URI(HOST_LIST_INVALID[2]));
       container = Utils.getContainerName(host);
       exception.expect(InvalidContainerNameException.class);
       Utils.validContainer(container);
+
+      host = Utils.getHost(new URI(HOST_LIST_VALID[4]));
+      container = Utils.getContainerName(host);
+      Assert.assertEquals(container, "a.b.c");
     } catch (IOException e) {
       Assert.fail();
     } catch (URISyntaxException e) {

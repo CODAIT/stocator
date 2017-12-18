@@ -51,12 +51,12 @@ public class CollisionTest extends SwiftBaseTest {
     super.setUp();
     Assume.assumeNotNull(getFs());
     getFs().delete(new Path(getBaseURI(), objectName), true);
-    FileStatus[] stats = getFs().listStatus(new Path(getBaseURI(), objectName));
-    Assert.assertEquals(0, stats.length);
+    boolean res = getFs().exists(new Path(getBaseURI(), objectName));
+    Assert.assertTrue(false == res);
     getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId));
     getFs().delete(new Path(getBaseURI(), objectName1), true);
-    FileStatus[] stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
-    Assert.assertEquals(0, stats1.length);
+    res = getFs().exists(new Path(getBaseURI(), objectName1));
+    Assert.assertTrue(res == false);
     getFs().mkdirs(new Path(getBaseURI(), objectNameTmpId1));
   }
 
@@ -85,8 +85,8 @@ public class CollisionTest extends SwiftBaseTest {
     Assert.assertEquals(parts, stats.length);
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectNameTmp), true));
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectName), true));
-    FileStatus[]  stats1 = getFs().listStatus(new Path(getBaseURI(), objectName));
-    Assert.assertEquals(0, stats1.length);
+    boolean res = getFs().exists(new Path(getBaseURI(), objectName));
+    Assert.assertTrue(res == false);
   }
 
   @Test
@@ -114,8 +114,8 @@ public class CollisionTest extends SwiftBaseTest {
     Assert.assertEquals(parts, stats.length);
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectNameTmp1), true));
     Assert.assertTrue(getFs().delete(new Path(getBaseURI(), objectName1), true));
-    FileStatus[] stats1 = getFs().listStatus(new Path(getBaseURI(), objectName1));
-    Assert.assertEquals(0, stats1.length);
+    boolean res = getFs().exists(new Path(getBaseURI(), objectName1));
+    Assert.assertTrue(res == false);
   }
 
 }

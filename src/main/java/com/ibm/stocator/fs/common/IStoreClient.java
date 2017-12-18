@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 
@@ -60,7 +61,7 @@ public interface IStoreClient {
    * @throws IOException if connection error
    * @throws FileNotFoundException if path not found
    */
-  public FileStatus getObjectMetadata(String hostName,
+  public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException;
 
   /**
@@ -97,8 +98,28 @@ public interface IStoreClient {
    * @return arrays of FileStatus
    * @throws IOException if connection error
    */
+  /*
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased) throws IOException;
+  */
+  /**
+   * List the statuses of the files/directories in the given path if the path is
+   * a directory.
+   *
+   * @param hostName hostname
+   * @param path given path
+   * @param fullListing if true, return all the content, including 0 byte size objects
+   * @param prefixBased if set to true, container will be listed with prefix based query
+   * @param isDirectory is direct Globber call
+   * @param flatListing is flat listing
+   * @param filter PathFilter filter
+   * @return the statuses of the files/directories in the given patch
+   * @throws FileNotFoundException when the path does not exist;
+   *         IOException see specific implementation
+   */
+  public FileStatus[] list(String hostName, Path path, boolean fullListing,
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException;
 
   /**
    * Create object. Return output stream
@@ -169,5 +190,7 @@ public interface IStoreClient {
    * @param sp Stocator path
    */
   public void setStocatorPath(StocatorPath sp);
+
+  public boolean isFlatListing();
 
 }

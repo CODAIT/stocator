@@ -23,12 +23,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.file.AccessDeniedException;
+import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.ibm.stocator.fs.cos.exception.COSClientIOException;
 import com.ibm.stocator.fs.cos.exception.COSIOException;
 import com.ibm.stocator.fs.cos.exception.COSServiceIOException;
@@ -37,7 +38,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,4 +230,58 @@ public final class COSUtils {
       return (int) size;
     }
   }
+
+  /**
+   * Create a files status instance from a listing.
+   * @param keyPath path to entry
+   * @param summary summary from AWS
+   * @param blockSize block size to declare
+   * @return a status entry
+   */
+  public static COSFileStatus createFileStatus(Path keyPath,
+      S3ObjectSummary summary,
+      long blockSize) {
+    long size = summary.getSize();
+    return createFileStatus(keyPath,
+        objectRepresentsDirectory(summary.getKey(), size),
+        size, summary.getLastModified(), blockSize);
+  }
+
+  /* Date 'modified' is ignored when isDir is true. */
+  private static COSFileStatus createFileStatus(Path keyPath, boolean isDir,
+      long size, Date modified, long blockSize) {
+    if (isDir) {
+      return new COSFileStatus(true, false, keyPath);
+    } else {
+      return new COSFileStatus(size, dateToLong(modified), keyPath, blockSize);
+    }
+  }
+
+  public static boolean objectRepresentsDirectory(final String name,
+      final long size) {
+    return !name.isEmpty()
+        && name.charAt(name.length() - 1) == '/'
+        && size == 0L;
+  }
+
+  /**
+   * Date to long conversion.
+   * Handles null Dates that can be returned by AWS by returning 0
+   * @param date date from AWS query
+   * @return timestamp of the object
+   */
+  public static long dateToLong(final Date date) {
+    if (date == null) {
+      return 0L;
+    }
+    return date.getTime();
+  }
+
+  public static String stringify(S3ObjectSummary summary) {
+    StringBuilder builder = new StringBuilder(summary.getKey().length() + 100);
+    builder.append(summary.getKey()).append(' ');
+    builder.append("size=").append(summary.getSize());
+    return builder.toString();
+  }
+
 }

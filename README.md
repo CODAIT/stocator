@@ -249,6 +249,8 @@ Now you can use URI
 | fs.cos.proxy.password| |Password for authenticating with proxy server |
 | fs.cos.proxy.domain| |Domain for authenticating with proxy server |
 | fs.cos.user.agent.prefix| |User agent prefix |
+| fs.cos.flat.list | true | In flat listing the result will include all objects under specific path prefix, for example bucket/a/b/data.txt, bucket/a/d.data. If listed bucket/a*, then result will include both objects. If flat list is set to flase, then it contains the same list behaviour as community s3a connector. |
+| fs.stocator.cache.size | 2000 | The Guava cache size used by the COS connector |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 
