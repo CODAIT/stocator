@@ -167,7 +167,7 @@ final class COSDataBlocks {
      */
     @Override
     DataBlock create(String key, long index, int limit) throws IOException {
-      String tmpPrefix = key.replaceAll("/", "-");
+      String tmpPrefix = (key.replaceAll("/", "-")).replaceAll(":", "-");
       File destFile = getOwner()
           .createTmpFileForWrite(String.format("cosblock-%04d-" + tmpPrefix, index));
       return new DiskBlock(destFile, limit, index);
