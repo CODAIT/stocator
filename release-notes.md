@@ -1,5 +1,10 @@
 ## Release notes
 
+### Version 1.0.12
+1. Fixing Null Pointer Exception when runnign with output comitter version 1
+2. [cos] New configuration key to define Guava cache size
+3. [cos] Fixing content type for block uploads
+
 ### Version 1.0.11
 1. Improve object read flows
 2. Allign list with Hadoop connectors. New configuration flag defines previous flat listing or new nested listing
