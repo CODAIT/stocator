@@ -113,7 +113,7 @@ public class COSOutputStream extends OutputStream {
     mContentType = contentType;
     mMetadata = metadata;
     try {
-      String tmpPrefix = key.replaceAll("/", "-");
+      String tmpPrefix = (key.replaceAll("/", "-")).replaceAll(":", "-");
       mBackupFile = fs.createTmpFileForWrite("output-" + tmpPrefix);
       LOG.trace("OutputStream for key '{}' writing to tempfile: {}", key, mBackupFile);
       mBackupOutputStream = new BufferedOutputStream(new FileOutputStream(mBackupFile), 32768);
