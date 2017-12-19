@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,9 +63,10 @@ public class COSLocalDirAllocator extends LocalDirAllocator {
 
   public File createTmpFileForWrite(String pathStr, long size,
       Configuration conf) throws IOException {
-    Path path = getLocalPathForWrite(pathStr, size, conf, true);
+    String sha256hex = DigestUtils.sha256Hex(pathStr);
+    Path path = getLocalPathForWrite(sha256hex, size, conf, true);
     File tmpDir = new File(path.getParent().toUri().getPath());
-    File tmpFile = new File(tmpDir, pathStr + UUID.randomUUID().toString());
+    File tmpFile = new File(tmpDir, sha256hex + UUID.randomUUID().toString());
     return tmpFile;
   }
 }
