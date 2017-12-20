@@ -583,7 +583,7 @@ public class COSAPIClient implements IStoreClient {
             memoryCache.putFileStatus(path.toString(), res);
             return res;
           } else if (key.isEmpty()) {
-            LOG.debug("Found root directory");
+            LOG.trace("Found root directory");
             LOG.trace("getFileStatus(completed) {}", path);
             res = new FileStatus(0, true, 1, 0, 0, path);
             memoryCache.putFileStatus(path.toString(), res);
@@ -864,115 +864,6 @@ public class COSAPIClient implements IStoreClient {
     return workingDir;
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * Prefix based
-   * Return everything that starts with the prefix
-   * Fill listing
-   * Return all objects, even zero size
-   * If fileStatus is null means the path is part of some name, neither object
-   * or pseudo directory. Was called by Globber
-   *
-   * @param hostName hostName
-   * @param path path
-   * @param fullListing Return all objects, even zero size
-   * @param prefixBased Return everything that starts with the prefix
-   * @return list
-   * @throws IOException if error
-   */
-  /*
-  public FileStatus[] list(String hostName, Path path, boolean fullListing,
-      boolean prefixBased) throws IOException {
-    String key = pathToKey(hostName, path);
-    ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    ListObjectsRequest request = new ListObjectsRequest().withBucketName(mBucket).withPrefix(key);
-
-    String curObj;
-    if (path.toString().equals(mBucket)) {
-      curObj = "";
-    } else if (path.toString().startsWith(mBucket + "/")) {
-      curObj = path.toString().substring(mBucket.length() + 1);
-    } else if (path.toString().startsWith(hostName)) {
-      curObj = path.toString().substring(hostName.length());
-    } else {
-      curObj = path.toString();
-    }
-
-    ObjectListing objectList = mClient.listObjects(request);
-    List<S3ObjectSummary> objectSummaries = objectList.getObjectSummaries();
-    if (objectSummaries.size() == 0) {
-      FileStatus[] emptyRes = {};
-      LOG.debug("List for bucket {} is empty", mBucket);
-      return emptyRes;
-    }
-    boolean objectScanContinue = true;
-    S3ObjectSummary prevObj = null;
-    while (objectScanContinue) {
-      for (S3ObjectSummary obj : objectSummaries) {
-        if (prevObj == null) {
-          prevObj = obj;
-          continue;
-        }
-        String objKey = obj.getKey();
-        String unifiedObjectName = extractUnifiedObjectName(objKey);
-        if (!prefixBased && !curObj.equals("") && !path.toString().endsWith("/")
-            && !unifiedObjectName.equals(curObj) && !unifiedObjectName.startsWith(curObj + "/")) {
-          LOG.trace("{} does not match {}. Skipped", unifiedObjectName, curObj);
-          continue;
-        }
-        if (isSparkOrigin(unifiedObjectName) && !fullListing) {
-          LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
-            if (fModeAutomaticDelete) {
-              delete(hostName, new Path(objKey), true);
-            }
-            continue;
-          } else {
-            // if we here - data created by spark and job completed
-            // successfully
-            // however there be might parts of failed tasks that
-            // were not aborted
-            // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(objKey).equals(nameWithoutTaskID(prevObj.getKey()))) {
-              // found failed that was not aborted.
-              LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
-              if (prevObj.getSize() < obj.getSize()) {
-                LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
-                prevObj = obj;
-              }
-              continue;
-            }
-          }
-        }
-        if (prevObj.getSize() > 0 || fullListing) {
-          FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
-          tmpResult.add(fs);
-        }
-        prevObj = obj;
-      }
-      boolean isTruncated = objectList.isTruncated();
-      if (isTruncated) {
-        objectList = mClient.listNextBatchOfObjects(objectList);
-        objectSummaries = objectList.getObjectSummaries();
-      } else {
-        objectScanContinue = false;
-      }
-    }
-    if (prevObj != null && (prevObj.getSize() > 0 || fullListing)) {
-      FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
-      tmpResult.add(fs);
-    }
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("COS List to return length {}", tmpResult.size());
-      for (FileStatus fs: tmpResult) {
-        LOG.trace("{}", fs.getPath());
-      }
-    }
-    return tmpResult.toArray(new FileStatus[tmpResult.size()]);
-  }
-  */
   @Override
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
@@ -1021,7 +912,7 @@ public class COSAPIClient implements IStoreClient {
         }
         String objKey = obj.getKey();
         String unifiedObjectName = extractUnifiedObjectName(objKey);
-        LOG.debug("list candidate {}, unified name {}", objKey, unifiedObjectName);
+        LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
         if (stocatorOrigin && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
           // if we here - data created by spark and job completed
@@ -1041,7 +932,7 @@ public class COSAPIClient implements IStoreClient {
         }
         FileStatus fs = createFileStatus(prevObj, hostName, path);
         if (fs.getLen() > 0 || fullListing) {
-          LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
+          LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
           if (filter == null) {
             tmpResult.add(fs);
           } else if (filter != null && filter.accept(fs.getPath())) {
@@ -1066,9 +957,9 @@ public class COSAPIClient implements IStoreClient {
 
     if (prevObj != null) {
       FileStatus fs = createFileStatus(prevObj, hostName, path);
-      LOG.debug("Adding the last object from the list {}", fs.getPath());
+      LOG.trace("Adding the last object from the list {}", fs.getPath());
       if (fs.getLen() > 0 || fullListing) {
-        LOG.debug("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
+        LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
         if (filter == null) {
           memoryCache.putFileStatus(fs.getPath().toString(), fs);
           tmpResult.add(fs);
@@ -1086,12 +977,12 @@ public class COSAPIClient implements IStoreClient {
 
     // get common prefixes
     for (String comPrefix : commonPrefixes) {
-      LOG.debug("Common prefix is {}", comPrefix);
+      LOG.trace("Common prefix is {}", comPrefix);
       if (emptyObjects.containsKey(keyToQualifiedPath(hostName,
           comPrefix).toString()) || emptyObjects.isEmpty()) {
         FileStatus status = new COSFileStatus(true, false, keyToQualifiedPath(hostName,
             comPrefix));
-        LOG.debug("Match between common prefix and empty object {}. Adding to result", comPrefix);
+        LOG.trace("Match between common prefix and empty object {}. Adding to result", comPrefix);
         if (filter == null) {
           memoryCache.putFileStatus(status.getPath().toString(), status);
           tmpResult.add(status);
@@ -1162,7 +1053,7 @@ public class COSAPIClient implements IStoreClient {
   private boolean isJobSuccessful(String objectKey) {
     LOG.trace("isJobSuccessful: for {}", objectKey);
     if (mCachedSparkJobsStatus.containsKey(objectKey)) {
-      LOG.debug("isJobSuccessful: {} found cached", objectKey);
+      LOG.trace("isJobSuccessful: {} found cached", objectKey);
       return mCachedSparkJobsStatus.get(objectKey).booleanValue();
     }
     String key = getRealKey(objectKey);
