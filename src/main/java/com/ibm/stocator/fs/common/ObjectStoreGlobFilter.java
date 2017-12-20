@@ -45,7 +45,7 @@ public class ObjectStoreGlobFilter implements PathFilter {
   private GlobPattern pattern;
 
   public ObjectStoreGlobFilter(String filePattern) throws IOException {
-    LOG.debug("Generate path pattern filter for {}", filePattern);
+    LOG.trace("Generate path pattern filter for {}", filePattern);
     init(filePattern, DEFAULT_FILTER);
   }
 
@@ -57,7 +57,7 @@ public class ObjectStoreGlobFilter implements PathFilter {
    * @throws IOException thrown if the file pattern is incorrect
    */
   public ObjectStoreGlobFilter(String filePattern, String patternPrefixT) throws IOException {
-    LOG.debug("Generate path pattern filter for {}", filePattern);
+    LOG.trace("Generate path pattern filter for {}", filePattern);
     init(filePattern, DEFAULT_FILTER);
     patternPrefix = patternPrefixT;
   }
@@ -91,7 +91,7 @@ public class ObjectStoreGlobFilter implements PathFilter {
 
   @Override
   public boolean accept(Path path) {
-    LOG.debug("match {} pattern {}", path.getName(), pattern.compiled().pattern());
+    LOG.trace("match {} pattern {}", path.getName(), pattern.compiled().pattern());
     String pathToMatch = path.getName();
     if (patternPrefix != null) {
       pathToMatch = patternPrefix + path.getName();

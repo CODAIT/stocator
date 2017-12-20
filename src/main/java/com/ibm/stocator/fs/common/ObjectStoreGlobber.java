@@ -172,10 +172,10 @@ public class ObjectStoreGlobber {
           noWildCardPathPrefix.endsWith("/"))));
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
-          LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
+          LOG.trace("Candidate accepted: {}", candidate.getPath().toString());
           results.add(candidate);
         } else {
-          LOG.debug("Candidate rejected: {} Pattern {}", candidate.getPath().toString(),
+          LOG.trace("Candidate rejected: {} Pattern {}", candidate.getPath().toString(),
               rootPlaceholder.getPath());
         }
       }

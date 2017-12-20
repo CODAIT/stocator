@@ -55,12 +55,12 @@ public class MemoryCache {
   }
 
   public void putFileStatus(String path, FileStatus fs) {
-    LOG.debug("Guava - add to cache {}", path);
+    LOG.trace("Guava - add to cache {}", path);
     fsCache.put(path, fs);
   }
 
   public void removeFileStatus(String path) {
-    LOG.debug("Guava - remove from cache {}", path);
+    LOG.trace("Guava - remove from cache {}", path);
     fsCache.invalidate(path);
   }
 
