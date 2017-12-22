@@ -34,6 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -58,11 +59,9 @@ public class SwiftOutputStream extends OutputStream {
   private static final Logger LOG = LoggerFactory.getLogger(SwiftOutputStream.class);
 
   /*
-   *  Executor service to handle threads for the different threads
+   *  Executor service to handle the HTTP PUT connection
    */
-  private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(
-      Runtime.getRuntime().availableProcessors()
-  );
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
   /*
    * Access url
@@ -73,12 +72,6 @@ public class SwiftOutputStream extends OutputStream {
    * Client used
    */
   private CloseableHttpClient client;
-
-  /*
-   * The data that is buffered in memory before opening the HTTP PUT request
-   * and flushing the data
-   */
-  private static final int MIN_DATA = 64 * 1024;
 
   // Holds the pending http request
   private Future<Integer> futureTask;
@@ -117,7 +110,7 @@ public class SwiftOutputStream extends OutputStream {
     contentType = targetContentType;
 
     pipOutStream = new PipedOutputStream();
-    bufOutStream = new BufferedOutputStream(pipOutStream, MIN_DATA);
+    bufOutStream = new BufferedOutputStream(pipOutStream, Constants.SWIFT_DATA_BUFFER);
 
     // Append the headers to the request
     request = new HttpPut(mUrl.toString());
@@ -172,7 +165,7 @@ public class SwiftOutputStream extends OutputStream {
           return responseCode;
         }
       };
-      futureTask = EXECUTOR.submit(connectionTask);
+      futureTask = executor.submit(connectionTask);
       do {
         // Wait till the connection is open and the task isn't done
       } while (!openConnection.get() && !futureTask.isDone());
@@ -187,10 +180,10 @@ public class SwiftOutputStream extends OutputStream {
     totalWritten += toBeWritten;
 
     if (LOG.isTraceEnabled()) {
-      LOG.trace("{} written ({} buffer size)", totalWritten, MIN_DATA);
+      LOG.trace("{} written ({} buffer size)", totalWritten, Constants.SWIFT_DATA_BUFFER);
     }
 
-    if (totalWritten >= MIN_DATA) {
+    if (totalWritten >= Constants.SWIFT_DATA_BUFFER) {
       OpenHttpConnection();
     }
   }
@@ -232,6 +225,7 @@ public class SwiftOutputStream extends OutputStream {
     try {
       int responseCode = futureTask.get();
       futureTask.cancel(true);
+      executor.shutdown();
       if (responseCode >= HTTP_BAD_REQUEST) { // Code may have changed from retrying
         throw new IOException("Could not PUT contents, got HTTP " + responseCode);
       }
