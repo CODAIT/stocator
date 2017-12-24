@@ -59,16 +59,16 @@
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
         <findbugs.path>build/findbugs</findbugs.path>
-        <slf4j.version>1.7.10</slf4j.version>
+        <slf4j.version>1.7.16</slf4j.version>
         <java.version>1.7</java.version>
         <joss.version>0.9.15</joss.version>
         <hadoop.version>2.7.3</hadoop.version>
         <junit.version>4.12</junit.version>
-        <jackson.version>1.9.7</jackson.version>
+        <jackson.version>1.9.13</jackson.version>
         <httpcomponents.httpcore.version>4.4.8</httpcomponents.httpcore.version>
         <httpcomponents.httpclient.version>4.5.4</httpcomponents.httpclient.version>
-        <powermock.version>1.6.1</powermock.version>
-        <mockito.version>1.10.8</mockito.version>
+        <powermock.version>1.6.2</powermock.version>
+        <mockito.version>1.10.19</mockito.version>
         <amazon.sdk.version>1.11.59</amazon.sdk.version>
         <google.guava.version>23.5-jre</google.guava.version>
     </properties>
@@ -116,7 +116,7 @@
           <groupId>com.google.guava</groupId>
           <artifactId>guava</artifactId>
           <version>${google.guava.version}</version>
-        </dependency>        
+        </dependency>
         <dependency>
 	        <groupId>com.googlecode.json-simple</groupId>
 	        <artifactId>json-simple</artifactId>
@@ -247,8 +247,7 @@
             <directory>src/main/resources</directory>
             <filtering>true</filtering>
           </resource>
-        </resources>  
-    
+        </resources>
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -319,8 +318,7 @@
                        </goals>
                    </execution>
                </executions>
-           </plugin>
-           
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
