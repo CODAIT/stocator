@@ -22,10 +22,20 @@ public class COSObjectCreate {
 
     // "us-geo" is the service name. Can be any other name
     // All configuration keys will have the prefix fs.cos.us-geo
+
+    //Usage with access key and secret key
     mConf.set("fs.cos.us-geo.endpoint", "http://s3-api.us-geo.objectstorage.softlayer.net");
     mConf.set("fs.cos.us-geo.v2.signer.type", "false");
     mConf.set("fs.cos.us-geo.access.key", "ACCESS KEY");
     mConf.set("fs.cos.us-geo.secret.key", "SECRET KEY");
+
+    //Usage with IAM service
+    /*
+    mConf.set("fs.cos.us-geo.endpoint", "http://s3-api.us-geo.objectstorage.softlayer.net");
+    mConf.set("fs.cos.us-geo.v2.signer.type", "false");
+    mConf.set("fs.cos.us-geo.iam.api.key", "API KEY");
+    mConf.set("fs.cos.us-geo.iam.service.id", "SERVICE ID");
+     */
 
     FileSystem fs = null;
     // gvernik is the bucket name
