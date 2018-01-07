@@ -174,6 +174,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.READAHEAD_RANGE;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_READAHEAD_RANGE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_MAX_RETRY_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_REFRESH_OFFSET_PROPERTY;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 
@@ -367,9 +369,19 @@ public class COSAPIClient implements IStoreClient {
     if (apiKey != null || token != null) {
       String serviceInstanceID = props.getProperty(IAM_SERVICE_INSTANCE_ID_PROPERTY);
       String iamEndpoint = props.getProperty(IAM_ENDPOINT_PROPERTY);
+      String maxTokenRrety = props.getProperty(IAM_TOKEN_MAX_RETRY_PROPERTY);
+      String tokenRefreshOffset = props.getProperty(IAM_TOKEN_REFRESH_OFFSET_PROPERTY);
       if (iamEndpoint != null) {
         LOG.debug("Setting custom IAM endpoint to {}", iamEndpoint);
         SDKGlobalConfiguration.IAM_ENDPOINT = iamEndpoint;
+      }
+      if (maxTokenRrety != null) {
+        LOG.debug("Setting custom maximum token retry value to {}", maxTokenRrety);
+        SDKGlobalConfiguration.IAM_MAX_RETRY = Integer.valueOf(maxTokenRrety).intValue();
+      }
+      if (tokenRefreshOffset != null) {
+        LOG.debug("Setting custom token refresh offset to {}", tokenRefreshOffset);
+        SDKGlobalConfiguration.IAM_REFRESH_OFFSET = Integer.valueOf(tokenRefreshOffset).intValue();
       }
       BasicIBMOAuthCredentials creds = null;
       if (apiKey != null) {

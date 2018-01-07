@@ -56,6 +56,10 @@ import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_MAX_RETRY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_MAX_RETRY_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_REFRESH_OFFSET;
+import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_REFRESH_OFFSET_PROPERTY;
 
 /**
  * Integrates Hadoop configuration with the COS client implementation
@@ -120,6 +124,10 @@ public final class ConfigurationHandler {
         IAM_ENDPOINT_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, IAM_SERVICE_INSTANCE_ID, props,
         IAM_SERVICE_INSTANCE_ID_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN_MAX_RETRY, props,
+        IAM_TOKEN_MAX_RETRY_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN_REFRESH_OFFSET, props,
+        IAM_TOKEN_REFRESH_OFFSET_PROPERTY, false);
 
     LOG.debug("Initialize completed successfully");
     return props;

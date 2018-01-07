@@ -167,6 +167,9 @@ The following is the list of the Stocator configuration keys. `<service>` can be
 |fs.cos.`<service>`.iam.api.key | API key  | mandatory | value of `apiKey`
 |fs.cos.`<service>`.iam.service.id  | Service ID | mandatory | Value of `iam_serviceid_crn`. In certain cases you need only value after `:serviceid:`
 |fs.cos.`<service>`.endpoint | COS endpoint | mandatory | Open link from `endpoints` and choose relevant endpoint. This endpoint should go here
+|fs.cos.`<service>`.iam.token.max.retry | IAM token retrieval max retry  | Optional |
+|fs.cos.`<service>`.iam.token.refresh | IAM token refresh time offset in seconds  | Optional |
+
 
 Example, configure `<service>` as `myCOS`:
 

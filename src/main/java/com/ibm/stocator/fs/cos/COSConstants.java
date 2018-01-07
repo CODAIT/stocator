@@ -204,4 +204,10 @@ public class COSConstants {
   public static final String INPUT_FADV_SEQUENTIAL = "sequential";
   public static final String INPUT_FADV_RANDOM = "random";
 
+  public static final String IAM_TOKEN_MAX_RETRY = ".iam.token.max.retry";
+  public static final String IAM_TOKEN_MAX_RETRY_PROPERTY = FS_COS + IAM_TOKEN_MAX_RETRY;
+
+  public static final String IAM_TOKEN_REFRESH_OFFSET = ".iam.token.refresh";
+  public static final String IAM_TOKEN_REFRESH_OFFSET_PROPERTY = FS_COS + IAM_TOKEN_REFRESH_OFFSET;
+
 }
