@@ -20,6 +20,7 @@
 
 package com.ibm.stocator.fs.swift;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
@@ -27,35 +28,41 @@ import java.io.PipedOutputStream;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.swift.auth.JossAccount;
+import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.ibm.stocator.fs.swift.auth.JossAccount;
-import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 /**
- *
  * Wraps OutputStream
  * This class is not thread-safe
- *
  */
 public class SwiftOutputStream extends OutputStream {
+
   /*
    * Logger
    */
   private static final Logger LOG = LoggerFactory.getLogger(SwiftOutputStream.class);
+
   /*
-   * Output stream
+   *  Executor service to handle the HTTP PUT connection
    */
-  private OutputStream mOutputStream;
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
   /*
    * Access url
    */
@@ -64,38 +71,48 @@ public class SwiftOutputStream extends OutputStream {
   /*
    * Client used
    */
-  private HttpClient client;
+  private CloseableHttpClient client;
 
-  /*
-   * Request
-   */
+  // Holds the pending http request
+  private Future<Integer> futureTask;
+
+  // Keep track of the number of bytes written
+  private long totalWritten = 0L;
+
+  private JossAccount mAccount;
   private HttpPut request;
 
-  /*
-   *  Executor service to handle threads
-   */
-  private ExecutorService execService;
-  private Future<Void> futureTask;
-  private long totalWritten;
-  private JossAccount mAccount;
+  private final String contentType;
+  private final AtomicBoolean openConnection = new AtomicBoolean(false);
+
+  private final PipedOutputStream pipOutStream;
+  private final BufferedOutputStream bufOutStream;
 
   /**
    * Default constructor
    *
-   * @param account JOSS account object
-   * @param url URL connection
-   * @param contentType content type
-   * @param metadata input metadata
+   * @param account           JOSS account object
+   * @param url               URL connection
+   * @param targetContentType Content type
+   * @param metadata          input metadata
    * @param connectionManager SwiftConnectionManager
-   * @throws IOException if error
    */
-  public SwiftOutputStream(JossAccount account, URL url, final String contentType,
-                           Map<String, String> metadata, SwiftConnectionManager connectionManager)
-          throws IOException {
+  public SwiftOutputStream(
+      JossAccount account,
+      URL url,
+      final String targetContentType,
+      Map<String, String> metadata,
+      SwiftConnectionManager connectionManager
+  ) {
     mUrl = url;
-    totalWritten = 0;
     mAccount = account;
     client = connectionManager.createHttpConnection();
+    contentType = targetContentType;
+
+    pipOutStream = new PipedOutputStream();
+    bufOutStream = new BufferedOutputStream(pipOutStream, Constants.SWIFT_DATA_BUFFER);
+
+    // Append the headers to the request
     request = new HttpPut(mUrl.toString());
     request.addHeader("X-Auth-Token", account.getAuthToken());
     if (metadata != null && !metadata.isEmpty()) {
@@ -103,89 +120,124 @@ public class SwiftOutputStream extends OutputStream {
         request.addHeader("X-Object-Meta-" + entry.getKey(), entry.getValue());
       }
     }
-
-    PipedOutputStream out = new PipedOutputStream();
-    final PipedInputStream in = new PipedInputStream();
-    out.connect(in);
-    execService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    mOutputStream = out;
-    Callable<Void> task = new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        InputStreamEntity entity = new InputStreamEntity(in, -1);
-        entity.setChunked(true);
-        entity.setContentType(contentType);
-        request.setEntity(entity);
-
-        LOG.debug("HTTP PUT request {}", mUrl.toString());
-        HttpResponse response = client.execute(request);
-        int responseCode = response.getStatusLine().getStatusCode();
-        LOG.debug("HTTP PUT response {}. Response code {}",
-                mUrl.toString(), responseCode);
-        if (responseCode == 401) { // Unauthorized error
-          mAccount.authenticate();
-          request.removeHeaders("X-Auth-Token");
-          request.addHeader("X-Auth-Token", mAccount.getAuthToken());
-          LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
-          response = client.execute(request);
-          responseCode = response.getStatusLine().getStatusCode();
-        }
-        if (responseCode >= 400) { // Code may have changed from retrying
-          throw new IOException("HTTP Error: " + responseCode
-                  + " Reason: " + response.getStatusLine().getReasonPhrase());
-        }
-
-        return null;
-      }
-    };
-    futureTask = execService.submit(task);
   }
 
-  @Override
-  public void write(int b) throws IOException {
-    if (LOG.isTraceEnabled()) {
-      totalWritten = totalWritten + 1;
-      LOG.trace("Write {} one byte. Total written {}", mUrl.toString(), totalWritten);
+  private synchronized void OpenHttpConnection() throws IOException {
+    // Let know that the connection is open
+    if (!openConnection.get()) {
+      final PipedInputStream in = new PipedInputStream();
+      pipOutStream.connect(in);
+
+      Callable<Integer> connectionTask = new Callable<Integer>() {
+        @Override
+        public Integer call() throws Exception {
+          LOG.info("Invoke HTTP Put request");
+
+          int responseCode;
+          String reasonPhrase;
+
+          InputStreamEntity entity = new InputStreamEntity(in, -1);
+          entity.setChunked(true);
+          entity.setContentType(contentType);
+          request.setEntity(entity);
+
+          LOG.info("HTTP PUT request {}", mUrl.toString());
+
+          openConnection.set(true);
+          try (CloseableHttpResponse response = client.execute(request)) {
+            responseCode = response.getStatusLine().getStatusCode();
+            reasonPhrase = response.getStatusLine().getReasonPhrase();
+          }
+          LOG.info("HTTP PUT response {}. Response code {}", mUrl.toString(), responseCode);
+          if (responseCode == HTTP_UNAUTHORIZED) { // Unauthorized error
+            mAccount.authenticate();
+            request.removeHeaders("X-Auth-Token");
+            request.addHeader("X-Auth-Token", mAccount.getAuthToken());
+            LOG.warn("Token recreated for {}.  Retry request", mUrl.toString());
+            try (CloseableHttpResponse response = client.execute(request)) {
+              responseCode = response.getStatusLine().getStatusCode();
+              reasonPhrase = response.getStatusLine().getReasonPhrase();
+            }
+          }
+          if (responseCode >= HTTP_BAD_REQUEST) { // Code may have changed from retrying
+            throw new IOException("HTTP Error: " + responseCode + " Reason: " + reasonPhrase);
+          }
+          return responseCode;
+        }
+      };
+      futureTask = executor.submit(connectionTask);
+      do {
+        // Wait till the connection is open and the task isn't done
+      } while (!openConnection.get() && !futureTask.isDone());
     }
-    mOutputStream.write(b);
+  }
+
+  private void checkBuffer() throws IOException {
+    checkBuffer(1);
+  }
+
+  private void checkBuffer(int toBeWritten) throws IOException {
+    totalWritten += toBeWritten;
+
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("{} written ({} buffer size)", totalWritten, Constants.SWIFT_DATA_BUFFER);
+    }
+
+    if (totalWritten >= Constants.SWIFT_DATA_BUFFER) {
+      OpenHttpConnection();
+    }
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    if (LOG.isTraceEnabled()) {
-      totalWritten = totalWritten + len;
-      LOG.trace("Write {} off {} len {}. Total {}", mUrl.toString(), off, len, totalWritten);
-    }
-    mOutputStream.write(b, off, len);
+    // Check if we need to open the connection
+    checkBuffer(len);
+
+    bufOutStream.write(b, off, len);
+  }
+
+  @Override
+  public void write(int b) throws IOException {
+
+    // Check if we need to open the connection
+    checkBuffer();
+
+    bufOutStream.write(b);
   }
 
   @Override
   public void write(byte[] b) throws IOException {
-    if (LOG.isTraceEnabled()) {
-      totalWritten = totalWritten + b.length;
-      LOG.trace("Write {} len {}. Total {}", mUrl.toString(), b.length, totalWritten);
-    }
-    mOutputStream.write(b);
+    write(b, 0, b.length);
   }
 
   @Override
   public void close() throws IOException {
-    LOG.debug("HTTP PUT close {}", mUrl.toString());
+    LOG.info("HTTP PUT close {}", mUrl.toString());
+
+    // Make sure that we have a HTTP connection
+    OpenHttpConnection();
+
     flush();
-    mOutputStream.close();
+
+    bufOutStream.close();
+    pipOutStream.close();
+
     try {
-      futureTask.get();
+      int responseCode = futureTask.get();
       futureTask.cancel(true);
-      execService.shutdown();
-    } catch (Exception e) {
-      execService.shutdown();
-      throw new IOException("Unable to complete write.", e);
+      executor.shutdown();
+      if (responseCode >= HTTP_BAD_REQUEST) { // Code may have changed from retrying
+        throw new IOException("Could not PUT contents, got HTTP " + responseCode);
+      }
+    } catch (InterruptedException | ExecutionException e) {
+      throw new IOException(e);
     }
   }
 
   @Override
   public void flush() throws IOException {
-    LOG.trace("{} flush method", mUrl.toString());
-    mOutputStream.flush();
+    LOG.info("{} flush method", mUrl.toString());
+    bufOutStream.flush();
+    pipOutStream.flush();
   }
 }

@@ -92,6 +92,11 @@ public class Constants {
   public static final String SEQ_READ_STRATEGY = "Sequential";
 
   /*
+   * The data that is buffered in memory before opening the HTTP PUT request
+   * and flushing the data
+   */
+  public static final int SWIFT_DATA_BUFFER = 64 * 1024;
+  /*
    * directory mime type
    */
   public static final String APPLICATION_DIRECTORY = "application/directory";
