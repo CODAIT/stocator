@@ -359,11 +359,7 @@
                        </goals>
                    </execution>
                </executions>
-<<<<<<< HEAD
            </plugin>
-=======
-            </plugin>
->>>>>>> origin/master
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
