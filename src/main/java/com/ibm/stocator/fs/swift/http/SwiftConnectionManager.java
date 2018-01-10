@@ -107,7 +107,6 @@ public class SwiftConnectionManager {
     HttpRequestRetryHandler myRetryHandler = new HttpRequestRetryHandler() {
 
       public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
-        System.out.println(executionCount);
         if (executionCount >= connectionConfiguration.getExecutionCount()) {
           // Do not retry if over max retry count
           LOG.debug("Execution count {} is bigger then threashold. Stop", executionCount);
