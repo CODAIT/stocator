@@ -251,6 +251,17 @@ public class COSAPIClient implements IStoreClient {
 
   private StocatorPath stocatorPath;
 
+  String serviceInstanceID;
+  BasicIBMOAuthCredentials creds = null;
+  CustomTokenManager customToken;
+  ClientConfiguration clientConf;
+  AWSStaticCredentialsProvider credProvider = null;
+  String serviceUrl;
+  String iamEndpoint;
+  AmazonS3ClientBuilder clientBuilder;
+
+  Properties props = new Properties();
+
   public COSAPIClient(URI pFilesystemURI, Configuration pConf) throws IOException {
     filesystemURI = pFilesystemURI;
     conf = pConf;
@@ -263,7 +274,7 @@ public class COSAPIClient implements IStoreClient {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
-    Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
+    props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
     int cacheSize = conf.getInt(CACHE_SIZE, GUAVA_CACHE_SIZE_DEFAULT);
     memoryCache = MemoryCache.getInstance(cacheSize);
@@ -287,7 +298,7 @@ public class COSAPIClient implements IStoreClient {
       throw new ConfigurationParseException("Secret KEY is empty. Please provide valid secret key");
     }
 
-    ClientConfiguration clientConf = new ClientConfiguration();
+    clientConf = new ClientConfiguration();
 
     int maxThreads = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_THREADS,
         DEFAULT_MAX_THREADS);
@@ -365,7 +376,6 @@ public class COSAPIClient implements IStoreClient {
     if (mIsV2Signer) {
       clientConf.withSignerOverride("S3SignerType");
     }
-    AWSStaticCredentialsProvider credProvider = null;
     if (apiKey != null || token != null) {
       String serviceInstanceID = props.getProperty(IAM_SERVICE_INSTANCE_ID_PROPERTY);
       String iamEndpoint = props.getProperty(IAM_ENDPOINT_PROPERTY);
@@ -377,11 +387,13 @@ public class COSAPIClient implements IStoreClient {
       }
       if (maxTokenRrety != null) {
         LOG.debug("Setting custom maximum token retry value to {}", maxTokenRrety);
-        SDKGlobalConfiguration.IAM_MAX_RETRY = Integer.valueOf(maxTokenRrety).intValue();
+        //SDKGlobalConfiguration.IAM_MAX_RETRY   //commented by PC and nl added
+        //  = Integer.valueOf(maxTokenRrety).intValue(); //commented by PC
       }
       if (tokenRefreshOffset != null) {
         LOG.debug("Setting custom token refresh offset to {}", tokenRefreshOffset);
-        SDKGlobalConfiguration.IAM_REFRESH_OFFSET = Integer.valueOf(tokenRefreshOffset).intValue();
+        //SDKGlobalConfiguration.IAM_REFRESH_OFFSET    //commented by PC and nl added
+        //  = Integer.valueOf(tokenRefreshOffset).intValue();    //commented by PC
       }
       BasicIBMOAuthCredentials creds = null;
       if (apiKey != null) {
@@ -389,7 +401,7 @@ public class COSAPIClient implements IStoreClient {
         creds = new BasicIBMOAuthCredentials(apiKey, serviceInstanceID);
       } else if (token != null) {
         LOG.debug("Setting custom token");
-        CustomTokenManager customToken = new CustomTokenManager(token);
+        customToken = new CustomTokenManager(token);
         creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
       }
       credProvider = new AWSStaticCredentialsProvider(creds);
@@ -398,9 +410,9 @@ public class COSAPIClient implements IStoreClient {
           new BasicAWSCredentials(accessKey, secretKey);
       credProvider = new AWSStaticCredentialsProvider(creds);
     }
-    final String serviceUrl = props.getProperty(ENDPOINT_URL_COS_PROPERTY);
+    serviceUrl = props.getProperty(ENDPOINT_URL_COS_PROPERTY);
 
-    AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard()
+    clientBuilder = AmazonS3ClientBuilder.standard()
         .withClientConfiguration(clientConf)
         .withPathStyleAccessEnabled(true)
         .withCredentials(credProvider);
@@ -520,6 +532,13 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
+
+    LOG.trace("Get object metadata: {}, hostname: {}", path, hostName);
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
+
     FileStatus res = null;
     FileStatus cached = memoryCache.getFileStatus(path.toString());
     if (cached != null) {
@@ -616,6 +635,13 @@ public class COSAPIClient implements IStoreClient {
   }
 
   private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception {
+
+    LOG.trace("Get file status by key {}, path {}", key, path);
+    if (key.contains("?token=")) {
+      key = Utils.removeToken(key);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
+
     LOG.trace("internal method - get file status by key {}, path {}", key, path);
     FileStatus cachedFS = memoryCache.getFileStatus(path.toString());
     if (cachedFS != null) {
@@ -647,6 +673,11 @@ public class COSAPIClient implements IStoreClient {
 
   private FileStatus createFileStatus(long contentlength, String key,
       Date lastModified, Path path) {
+
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
+    }
+
     if (objectRepresentsDirectory(key, contentlength)) {
       LOG.debug("Found exact file: fake directory {}", path.toString());
       return new FileStatus(0, true, 1, 0, 0, path);
@@ -710,6 +741,12 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
+
+    if (path.toString().contains("?token=")) {  //added by PC
+      checkCreds(path);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
+
     LOG.debug("Opening '{}' for reading.", path);
     String key = pathToKey(hostName, path);
     FileStatus fileStatus = memoryCache.getFileStatus(path.toString());
@@ -730,6 +767,12 @@ public class COSAPIClient implements IStoreClient {
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
+
+    if (objName.contains("?token=")) {
+      checkCreds(new Path(objName));
+      objName = Utils.removeToken(objName);
+    }
+
     try {
       String objNameWithoutBuket = objName;
       if (objName.startsWith(mBucket + "/")) {
@@ -773,6 +816,9 @@ public class COSAPIClient implements IStoreClient {
           objName = objName + "/";
         }*/
         LOG.debug("bucket: {}, key {}", mBucket, objName);
+
+        refreshTransferManager();
+
         PutObjectRequest putObjectRequest = new PutObjectRequest(mBucket, objName, im, om);
         Upload upload = transfers.upload(putObjectRequest);
         upload.waitForUploadResult();
@@ -880,6 +926,12 @@ public class COSAPIClient implements IStoreClient {
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
       boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
+
+    if (path.toString().contains("?token=")) {
+      checkCreds(path);
+      path = new Path(Utils.removeToken(path.toString()));
+    }
+
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(hostName, path);
@@ -1268,6 +1320,33 @@ public class COSAPIClient implements IStoreClient {
     transfers.setConfiguration(transferConfiguration);
   }
 
+  private void refreshTransferManager() {
+    int maxThreads = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_THREADS,
+              DEFAULT_MAX_THREADS);
+    if (maxThreads < 2) {
+      LOG.warn(MAX_THREADS + " must be at least 2: forcing to 2.");
+      maxThreads = 2;
+    }
+    int totalTasks = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_TOTAL_TASKS,
+        DEFAULT_MAX_TOTAL_TASKS);
+    long keepAliveTime = Utils.getLong(conf, FS_COS, FS_ALT_KEYS, KEEPALIVE_TIME,
+        DEFAULT_KEEPALIVE_TIME);
+    threadPoolExecutor = BlockingThreadPoolExecutorService.newInstance(
+        maxThreads,
+        maxThreads + totalTasks,
+        keepAliveTime, TimeUnit.SECONDS,
+        "s3a-transfer-shared");
+
+    unboundedThreadPool = new ThreadPoolExecutor(
+        maxThreads, Integer.MAX_VALUE,
+        keepAliveTime, TimeUnit.SECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        BlockingThreadPoolExecutorService.newDaemonThreadFactory(
+            "s3a-transfer-unbounded"));
+
+    initTransferManager();
+  }
+
   private synchronized File createTmpDirForWrite(String pathStr,
       String tmpDirName) throws IOException {
     LOG.trace("tmpDirName is {}", tmpDirName);
@@ -1301,6 +1380,31 @@ public class COSAPIClient implements IStoreClient {
     } catch (AmazonClientException e) {
       throw e;
     }
+  }
+
+  private void checkCreds(Path path) {
+    String token = Utils.extractToken(path);
+    customToken = new CustomTokenManager(token);
+    creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
+
+    clientConf = new ClientConfiguration();
+    credProvider = new AWSStaticCredentialsProvider(creds);
+
+    clientBuilder = AmazonS3ClientBuilder.standard()
+        .withClientConfiguration(clientConf)
+        .withPathStyleAccessEnabled(true)
+        .withCredentials(credProvider);
+
+    if (serviceUrl != null && !serviceUrl.equals(amazonDefaultEndpoint)) {
+      EndpointConfiguration endpointConfiguration = new EndpointConfiguration(serviceUrl,
+          Regions.DEFAULT_REGION.getName());
+      clientBuilder.withEndpointConfiguration(endpointConfiguration);
+
+    } else {
+      clientBuilder.withRegion(Regions.DEFAULT_REGION);
+    }
+    mClient = clientBuilder.build();
+
   }
 
   final class WriteOperationHelper {
