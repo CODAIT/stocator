@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.http.conn.util.InetAddressUtils;
 import org.slf4j.Logger;
@@ -208,7 +209,6 @@ public class Utils {
    * @param required if the key is mandatory
    * @throws ConfigurationParseException if there was no match for the key
    */
-
   public static void updateProperty(Configuration conf, String prefix, String[] altPrefix,
       String key, Properties props, String propsKey,
       boolean required) throws ConfigurationParseException {
@@ -419,6 +419,43 @@ public class Utils {
         LOG.debug("Ignore failure in closing the Closeable", ex);
       }
     }
+  }
+
+  /**
+   * Removes ?token=aabbcc from cos://container.service/object?token=aabbcc
+   *
+   * Also removes ?token=aabbcc from cos://container.service/object?token=aabbcc/_SUCCESS,
+   * cos://container.service/object?token=aabbcc/_temporary/0/_temporary/attempt-0000
+   *
+   * @param path path
+   * @return the path without the IAM token
+   */
+  public static String removeToken(String path) {
+    String objNamePart = path.substring(0,  path.indexOf("?token="));
+    String objNamePartEnd = path.substring(path.indexOf("?token="));
+    if (objNamePartEnd.indexOf("/") >= 0) {
+      objNamePartEnd = objNamePartEnd.substring(objNamePartEnd.indexOf("/"));
+      path = objNamePart + objNamePartEnd;
+      return path;
+    } else {
+      path = path.substring(0, path.indexOf("?token="));
+      return path;
+    }
+  }
+
+  /**
+   *  Extracts aaaa from http://container.service/object?token=aaaa
+   *
+   *  @param path containing the IAM token
+   *  @return the token value
+   */
+  public static String extractToken(Path path) {
+    String token = path.toString();
+    token = token.substring(token.lastIndexOf("?token=") + 7, token.length());
+    if (token.contains("/")) {
+      token = token.substring(0, token.indexOf("/"));
+    }
+    return token;
   }
 
   public static boolean shouldAbort() {

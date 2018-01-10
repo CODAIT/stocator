@@ -275,11 +275,17 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
           LOG.debug("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
-          String pathToDelete = f.toString();
+          String pathToDelete;
+          if (f.toString().contains("?token=")) {
+            f = new Path(Utils.removeToken(f.toString()));
+            pathToDelete = f.toString();
+          } else {
+            pathToDelete = f.toString();
+          }
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
-          LOG.debug("Delete candidate {} ", fs.getPath().toString(), pathToDelete);
+          LOG.debug("Delete candidate {} path {}", fs.getPath().toString(), pathToDelete);
           if (fs.getPath().toString().equals(f.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
             LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
