@@ -1,4 +1,4 @@
- package com.ibm.stocator.fs.commom.unittests;
+package com.ibm.stocator.fs.commom.unittests;
 
 import java.io.IOException;
 import java.net.URI;
@@ -24,7 +24,7 @@ import com.ibm.stocator.fs.common.exception.InvalidContainerNameException;
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(Utils.class)
 public class CommonUtilsTest {
-  
+
   public CommonUtilsTest() throws URISyntaxException {}
 
   private Utils mUtils;
@@ -47,10 +47,10 @@ public class CommonUtilsTest {
       "cos://ab.service",
       "cos://127.0.0.1/bucket",
       "cos://a"};
-  
+
   private static final String[] PATH = {"cos://bucket.service/object?token=aabbcc",
-            "cos://bucket.service/object?token=aabbcc/1234"};
-      
+      "cos://bucket.service/object?token=aabbcc/1234"};
+
   @Before
   public final void before() {
     mUtils = PowerMockito.mock(Utils.class);
@@ -81,7 +81,7 @@ public class CommonUtilsTest {
     Assert.assertEquals("Invalid host name extracted",
         "bucket", host);
   }
-  
+
   @Test
   public void testIAMTokenExtractionPath() throws IOException {
     String token = Utils.extractToken(new Path(PATH[0]));
