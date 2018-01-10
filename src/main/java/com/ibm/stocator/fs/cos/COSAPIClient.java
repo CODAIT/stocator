@@ -387,13 +387,11 @@ public class COSAPIClient implements IStoreClient {
       }
       if (maxTokenRrety != null) {
         LOG.debug("Setting custom maximum token retry value to {}", maxTokenRrety);
-        //SDKGlobalConfiguration.IAM_MAX_RETRY   //commented by PC and nl added
-        //  = Integer.valueOf(maxTokenRrety).intValue(); //commented by PC
+        SDKGlobalConfiguration.IAM_MAX_RETRY = Integer.valueOf(maxTokenRrety).intValue();
       }
       if (tokenRefreshOffset != null) {
         LOG.debug("Setting custom token refresh offset to {}", tokenRefreshOffset);
-        //SDKGlobalConfiguration.IAM_REFRESH_OFFSET    //commented by PC and nl added
-        //  = Integer.valueOf(tokenRefreshOffset).intValue();    //commented by PC
+        SDKGlobalConfiguration.IAM_REFRESH_OFFSET = Integer.valueOf(tokenRefreshOffset).intValue();
       }
       BasicIBMOAuthCredentials creds = null;
       if (apiKey != null) {
@@ -742,7 +740,7 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
 
-    if (path.toString().contains("?token=")) {  //added by PC
+    if (path.toString().contains("?token=")) {
       checkCreds(path);
       path = new Path(Utils.removeToken(path.toString()));
     }
