@@ -82,45 +82,45 @@ public class StocatorPathTest {
     String hostname = "swift2d://a.service/";
 
     String input = "swift2d://a.service/aa/bb/cc/one3.txt/_temporary/0/_temporary/"
-        + "attempt_201610052038_0001_m_000007_15/part-00007";
+                   + "attempt_201610052038_0001_m_000007_15/part-00007";
     String expectedResult = "aa/bb/cc/one3.txt/part-00007";
     String result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname, false);
+                                          new Path(input), false, hostname);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
-            expectedResult, result);
+                        expectedResult, result);
 
     input = "swift2d://a.service/one3.txt/_temporary/0/_temporary/"
-        + "attempt_201610052038_0001_m_000007_15/a/part-00007";
+            + "attempt_201610052038_0001_m_000007_15/a/part-00007";
     expectedResult = "one3.txt/a/part-00007";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname, false);
+                                   new Path(input), false, hostname);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
-            expectedResult, result);
+                        expectedResult, result);
 
     input = "swift2d://a.service/one3.txt/_temporary/0/_temporary/"
-        + "attempt_201610052038_0001_m_000007_15/";
+            + "attempt_201610052038_0001_m_000007_15/";
     expectedResult = "one3.txt";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname, false);
+                                   new Path(input), false, hostname);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
-            expectedResult, result);
+                        expectedResult, result);
 
     input = "swift2d://a.service/one3.txt/_temporary/0/_temporary/"
-        + "attempt_201610052038_0001_m_000007_15";
+            + "attempt_201610052038_0001_m_000007_15";
     expectedResult = "one3.txt";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname, false);
+                                   new Path(input), false, hostname);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
-            expectedResult, result);
+                        expectedResult, result);
 
     input = "swift2d://a.service/one3.txt/_temporary/0/_temporary/"
-        + "attampt_201610052038_0001_m_000007_15";
+            + "attampt_201610052038_0001_m_000007_15";
     expectedResult = "one3.txt/_temporary/0/_temporary/"
-        + "attampt_201610052038_0001_m_000007_15";
+                     + "attampt_201610052038_0001_m_000007_15";
     result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
-        new Path(input), false, hostname, false);
+                                   new Path(input), false, hostname);
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
-            expectedResult, result);
+                        expectedResult, result);
 
   }
 
@@ -145,8 +145,9 @@ public class StocatorPathTest {
         + "_temporary/0/_temporary/attempt_20171115113432_0017_m_000076_0/"
         + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet";
     String expectedResult = "a/aa/abc.parquet/"
-        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet"
-        + "-attempt_20171115113432_0017_m_000076_0";
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8"
+        + "-attempt_20171115113432_0017_m_000076_0"
+        + ".snappy.parquet";
 
     String result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
@@ -158,8 +159,9 @@ public class StocatorPathTest {
         + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet";
     expectedResult = "a/aa/abc.parquet/"
         + "YEAR=2003/"
-        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet"
-        + "-attempt_20171115113432_0017_m_000076_0";
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8"
+        + "-attempt_20171115113432_0017_m_000076_0"
+        + ".snappy.parquet";
 
     result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
@@ -171,8 +173,9 @@ public class StocatorPathTest {
         + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet";
     expectedResult = "a/aa/abc.parquet/"
         + "D_DATE=2003-01-10 00%3A00%3A00/"
-        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8.snappy.parquet"
-        + "-attempt_20171115113432_0017_m_000076_0";
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8"
+        + "-attempt_20171115113432_0017_m_000076_0"
+        + ".snappy.parquet";
 
     result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",

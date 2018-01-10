@@ -761,7 +761,7 @@ public class SwiftAPIClient implements IStoreClient {
    * Accepts any object name.
    * If object name of the form
    * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
+   *    -attempt_20160317132a_wrong_0000_m_000000_1.csv
    * Then a/b/c/gil.data is returned.
    * Code testing that attempt_20160317132a_wrong_0000_m_000000_1 is valid
    * task id identifier
@@ -771,8 +771,9 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private String extractUnifiedObjectName(String objectName) {
     Path p = new Path(objectName);
-    if (objectName.indexOf("-" + HADOOP_ATTEMPT) > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
+    int attemptIndex = objectName.indexOf(HADOOP_ATTEMPT);
+    if (attemptIndex >= 0) {
+      String attempt = objectName.substring(attemptIndex, objectName.lastIndexOf('.'));
       try {
         TaskAttemptID.forName(attempt);
         return p.getParent().toString();
@@ -789,7 +790,7 @@ public class SwiftAPIClient implements IStoreClient {
    * Accepts any object name.
    * If object name is of the form
    * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
+   *    -attempt_20160317132a_wrong_0000_m_000000_1.csv
    * Then a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
    * Perform test that attempt_20160317132a_wrong_0000_m_000000_1 is valid
    * task id identifier
@@ -798,12 +799,12 @@ public class SwiftAPIClient implements IStoreClient {
    * @return unified object name
    */
   private String nameWithoutTaskID(String objectName) {
-    int index = objectName.indexOf("-" + HADOOP_ATTEMPT);
+    int index = objectName.indexOf(HADOOP_ATTEMPT);
     if (index > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
+      String attempt = objectName.substring(index, objectName.lastIndexOf('.'));
       try {
         TaskAttemptID.forName(attempt);
-        return objectName.substring(0, index);
+        return objectName.replace("-" + attempt , "");
       } catch (IllegalArgumentException e) {
         return objectName;
       }
