@@ -551,6 +551,7 @@ public class COSAPIClient implements IStoreClient {
       LOG.warn("file status {} returned {}. Most likely authentication failed",
           key, e.getStatusCode());
       if (e.getStatusCode() != 404) {
+        LOG.warn("Throw IOException for {}", key);
         throw new IOException(e);
       }
     }
