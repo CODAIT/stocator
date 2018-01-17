@@ -183,12 +183,15 @@ public class ObjectStoreGlobber {
       LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
           pathPattern.toString());
       candidates = new ArrayList<>(Arrays.asList(getFileStatus(new Path(pathPattern.toString()))));
-      if (candidates.isEmpty()) {
+      if (candidates == null || candidates.isEmpty()) {
         return new FileStatus[0];
       }
       LOG.debug("About to loop over candidates");
       for (FileStatus candidate : candidates) {
-        LOG.trace("Loop over");
+        if (candidate == null) {
+          throw new FileNotFoundException("Not found " + pathPatternString);
+        }
+        LOG.trace("Loop over {}", candidate);
         if (filter.accept(candidate.getPath())
             && (candidate.getPath().toString().startsWith(pathPattern.toString() + "/")
                 || (candidate.getPath().toString().equals(pathPattern.toString())))) {

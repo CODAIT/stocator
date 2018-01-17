@@ -548,10 +548,10 @@ public class COSAPIClient implements IStoreClient {
     try {
       fileStatus = getFileStatusKeyBased(key, path);
     } catch (AmazonS3Exception e) {
-      LOG.warn("file status {} returned {}. Most likely authentication failed",
+      LOG.warn("file status {} returned {}",
           key, e.getStatusCode());
       if (e.getStatusCode() != 404) {
-        LOG.warn("Throw IOException for {}", key);
+        LOG.warn("Throw IOException for {}. Most likely authentication failed", key);
         throw new IOException(e);
       }
     }
@@ -592,20 +592,20 @@ public class COSAPIClient implements IStoreClient {
 
         ObjectListing objects = mClient.listObjects(request);
         if (!objects.getCommonPrefixes().isEmpty() || !objects.getObjectSummaries().isEmpty()) {
-          LOG.trace("getFileStatus(completed) {}", path);
+          LOG.debug("getFileStatus(completed) {}", path);
           res = new FileStatus(0, true, 1, 0, 0, path);
           memoryCache.putFileStatus(path.toString(), res);
           return res;
         } else if (key.isEmpty()) {
           LOG.trace("Found root directory");
-          LOG.trace("getFileStatus(completed) {}", path);
+          LOG.debug("getFileStatus(completed) {}", path);
           res = new FileStatus(0, true, 1, 0, 0, path);
           memoryCache.putFileStatus(path.toString(), res);
           return res;
         }
       }
     }
-    LOG.debug("Not found {}", path.toString());
+    LOG.debug("Not found {}. Throw FNF exception", path.toString());
     throw new FileNotFoundException("Not found " + path.toString());
   }
 
