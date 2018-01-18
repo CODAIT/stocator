@@ -306,6 +306,7 @@
                           <include>software.amazon.ion:ion-java</include>
                           <include>commons-logging:commons-logging</include>
                           <include>com.google.guava:*</include>
+                          <include>com.google.errorprone:*</include>
                       </includes>
                   </artifactSet>
                    <relocations>
@@ -346,8 +347,8 @@
                            <shadedPattern>com.ibm.oauth.shade</shadedPattern>
                        </relocation>
                        <relocation>
-                            <pattern>com.google.guava</pattern>
-                            <shadedPattern>com.google.guava.shade</shadedPattern>
+                            <pattern>com.google</pattern>
+                            <shadedPattern>com.google.shade</shadedPattern>
                         </relocation>
                    </relocations>
                </configuration>
