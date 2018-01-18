@@ -772,8 +772,9 @@ public class SwiftAPIClient implements IStoreClient {
   private String extractUnifiedObjectName(String objectName) {
     Path p = new Path(objectName);
     int attemptIndex = objectName.indexOf(HADOOP_ATTEMPT);
-    if (attemptIndex >= 0) {
-      String attempt = objectName.substring(attemptIndex, objectName.lastIndexOf('.'));
+    int dotIndex = objectName.lastIndexOf('.');
+    if (attemptIndex >= 0 && dotIndex > attemptIndex) {
+      String attempt = objectName.substring(attemptIndex, dotIndex);
       try {
         TaskAttemptID.forName(attempt);
         return p.getParent().toString();
