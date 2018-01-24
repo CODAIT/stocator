@@ -829,7 +829,8 @@ public class COSAPIClient implements IStoreClient {
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(hostName, path);
-    if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")) {
+    if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")
+        && !path.toString().equals(hostName)) {
       key = key + "/";
       LOG.debug("listNativeDirect modify key to {}", key);
     }
