@@ -490,74 +490,68 @@ public class COSAPIClient implements IStoreClient {
     }
     String key = pathToKey(hostName, path);
     LOG.debug("getFileStatus: on original key {}", key);
+    FileStatus fileStatus = null;
     try {
-      FileStatus fileStatus = null;
+      fileStatus = getFileStatusKeyBased(key, path);
+    } catch (AmazonS3Exception e) {
+      LOG.warn("file status {} returned {}",
+          key, e.getStatusCode());
+      if (e.getStatusCode() != 404) {
+        LOG.warn("Throw IOException for {}. Most likely authentication failed", key);
+        throw new IOException(e);
+      }
+    }
+    if (fileStatus != null) {
+      LOG.trace("getFileStatus(completed) {}", path);
+      memoryCache.putFileStatus(path.toString(), fileStatus);
+      return fileStatus;
+    }
+    // means key returned not found. Trying to call get file status on key/
+    // probably not needed this call
+    if (!key.endsWith("/")) {
+      String newKey = key + "/";
       try {
-        fileStatus = getFileStatusKeyBased(key, path);
+        LOG.debug("getFileStatus: original key not found. Alternative key {}", key);
+        fileStatus = getFileStatusKeyBased(newKey, path);
       } catch (AmazonS3Exception e) {
         if (e.getStatusCode() != 404) {
           throw new IOException(e);
         }
       }
+
       if (fileStatus != null) {
         LOG.trace("getFileStatus(completed) {}", path);
         memoryCache.putFileStatus(path.toString(), fileStatus);
         return fileStatus;
-      }
-      // means key returned not found. Trying to call get file status on key/
-      // probably not needed this call
-      if (!key.endsWith("/")) {
-        String newKey = key + "/";
-        try {
-          LOG.debug("getFileStatus: original key not found. Alternative key {}", key);
-          fileStatus = getFileStatusKeyBased(newKey, path);
-        } catch (AmazonS3Exception e) {
-          if (e.getStatusCode() != 404) {
-            throw new IOException(e);
-          }
-        }
+      } else {
+        // if here: both key and key/ returned not found.
+        // trying to see if pseudo directory of the form
+        // a/b/key/d/e (a/b/key/ doesn't exists by itself)
+        // perform listing on the key
+        LOG.debug("getFileStatus: Modifined key {} not found. Trying to lisr", key);
+        key = maybeAddTrailingSlash(key);
+        ListObjectsRequest request = new ListObjectsRequest();
+        request.setBucketName(mBucket);
+        request.setPrefix(key);
+        request.setDelimiter("/");
+        request.setMaxKeys(1);
 
-        if (fileStatus != null) {
-          LOG.trace("getFileStatus(completed) {}", path);
-          memoryCache.putFileStatus(path.toString(), fileStatus);
-          return fileStatus;
-        } else {
-          // if here: both key and key/ returned not found.
-          // trying to see if pseudo directory of the form
-          // a/b/key/d/e (a/b/key/ doesn't exists by itself)
-          // perform listing on the key
-          LOG.debug("getFileStatus: Modifined key {} not found. Trying to lisr", key);
-          key = maybeAddTrailingSlash(key);
-          ListObjectsRequest request = new ListObjectsRequest();
-          request.setBucketName(mBucket);
-          request.setPrefix(key);
-          request.setDelimiter("/");
-          request.setMaxKeys(1);
-
-          ObjectListing objects = mClient.listObjects(request);
-          if (!objects.getCommonPrefixes().isEmpty() || !objects.getObjectSummaries().isEmpty()) {
-            LOG.trace("getFileStatus(completed) {}", path);
-            res = new FileStatus(0, true, 1, 0, 0, path);
-            memoryCache.putFileStatus(path.toString(), res);
-            return res;
-          } else if (key.isEmpty()) {
-            LOG.trace("Found root directory");
-            LOG.trace("getFileStatus(completed) {}", path);
-            res = new FileStatus(0, true, 1, 0, 0, path);
-            memoryCache.putFileStatus(path.toString(), res);
-            return res;
-          }
+        ObjectListing objects = mClient.listObjects(request);
+        if (!objects.getCommonPrefixes().isEmpty() || !objects.getObjectSummaries().isEmpty()) {
+          LOG.debug("getFileStatus(completed) {}", path);
+          res = new FileStatus(0, true, 1, 0, 0, path);
+          memoryCache.putFileStatus(path.toString(), res);
+          return res;
+        } else if (key.isEmpty()) {
+          LOG.trace("Found root directory");
+          LOG.debug("getFileStatus(completed) {}", path);
+          res = new FileStatus(0, true, 1, 0, 0, path);
+          memoryCache.putFileStatus(path.toString(), res);
+          return res;
         }
       }
-    } catch (AmazonS3Exception e) {
-      if (e.getStatusCode() == 403) {
-        throw new IOException(e);
-      }
-    } catch (Exception e) {
-      LOG.debug("Not found {}", path.toString());
-      LOG.warn(e.getMessage());
-      throw new FileNotFoundException("Not found " + path.toString());
     }
+    LOG.debug("Not found {}. Throw FNF exception", path.toString());
     throw new FileNotFoundException("Not found " + path.toString());
   }
 
