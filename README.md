@@ -251,6 +251,9 @@ Now you can use URI
 | fs.cos.user.agent.prefix| |User agent prefix |
 | fs.cos.flat.list | true | In flat listing the result will include all objects under specific path prefix, for example bucket/a/b/data.txt, bucket/a/d.data. If listed bucket/a*, then result will include both objects. If flat list is set to flase, then it contains the same list behaviour as community s3a connector. |
 | fs.stocator.cache.size | 2000 | The Guava cache size used by the COS connector |
+| fs.cos.multipart.size | 104857600 | Size in bytes. Define multipart size |
+| fs.cos.multipart.threshold | Max Integer | minimum size in bytes before we start a multipart uploads, default is max integer |
+| fs.cos.fast.upload | false | enable or disable block upload |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 
