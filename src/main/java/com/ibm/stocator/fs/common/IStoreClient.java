@@ -191,6 +191,14 @@ public interface IStoreClient {
    */
   public void setStocatorPath(StocatorPath sp);
 
+  /**
+   * @return is flat listing
+   */
   public boolean isFlatListing();
+
+  /**
+   * @param stat Statistics
+   */
+  public void setStatistics(Statistics stat);
 
 }

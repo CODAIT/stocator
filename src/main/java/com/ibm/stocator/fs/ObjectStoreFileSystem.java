@@ -109,6 +109,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       }
       stocatorPath = new StocatorPath(committerType, conf, hostNameScheme);
       storageClient.setStocatorPath(stocatorPath);
+      storageClient.setStatistics(statistics);
     }
   }
 

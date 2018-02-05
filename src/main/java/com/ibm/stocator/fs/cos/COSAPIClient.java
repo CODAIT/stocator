@@ -234,6 +234,7 @@ public class COSAPIClient implements IStoreClient {
   private long readAhead;
   private COSInputPolicy inputPolicy;
   private int cacheSize;
+  private Statistics statistics;
 
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
@@ -661,7 +662,7 @@ public class COSAPIClient implements IStoreClient {
           + " because it is a directory");
     }
     COSInputStream inputStream = new COSInputStream(mBucket, key,
-        fileStatus.getLen(), mClient, readAhead, inputPolicy);
+        fileStatus.getLen(), mClient, readAhead, inputPolicy, statistics);
 
     return new FSDataInputStream(inputStream);
   }
@@ -1523,6 +1524,11 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public boolean isFlatListing() {
     return flatListingFlag;
+  }
+
+  @Override
+  public void setStatistics(Statistics stat) {
+    statistics = stat;
   }
 
 }
