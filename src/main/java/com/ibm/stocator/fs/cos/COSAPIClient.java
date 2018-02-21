@@ -246,7 +246,7 @@ public class COSAPIClient implements IStoreClient {
   private long readAhead;
   private COSInputPolicy inputPolicy;
   private int cacheSize;
-
+  private CustomTokenManager customToken = null;
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
   private StocatorPath stocatorPath;
@@ -263,7 +263,13 @@ public class COSAPIClient implements IStoreClient {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
+    String token = null;
+    if (filesystemURI.getPath().indexOf("?token=") != -1) {
+      token = COSUtils.extractToken(filesystemURI.toString());
+      filesystemURI = URI.create(COSUtils.removeToken(filesystemURI.toString()));
+    }
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
+
     // Set bucket name property
     int cacheSize = conf.getInt(CACHE_SIZE, GUAVA_CACHE_SIZE_DEFAULT);
     memoryCache = MemoryCache.getInstance(cacheSize);
@@ -278,8 +284,10 @@ public class COSAPIClient implements IStoreClient {
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
     String secretKey = props.getProperty(SECRET_KEY_COS_PROPERTY);
     String apiKey = props.getProperty(API_KEY_IAM_PROPERTY);
-    String token = props.getProperty(IAM_TOKEN_PROPERTY);
-
+    // Read configuration value only If token not provided by URI
+    if (token == null) {
+      token = props.getProperty(IAM_TOKEN_PROPERTY);
+    }
     if (apiKey == null && accessKey == null && token == null) {
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
     }
@@ -389,7 +397,7 @@ public class COSAPIClient implements IStoreClient {
         creds = new BasicIBMOAuthCredentials(apiKey, serviceInstanceID);
       } else if (token != null) {
         LOG.debug("Setting custom token");
-        CustomTokenManager customToken = new CustomTokenManager(token);
+        customToken = new CustomTokenManager(token);
         creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
       }
       credProvider = new AWSStaticCredentialsProvider(creds);
@@ -520,6 +528,7 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
+    path = updatePathAndToken(customToken, path);
     FileStatus res = null;
     FileStatus cached = memoryCache.getFileStatus(path.toString());
     if (cached != null) {
@@ -704,6 +713,7 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
+    path = updatePathAndToken(customToken, path);
     LOG.debug("Opening '{}' for reading.", path);
     String key = pathToKey(hostName, path);
     FileStatus fileStatus = memoryCache.getFileStatus(path.toString());
@@ -725,6 +735,10 @@ public class COSAPIClient implements IStoreClient {
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
     try {
+      if (objName.indexOf("?token=") != -1) {
+        customToken.setToken(COSUtils.extractToken(objName));
+        objName = COSUtils.removeToken(objName);
+      }
       String objNameWithoutBuket = objName;
       if (objName.startsWith(mBucket + "/")) {
         objNameWithoutBuket = objName.substring(mBucket.length() + 1);
@@ -834,6 +848,7 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException {
+    path = updatePathAndToken(customToken, path);
     String obj = path.toString();
     if (path.toString().startsWith(hostName)) {
       obj = path.toString().substring(hostName.length());
@@ -870,10 +885,19 @@ public class COSAPIClient implements IStoreClient {
     return workingDir;
   }
 
+  private Path updatePathAndToken(CustomTokenManager customTokenMgr, Path path) {
+    if (customToken != null && path.toString().indexOf("?token=") != -1) {
+      customToken.setToken(COSUtils.extractToken(path.toString()));
+      return new Path(COSUtils.removeToken(path.toString()));
+    }
+    return path;
+  }
+
   @Override
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
       boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
+    path = updatePathAndToken(customToken, path);
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(hostName, path);

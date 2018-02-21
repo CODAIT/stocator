@@ -32,15 +32,19 @@ public class CustomTokenManager implements TokenManager {
   private Token token;
 
   public CustomTokenManager(String userToken) {
-    Token tokenTmp = new Token();
-    tokenTmp.setAccess_token(userToken);
-    tokenTmp.setExpiration(String.valueOf(System.currentTimeMillis() + 60 * 60 * 24 * 1000));
-    token = tokenTmp;
+    setToken(userToken);
   }
 
   @Override
   public String getToken() {
     return token.getAccess_token();
+  }
+
+  public void setToken(String userToken) {
+    Token tokenTmp = new Token();
+    tokenTmp.setAccess_token(userToken);
+    tokenTmp.setExpiration(String.valueOf(System.currentTimeMillis() + 60 * 60 * 24 * 1000));
+    token = tokenTmp;
   }
 
 }
