@@ -148,7 +148,6 @@ class COSBlockOutputStream extends OutputStream {
     if (blockSize < COSConstants.MULTIPART_MIN_SIZE) {
       throw new IllegalArgumentException("Block size is too small: " + blockSize);
     }
-        
     executorService = MoreExecutors.listeningDecorator(executorServiceT);
     multiPartUpload = null;
     // create that first block. This guarantees that an open + close sequence
@@ -294,7 +293,7 @@ class COSBlockOutputStream extends OutputStream {
    */
   private synchronized void uploadCurrentBlock() throws IOException {
     if (!hasActiveBlock()) {
-      throw new IllegalStateException ("No active block");
+      throw new IllegalStateException("No active block");
     }
     LOG.debug("Writing block # {}", blockCount);
     if (multiPartUpload == null) {
