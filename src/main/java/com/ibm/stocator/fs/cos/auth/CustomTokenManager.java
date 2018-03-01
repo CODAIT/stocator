@@ -17,8 +17,8 @@
 
 package com.ibm.stocator.fs.cos.auth;
 
-import com.ibm.oauth.Token;
-import com.ibm.oauth.TokenManager;
+import com.ibm.cloud.objectstorage.oauth.Token;
+import com.ibm.cloud.objectstorage.oauth.TokenManager;
 
 /**
  * <b>Simple example of a custom TokenManager implementation</b>. A User can

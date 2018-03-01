@@ -20,7 +20,7 @@ package com.ibm.stocator.fs.cos.exception;
 
 import java.io.IOException;
 
-import com.amazonaws.AmazonClientException;
+import com.ibm.cloud.objectstorage.AmazonClientException;
 import com.google.common.base.Preconditions;
 
 public class COSClientIOException extends IOException {

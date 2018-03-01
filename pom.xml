@@ -69,15 +69,14 @@
         <httpcomponents.httpclient.version>4.5.4</httpcomponents.httpclient.version>
         <powermock.version>1.7.3</powermock.version>
         <mockito.version>1.10.19</mockito.version>
-         <ibm.sdk.version>1.1.1</ibm.sdk.version>
+        <ibm.sdk.version>2.0.1</ibm.sdk.version>
         <google.guava.version>23.5-jre</google.guava.version>
     </properties>
 
     <dependencies>
         <dependency>
            <groupId>com.ibm.cos</groupId>
-           <artifactId>ibm-cos-java-sdk</artifactId>
-           <type>pom</type>
+           <artifactId>ibm-cos-java-sdk-bundle</artifactId>
            <version>${ibm.sdk.version}</version>
         </dependency>
         <dependency>
@@ -156,11 +155,6 @@
                </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>commons-validator</groupId>
-            <artifactId>commons-validator</artifactId>
-            <version>1.6</version>
-	   </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -292,65 +286,41 @@
               <artifactId>maven-shade-plugin</artifactId>
               <version>3.1.0</version>
               <configuration>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
                 <artifactSet>
                       <includes>
                           <include>com.ibm.cos:*</include>
-                          <include>com.amazonaws:*</include>
                           <include>org.javaswift:*</include>
-                          <include>joda-time:joda-time</include>
-                          <include>com.fasterxml.jackson.core:*</include>
-                          <include>com.fasterxml.jackson.dataformat:jackson-dataformat-cbor</include>
                           <include>org.apache.httpcomponents:*</include>
-                          <include>commons-codec:commons-codec</include>
-                          <include>software.amazon.ion:ion-java</include>
-                          <include>commons-logging:commons-logging</include>
                           <include>com.google.guava:*</include>
                           <include>com.google.errorprone:*</include>
+                          <include>com.googlecode.json-simple:*</include>
                       </includes>
                   </artifactSet>
                    <relocations>
                         <relocation>
+                            <pattern>com.ibm.cloud.objectstorage</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.cos</shadedPattern>
+                        </relocation>
+                        <relocation>
                             <pattern>org.javaswift.joss</pattern>
-                            <shadedPattern>org.javaswift.joss.shade</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.joda</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.joda</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>com.fasterxml.jackson</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.jackson</shadedPattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.joss</shadedPattern>
                         </relocation>
                         <relocation>
                             <pattern>org.apache.http</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.http</shadedPattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.http</shadedPattern>
                         </relocation>
                         <relocation>
-                            <pattern>org.apache.commons.codec</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.codec</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>software.amazon.ion</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.ion</shadedPattern>
-                        </relocation>
-                        <relocation>
-                            <pattern>org.apache.commons.logging</pattern>
-                            <shadedPattern>com.amazonaws.shade.thirdparty.apache.logging</shadedPattern>
-                        </relocation>
-                       <relocation>
-                           <pattern>com.amazonaws</pattern>
-                           <shadedPattern>com.amazonaws.shade</shadedPattern>
-                       </relocation>
-                       <relocation>
-                           <pattern>com.ibm.oauth</pattern>
-                           <shadedPattern>com.ibm.oauth.shade</shadedPattern>
-                       </relocation>
-                       <relocation>
                             <pattern>com.google</pattern>
-                            <shadedPattern>com.google.shade</shadedPattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.google</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.json.simple</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.json</shadedPattern>
                         </relocation>
                    </relocations>
+                   <shadedArtifactAttached>false</shadedArtifactAttached>
+                   <createDependencyReducedPom>true</createDependencyReducedPom>
+                   <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                </configuration>
                <executions>
                    <execution>
@@ -358,6 +328,11 @@
                        <goals>
                            <goal>shade</goal>
                        </goals>
+                       <configuration>
+                           <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                           </transformers>
+                       </configuration>
                    </execution>
                </executions>
            </plugin>
