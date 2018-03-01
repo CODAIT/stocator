@@ -26,10 +26,10 @@ import java.nio.file.AccessDeniedException;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.ibm.cloud.objectstorage.AmazonClientException;
+import com.ibm.cloud.objectstorage.AmazonServiceException;
+import com.ibm.cloud.objectstorage.services.s3.model.AmazonS3Exception;
+import com.ibm.cloud.objectstorage.services.s3.model.S3ObjectSummary;
 import com.ibm.stocator.fs.cos.exception.COSClientIOException;
 import com.ibm.stocator.fs.cos.exception.COSIOException;
 import com.ibm.stocator.fs.cos.exception.COSServiceIOException;
