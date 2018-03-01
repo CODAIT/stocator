@@ -34,6 +34,7 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.fs.CanSetReadahead;
 import org.apache.hadoop.fs.FSExceptionMessages;
 import org.apache.hadoop.fs.FSInputStream;
+import org.apache.hadoop.fs.FileSystem.Statistics;
 
 public class COSInputStream extends FSInputStream implements CanSetReadahead {
   /**
@@ -74,18 +75,21 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
    * The start of the content range of the last request.
    */
   private long contentRangeStart;
+  private Statistics stats;
 
   public COSInputStream(String bucketT, String keyT,
       long contentLengthT,
       AmazonS3 clientT,
       long readahead,
-      COSInputPolicy inputPolicyT) {
+      COSInputPolicy inputPolicyT,
+      Statistics statisticsT) {
     bucket = bucketT;
     key = keyT;
     contentLength = contentLengthT;
     client = clientT;
     uri = bucket + "/" + key;
     inputPolicy = inputPolicyT;
+    stats = statisticsT;
     setReadahead(readahead);
   }
 
@@ -198,6 +202,7 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
         if (skipped > 0) {
           pos += skipped;
           // as these bytes have been read, they are included in the counter
+          incrementBytesRead(diff);
         }
 
         if (pos == targetPos) {
@@ -268,6 +273,7 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
     if (byteRead >= 0) {
       pos++;
       nextReadPos++;
+      incrementBytesRead(1);
     }
 
     return byteRead;
@@ -318,6 +324,7 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
       pos += bytesRead;
       nextReadPos += bytesRead;
     }
+    incrementBytesRead(bytesRead);
     return bytesRead;
   }
 
@@ -636,6 +643,17 @@ public class COSInputStream extends FSInputStream implements CanSetReadahead {
               + ": request length=" + length
               + ", with offset =" + offset
               + "; buffer capacity =" + (buffer.length - offset));
+    }
+  }
+
+  /**
+   * Increment the bytes read counter if there is a stats instance
+   * and the number of bytes read is more than zero.
+   * @param bytesRead number of bytes read
+   */
+  private void incrementBytesRead(long bytesRead) {
+    if (stats != null && bytesRead > 0) {
+      stats.incrementBytesRead(bytesRead);
     }
   }
 

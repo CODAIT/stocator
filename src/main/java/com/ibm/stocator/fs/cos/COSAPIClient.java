@@ -247,6 +247,7 @@ public class COSAPIClient implements IStoreClient {
   private COSInputPolicy inputPolicy;
   private int cacheSize;
   private CustomTokenManager customToken = null;
+  private Statistics statistics;
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
   private StocatorPath stocatorPath;
@@ -725,7 +726,7 @@ public class COSAPIClient implements IStoreClient {
           + " because it is a directory");
     }
     COSInputStream inputStream = new COSInputStream(mBucket, key,
-        fileStatus.getLen(), mClient, readAhead, inputPolicy);
+        fileStatus.getLen(), mClient, readAhead, inputPolicy, statistics);
 
     return new FSDataInputStream(inputStream);
   }
@@ -901,7 +902,8 @@ public class COSAPIClient implements IStoreClient {
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(hostName, path);
-    if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")) {
+    if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")
+        && !path.toString().equals(hostName)) {
       key = key + "/";
       LOG.debug("listNativeDirect modify key to {}", key);
     }
@@ -1600,6 +1602,11 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public boolean isFlatListing() {
     return flatListingFlag;
+  }
+
+  @Override
+  public void setStatistics(Statistics stat) {
+    statistics = stat;
   }
 
 }

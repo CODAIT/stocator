@@ -180,6 +180,7 @@ public class SwiftAPIClient implements IStoreClient {
   private LocalDirAllocator directoryAllocator;
   private String bufferDir = "";
   private boolean nonStreamingUpload;
+  private Statistics statistics;
 
   /**
    * Constructor method
@@ -899,6 +900,11 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public boolean isFlatListing() {
     return false;
+  }
+
+  @Override
+  public void setStatistics(Statistics stat) {
+    statistics = stat;
   }
 
 }

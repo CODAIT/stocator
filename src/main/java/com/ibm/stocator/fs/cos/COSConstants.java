@@ -122,7 +122,7 @@ public class COSConstants {
 
   // size of each of or multipart pieces in bytes
   public static final String MULTIPART_SIZE = ".multipart.size";
-  public static final long DEFAULT_MULTIPART_SIZE = 104857600; // 100 MB
+  public static final long DEFAULT_MULTIPART_SIZE = 8388608; // 8 MB
 
   // minimum size in bytes before we start a multipart uploads or copy
   public static final String MIN_MULTIPART_THRESHOLD = ".multipart.threshold";
