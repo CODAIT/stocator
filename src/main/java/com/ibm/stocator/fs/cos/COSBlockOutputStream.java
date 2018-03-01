@@ -36,7 +36,6 @@ import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.UploadPartRequest;
-import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -146,8 +145,10 @@ class COSBlockOutputStream extends OutputStream {
     blockSize = (int) blockSizeT;
     mMetadata = metadata;
     writeOperationHelper = writeOperationHelperT;
-    Preconditions.checkArgument(blockSize >= COSConstants.MULTIPART_MIN_SIZE,
-        "Block size is too small: %d", blockSize);
+    if (blockSize < COSConstants.MULTIPART_MIN_SIZE) {
+      throw new IllegalArgumentException("Block size is too small: " + blockSize);
+    }
+        
     executorService = MoreExecutors.listeningDecorator(executorServiceT);
     multiPartUpload = null;
     // create that first block. This guarantees that an open + close sequence
@@ -292,7 +293,9 @@ class COSBlockOutputStream extends OutputStream {
    *           upload
    */
   private synchronized void uploadCurrentBlock() throws IOException {
-    Preconditions.checkState(hasActiveBlock(), "No active block");
+    if (!hasActiveBlock()) {
+      throw new IllegalStateException ("No active block");
+    }
     LOG.debug("Writing block # {}", blockCount);
     if (multiPartUpload == null) {
       LOG.debug("Initiating Multipart upload");
