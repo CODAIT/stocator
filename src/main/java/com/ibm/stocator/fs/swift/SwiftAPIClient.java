@@ -907,4 +907,13 @@ public class SwiftAPIClient implements IStoreClient {
     statistics = stat;
   }
 
+  @Override
+  public Path qualify(Path path) {
+    return path;
+  }
+
+  @Override
+  public void setWorkingDirectory(Path newDir) {
+  }
+
 }

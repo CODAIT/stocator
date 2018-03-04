@@ -123,36 +123,43 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   protected void checkPath(Path path) {
-    LOG.debug("Check path: {}. Not implemented", path.toString());
+    LOG.trace("Check path: {}. Not implemented", path.toString());
   }
 
   /**
    * There is no "directories" in the object store
    * The general structure is "dataroot/object"
    * and "object" may contain nested structure
+   *
+   * qualify path if doesn't of the form scheme://bucket
    */
   @Override
   public boolean isDirectory(Path f) throws IOException {
     if (stocatorPath.isTemporaryPathContain(f)) {
       return false;
     }
+    Path path = storageClient.qualify(f);
     try {
-      FileStatus fileStatus = getFileStatus(f);
-      LOG.debug("is directory: {}" + f.toString() + " " + fileStatus.isDirectory());
+      FileStatus fileStatus = getFileStatus(path);
+      LOG.debug("is directory: {}" + path.toString() + " " + fileStatus.isDirectory());
       return fileStatus.isDirectory();
     } catch (FileNotFoundException e) {
       return false;
     }
   }
 
+  /**
+   * qualify path if doesn't of the form scheme://bucket
+   */
   @Override
   public boolean isFile(Path f) throws IOException {
     if (stocatorPath.isTemporaryPathContain(f)) {
       return true;
     }
+    Path path = storageClient.qualify(f);
     try {
-      FileStatus fileStatus = getFileStatus(f);
-      LOG.debug("is file: {}" + f.toString() + " " + fileStatus.isFile());
+      FileStatus fileStatus = getFileStatus(path);
+      LOG.debug("is file: {}" + path.toString() + " " + fileStatus.isFile());
       return fileStatus.isFile();
     } catch (FileNotFoundException e) {
       return false;
@@ -177,12 +184,14 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FSDataInputStream open(Path f) throws IOException {
     LOG.debug("open: {} without buffer size" , f.toString());
-    return storageClient.getObject(hostNameScheme, f);
+    Path path = storageClient.qualify(f);
+    return storageClient.getObject(hostNameScheme, path);
   }
 
   public FSDataInputStream open(Path f, int bufferSize) throws IOException {
     LOG.debug("open: {} with buffer size {}", f.toString(), bufferSize);
-    return storageClient.getObject(hostNameScheme, f);
+    Path path = storageClient.qualify(f);
+    return storageClient.getObject(hostNameScheme, path);
   }
 
   /**
@@ -201,15 +210,16 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       boolean overwrite, int bufferSize,
       short replication, long blockSize, Progressable progress) throws IOException {
     LOG.debug("Create: {}, overwrite is: {}", f.toString(), overwrite);
+    Path path = storageClient.qualify(f);
     String objNameModified = "";
     // check if request is dataroot/objectname/_SUCCESS
-    if (f.getName().equals(Constants.HADOOP_SUCCESS)) {
+    if (path.getName().equals(Constants.HADOOP_SUCCESS)) {
       // no need to add attempt id to the _SUCCESS
-      objNameModified =  stocatorPath.getObjectNameRoot(f, false,
+      objNameModified =  stocatorPath.getObjectNameRoot(path, false,
           storageClient.getDataRoot(), true);
     } else {
       // add attempt id to the final name
-      objNameModified = stocatorPath.getObjectNameRoot(f, true,
+      objNameModified = stocatorPath.getObjectNameRoot(path, true,
           storageClient.getDataRoot(), true);
     }
     FSDataOutputStream outStream = storageClient.createObject(objNameModified,
@@ -219,7 +229,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   public FSDataOutputStream append(Path f, int bufferSize,
       Progressable progress) throws IOException {
-    throw new IOException("Append is not supported in the object store");
+    throw new IOException("Append is not supported in the object storage");
   }
 
   /**
@@ -242,7 +252,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("Source {} does not exists. Exit", src);
       return false;
     }
-    return storageClient.rename(hostNameScheme, src.toString(), dst.toString());
+    Path srcPath = storageClient.qualify(src);
+    Path dstPath = storageClient.qualify(dst);
+    return storageClient.rename(hostNameScheme, srcPath.toString(), dstPath.toString());
   }
 
   @Override
@@ -251,19 +263,28 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (stocatorPath.isTemporaryPathContain(f.toString())) {
       return true;
     }
-    String objNameModified = stocatorPath.getObjectNameRoot(f, true,
-        storageClient.getDataRoot(), true);
-    LOG.debug("delete: {} recursive {}. modifed name {}, hostname {}", f.toString(),
-        recursive, objNameModified, hostNameScheme);
-    boolean result = false;
+    Path path = storageClient.qualify(f);
+    if (path.toString().equals(hostNameScheme)) {
+      LOG.warn("{} {}", path.toString(), "Cannot delete root path");
+      return true;
+    }
+    LOG.trace("Delete: qualify input path {} to {}", f, path);
+    // this will strip temp structure if present and generate real
+    // object name without hadoop_attempt, _temporary, etc.
+    String objNameModified = stocatorPath.getObjectNameRoot(path, true,
+        storageClient.getDataRoot(), false);
+    // create new full path again, this time without hadoop_attempt, _temporary, etc.
+    Path reducedPath = storageClient.qualify(new Path(hostNameScheme, objNameModified));
+    LOG.debug("delete: reduced path {} recursive {}. modifed name {}, hostname {}",
+        reducedPath.toString(), recursive, objNameModified, hostNameScheme);
+
     boolean deleteMainEntry = true;
-    Path pathToObj = new Path(objNameModified);
     if (f.getName().startsWith(HADOOP_ATTEMPT)) {
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj.getParent(), true, true,
+      FileStatus[] fsList = storageClient.list(hostNameScheme, reducedPath.getParent(), true, true,
           null, false, null);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
-          if (fs.getPath().getName().endsWith(f.getName())) {
+          if (fs.getPath().getName().endsWith(path.getName())) {
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
           }
         }
@@ -271,30 +292,31 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     } else {
       LOG.debug("delete: {} is not temporary path and not starts with HADOOP_ATTEMPT",
           f.toString());
-      FileStatus[] fsList = storageClient.list(hostNameScheme, pathToObj, true, true,
+      FileStatus[] fsList = storageClient.list(hostNameScheme, reducedPath, true, true,
           Boolean.TRUE, recursive, null);
       if (fsList.length > 0) {
         for (FileStatus fs: fsList) {
-          LOG.debug("Delete candidate {} path {}", fs.getPath().toString(), f.toString());
-          String pathToDelete = f.toString();
+          LOG.debug("Delete candidate {} reduced path {}", fs.getPath().toString(),
+              reducedPath.toString());
+          String pathToDelete = reducedPath.toString();
           if (!pathToDelete.endsWith("/")) {
             pathToDelete = pathToDelete + "/";
           }
           LOG.debug("Delete candidate {} ", fs.getPath().toString(), pathToDelete);
-          if (fs.getPath().toString().equals(f.toString())
+          if (fs.getPath().toString().equals(path.toString())
               || fs.getPath().toString().startsWith(pathToDelete)) {
-            LOG.debug("Delete {} from the list of {}", fs.getPath(), pathToObj);
+            LOG.debug("Delete {} from the list of {}", fs.getPath(), reducedPath);
             storageClient.delete(hostNameScheme, fs.getPath(), recursive);
-            if (fs.getPath().toString().equals(f.toString())) {
+            if (fs.getPath().toString().equals(path.toString())) {
               deleteMainEntry = false;
             }
           }
         }
       }
     }
-    if (!hostNameScheme.equals(pathToObj.toString()) && deleteMainEntry) {
-      LOG.debug("*** Delete main entry {}", pathToObj);
-      storageClient.delete(hostNameScheme, f, recursive);
+    if (!hostNameScheme.equals(reducedPath.toString()) && deleteMainEntry) {
+      LOG.debug("*** Delete main entry {}", reducedPath);
+      storageClient.delete(hostNameScheme, reducedPath, recursive);
     }
     return true;
   }
@@ -351,17 +373,17 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     }
     LOG.debug("listStatus: {} is not exiists, prefix based listing set to {}. Perform list",
         f.toString(), prefixBased);
-
+    Path path = storageClient.qualify(f);
     if (!storageClient.isFlatListing()) {
       LOG.debug("Using s3a style, non flat list. Requested via configuration flag for {}",
           f);
-      listing =  storageClient.list(hostNameScheme, f, false, prefixBased,
+      listing =  storageClient.list(hostNameScheme, path, false, prefixBased,
           isDirectory, storageClient.isFlatListing(), filter);
     } else {
-      listing = storageClient.list(hostNameScheme, f, false, prefixBased, isDirectory,
+      listing = storageClient.list(hostNameScheme, path, false, prefixBased, isDirectory,
           storageClient.isFlatListing(), filter);
     }
-    LOG.debug("listStatus: {} list completed with {} results", f.toString(),
+    LOG.debug("listStatus: {} list completed with {} results", path.toString(),
         listing.length);
     return listing;
   }
@@ -376,7 +398,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public void setWorkingDirectory(Path new_dir) {
     LOG.debug("set working directory: {}", new_dir.toString());
-
+    storageClient.setWorkingDirectory(new_dir);
   }
 
   /**
@@ -412,7 +434,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   public boolean mkdirs(Path f) throws IOException {
     LOG.debug("mkdirs: {}", f.toString());
     if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
-      String objNameModified = stocatorPath.getObjectNameRoot(f,true,
+      Path path = storageClient.qualify(f);
+      String objNameModified = stocatorPath.getObjectNameRoot(path,true,
           storageClient.getDataRoot(), true);
       Path pathToObj = new Path(objNameModified);
       String plainObjName = pathToObj.getParent().toString();
@@ -429,7 +452,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     LOG.debug("get file status: {}", f.toString());
-    return storageClient.getFileStatus(hostNameScheme, f, "fileStatus");
+    Path path = storageClient.qualify(f);
+    return storageClient.getFileStatus(hostNameScheme, path, "fileStatus");
   }
 
   @Override
@@ -514,5 +538,4 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     }
     return hostNameScheme;
   }
-
 }
