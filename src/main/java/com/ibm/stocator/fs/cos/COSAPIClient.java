@@ -277,7 +277,7 @@ public class COSAPIClient implements IStoreClient {
     mBucket = props.getProperty(COS_BUCKET_PROPERTY);
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
         getWorkingDirectory());
-
+    LOG.trace("Working directory set to {}", workingDir);
     fModeAutomaticDelete =
         "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_COS_PROPERTY, "false"));
     mIsV2Signer = "true".equals(props.getProperty(V2_SIGNER_TYPE_COS_PROPERTY, "false"));
@@ -552,7 +552,7 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("getFileStatus on temp object {}. Return not found", path.toString());
       throw new FileNotFoundException("Not found " + path.toString());
     }
-    String key = pathToKey(hostName, path);
+    String key = pathToKey(path);
     LOG.debug("getFileStatus: on original key {}", key);
     FileStatus fileStatus = null;
     try {
@@ -694,10 +694,7 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public boolean exists(String hostName, Path path) throws IOException, FileNotFoundException {
     LOG.trace("Object exists: {}", path);
-    String objName = path.toString();
-    if (path.toString().startsWith(hostName)) {
-      objName = path.toString().substring(hostName.length());
-    }
+    String objName = pathToKey(path);
     if (objName.contains(HADOOP_TEMPORARY)) {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
@@ -716,7 +713,7 @@ public class COSAPIClient implements IStoreClient {
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
     path = updatePathAndToken(customToken, path);
     LOG.debug("Opening '{}' for reading.", path);
-    String key = pathToKey(hostName, path);
+    String key = pathToKey(path);
     FileStatus fileStatus = memoryCache.getFileStatus(path.toString());
     if (fileStatus == null) {
       fileStatus = getFileStatus(hostName, path, "getObject");
@@ -735,6 +732,7 @@ public class COSAPIClient implements IStoreClient {
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
+    LOG.debug("Create object {}", objName);
     try {
       if (objName.indexOf("?token=") != -1) {
         customToken.setToken(COSUtils.extractToken(objName));
@@ -850,13 +848,10 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException {
     path = updatePathAndToken(customToken, path);
-    String obj = path.toString();
-    if (path.toString().startsWith(hostName)) {
-      obj = path.toString().substring(hostName.length());
-    }
-    LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
+    String key = pathToKey(path);
+    LOG.debug("Object name to delete {}. Path {}", key, path.toString());
     try {
-      mClient.deleteObject(new DeleteObjectRequest(mBucket, obj));
+      mClient.deleteObject(new DeleteObjectRequest(mBucket, key));
       memoryCache.removeFileStatus(path.toString());
       return true;
     } catch (AmazonServiceException e) {
@@ -878,6 +873,7 @@ public class COSAPIClient implements IStoreClient {
    *
    * @param newDir new directory
    */
+  @Override
   public void setWorkingDirectory(Path newDir) {
     workingDir = newDir;
   }
@@ -901,7 +897,7 @@ public class COSAPIClient implements IStoreClient {
     path = updatePathAndToken(customToken, path);
     LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    String key = pathToKey(hostName, path);
+    String key = pathToKey(path);
     if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")
         && !path.toString().equals(hostName)) {
       key = key + "/";
@@ -1052,16 +1048,12 @@ public class COSAPIClient implements IStoreClient {
   /**
    * Turns a path (relative or otherwise) into an COS key
    *
-   * @host hostName host of the object
    * @param path object full path
    */
-  private String pathToKey(String hostName, Path path) {
+
+  private String pathToKey(Path path) {
     if (!path.isAbsolute()) {
-      String pathStr = path.toUri().getPath();
-      if (pathStr.startsWith(mBucket) && !pathStr.equals(mBucket)) {
-        path = new Path(pathStr.substring(mBucket.length() + 1));
-      }
-      path = new Path(hostName, path);
+      path = new Path(workingDir, path);
     }
 
     if (path.toUri().getScheme() != null && path.toUri().getPath().isEmpty()) {
@@ -1609,4 +1601,19 @@ public class COSAPIClient implements IStoreClient {
     statistics = stat;
   }
 
+  /**
+   * Qualify a path
+   * @param path path to qualify
+   * @return a qualified path
+   */
+
+  public Path qualify(Path path) {
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("Working directory {}", workingDir);
+      Path p = path.makeQualified(filesystemURI, workingDir);
+      LOG.trace("Qualify path from {} to {}", path, p);
+      return p;
+    }
+    return path.makeQualified(filesystemURI, workingDir);
+  }
 }

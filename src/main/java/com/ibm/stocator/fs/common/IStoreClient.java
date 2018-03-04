@@ -160,6 +160,11 @@ public interface IStoreClient {
   public Path getWorkingDirectory();
 
   /**
+   * @param newDir new working directory
+   */
+  public void setWorkingDirectory(Path newDir);
+
+  /**
    * Return authenticated access URI
    * @return access URI
    * @throws IOException if something went wrong
@@ -200,5 +205,11 @@ public interface IStoreClient {
    * @param stat Statistics
    */
   public void setStatistics(Statistics stat);
+
+  /**
+   * @param path input path to qualify
+   * @return qualified path
+   */
+  public Path qualify(Path path);
 
 }

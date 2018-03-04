@@ -284,7 +284,10 @@ public class StocatorPath {
       boolean addTaskIdCompositeName, String hostNameScheme) throws IOException {
     String boundary = HADOOP_TEMPORARY;
     String path = fullPath.toString();
-    String noPrefix = path.substring(hostNameScheme.length());
+    String noPrefix = path;
+    if (path.startsWith(hostNameScheme)) {
+      noPrefix = path.substring(hostNameScheme.length());
+    }
     int npIdx = noPrefix.indexOf(boundary);
     String objectName = "";
     if (npIdx >= 0) {
