@@ -249,12 +249,8 @@ public class COSAPIClient implements IStoreClient {
   private int cacheSize;
   private CustomTokenManager customToken = null;
   private Statistics statistics;
-<<<<<<< HEAD
-=======
   private String bufferDirectory;
   private String bufferDirectoryKey;
-
->>>>>>> origin/master
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
   private StocatorPath stocatorPath;
