@@ -43,22 +43,12 @@ import org.slf4j.LoggerFactory;
  * time stamp, and finally a uuid number.
  */
 public class COSLocalDirAllocator extends LocalDirAllocator {
-  private static final Logger LOG = LoggerFactory.getLogger(COSAPIClient.class);
-  private Configuration conf;
+  private static final Logger LOG = LoggerFactory.getLogger(COSLocalDirAllocator.class);
   public static final int SIZE_UNKNOWN = -1;
 
-  public COSLocalDirAllocator(Configuration pConf, String bufferDir) {
+  public COSLocalDirAllocator(String bufferDir) {
     super(bufferDir);
-    conf = pConf;
-  }
-
-  private synchronized File createTmpDirForWrite(String tmpDirName) throws IOException {
-    LOG.trace("tmpDirName is {}", tmpDirName);
-    File tmpDir = new File(tmpDirName);
-    if (!tmpDir.exists()) {
-      tmpDir.mkdir();
-    }
-    return tmpDir;
+    LOG.trace("Buffer directory key set to {}", bufferDir);
   }
 
   public File createTmpFileForWrite(String pathStr, long size,

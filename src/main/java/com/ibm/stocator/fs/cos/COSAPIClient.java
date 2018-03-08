@@ -176,6 +176,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_MAX_RETRY_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_REFRESH_OFFSET_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 
@@ -248,6 +249,12 @@ public class COSAPIClient implements IStoreClient {
   private int cacheSize;
   private CustomTokenManager customToken = null;
   private Statistics statistics;
+<<<<<<< HEAD
+=======
+  private String bufferDirectory;
+  private String bufferDirectoryKey;
+
+>>>>>>> origin/master
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
   private StocatorPath stocatorPath;
@@ -427,7 +434,13 @@ public class COSAPIClient implements IStoreClient {
     // Set block size property
     String mBlockSizeString = props.getProperty(BLOCK_SIZE_COS_PROPERTY, "128");
     mBlockSize = Long.valueOf(mBlockSizeString).longValue() * 1024 * 1024L;
+    bufferDirectory = Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS,
+        BUFFER_DIR);
+    bufferDirectoryKey = Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS,
+        BUFFER_DIR);
 
+    LOG.trace("Buffer directory is set to {} for the key {}", bufferDirectory,
+        bufferDirectoryKey);
     boolean autoCreateBucket =
         "true".equalsIgnoreCase((props.getProperty(AUTO_BUCKET_CREATE_COS_PROPERTY, "false")));
 
@@ -1280,22 +1293,16 @@ public class COSAPIClient implements IStoreClient {
     transfers.setConfiguration(transferConfiguration);
   }
 
-  private synchronized File createTmpDirForWrite(String pathStr,
-      String tmpDirName) throws IOException {
-    LOG.trace("tmpDirName is {}", tmpDirName);
+  public synchronized File createTmpFileForWrite(String pathStr) throws IOException {
+    LOG.trace("createTmpFileForWrite {}", pathStr);
     if (directoryAllocator == null) {
-      String bufferDir = "hadoop.tmp.dir";
-      LOG.trace("Local buffer directorykey is {}", bufferDir);
-      directoryAllocator = new COSLocalDirAllocator(conf, bufferDir);
+      String bufferDirKey = bufferDirectory != null
+          ? bufferDirectoryKey : "hadoop.tmp.dir";
+      LOG.trace("Local buffer directorykey is {}", bufferDirKey);
+      directoryAllocator = new COSLocalDirAllocator(bufferDirKey);
     }
     return directoryAllocator.createTmpFileForWrite(pathStr,
       COSLocalDirAllocator.SIZE_UNKNOWN, conf);
-  }
-
-  File createTmpFileForWrite(String pathStr) throws IOException {
-    String tmpDirName = conf.get("hadoop.tmp.dir") + "/stocator";
-    File tmpDir = createTmpDirForWrite(pathStr, tmpDirName);
-    return tmpDir;
   }
 
   /**

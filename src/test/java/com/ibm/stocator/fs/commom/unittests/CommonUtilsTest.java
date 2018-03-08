@@ -23,13 +23,20 @@ import java.net.URISyntaxException;
 
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Rule;
 
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.InvalidContainerNameException;
 
+import static com.ibm.stocator.fs.cos.COSConstants.FS_S3_A;
+import static com.ibm.stocator.fs.cos.COSConstants.FS_S3_D;
+import static com.ibm.stocator.fs.cos.COSConstants.FS_COS;
+
 public class CommonUtilsTest {
+
+  private static final String[] FS_ALT_KEYS = new String[]{FS_S3_D, FS_S3_A};
 
   private static final String[] HOST_LIST_VALID = {
       "cos://abc.service/a/b",
@@ -88,6 +95,62 @@ public class CommonUtilsTest {
     } catch (URISyntaxException e) {
       Assert.fail();
     }
+  }
+
+  @Test
+  public void testAlternativeKeys() {
+    Configuration conf = new Configuration(false);
+    conf.set("fs.cos.key1", "value1");
+    conf.set("fs.s3a.key2", "value2");
+    conf.set("fs.s3d.key3", "value3");
+    conf.set("fs.cos.key4", "value4");
+    conf.set("fs.s3a.key4", "value41");
+    conf.set("fs.cos.key5", "value5");
+    conf.set("fs.s3d.key5", "value51");
+    conf.set("fs.s3d.key6", "value6");
+    conf.set("fs.s3a.key6", "value61");
+
+    conf.set("fs.cos.key1i", "1");
+    conf.set("fs.s3a.key2i", "2");
+    conf.set("fs.s3d.key3i", "3");
+    conf.set("fs.cos.key4i", "4");
+    conf.set("fs.s3a.key4i", "41");
+    conf.set("fs.cos.key5i", "5");
+    conf.set("fs.s3d.key5i", "51");
+    conf.set("fs.s3d.key6i", "6");
+    conf.set("fs.s3a.key6i", "61");
+
+    Assert.assertEquals("fs.cos.key1", Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS, ".key1"));
+    Assert.assertEquals("fs.s3a.key2", Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS, ".key2"));
+    Assert.assertEquals("fs.s3d.key3", Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS, ".key3"));
+    Assert.assertEquals("fs.cos.key4", Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS, ".key4"));
+    Assert.assertEquals("fs.cos.key5", Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS, ".key5"));
+    Assert.assertEquals("fs.s3d.key6", Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS, ".key6"));
+    Assert.assertNull(Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS, ".key7"));
+
+    Assert.assertEquals("value1", Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, ".key1"));
+    Assert.assertEquals("value2", Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, ".key2"));
+    Assert.assertEquals("value3", Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, ".key3"));
+    Assert.assertEquals("value4", Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, ".key4"));
+    Assert.assertEquals("value5", Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, ".key5"));
+    Assert.assertEquals("value6", Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, ".key6"));
+    Assert.assertNull(Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS, ".key7"));
+
+    Assert.assertEquals(1, Utils.getInt(conf, FS_COS, FS_ALT_KEYS, ".key1i", -1));
+    Assert.assertEquals(2, Utils.getInt(conf, FS_COS, FS_ALT_KEYS, ".key2i", -1));
+    Assert.assertEquals(3, Utils.getInt(conf, FS_COS, FS_ALT_KEYS, ".key3i", -1));
+    Assert.assertEquals(4, Utils.getInt(conf, FS_COS, FS_ALT_KEYS, ".key4i", -1));
+    Assert.assertEquals(5, Utils.getInt(conf, FS_COS, FS_ALT_KEYS, ".key5i", -1));
+    Assert.assertEquals(6, Utils.getInt(conf, FS_COS, FS_ALT_KEYS, ".key6i", -1));
+    Assert.assertEquals(-1, Utils.getInt(conf, FS_COS, FS_ALT_KEYS, ".key67i", -1));
+
+    Assert.assertEquals(1, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key1i", -1));
+    Assert.assertEquals(2, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key2i", -1));
+    Assert.assertEquals(3, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key3i", -1));
+    Assert.assertEquals(4, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key4i", -1));
+    Assert.assertEquals(5, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key5i", -1));
+    Assert.assertEquals(6, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key6i", -1));
+    Assert.assertEquals(-1, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key67i", -1));
   }
 
 }
