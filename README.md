@@ -1,4 +1,4 @@
-Stocator - Storage Connector for Apache Spark
+Stocator - Storage Connector for Apache Spark 
 ==============================
 Apache Spark can work with multiple data sources that include various object stores like IBM Cloud Object Storage, OpenStack Swift and more. To access an object store, Apache Spark uses Hadoop modules that contain connectors to the various object stores. 
 
