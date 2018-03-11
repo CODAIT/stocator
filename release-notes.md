@@ -1,6 +1,24 @@
 ## Release notes
 
+### Version 1.0.15
+1. [cos] Fixing BUFFER_DIR to provide input for the temp files folders
+2. [swift, cos] Introducing object store flat globber
+
+### Version 1.0.14
+
+1. [swift] Improvements for the connections (when data is ready and not on create)
+2. Updates of the dependencies
+3. [cos] Improve exceptions when IAM credentials are not valid
+4. [cos] Fixing list on the root level
+5. [cos] Usage of Statistics class to report metrics of bytes read or write
+6. [cos] Remove preconditions check to avoid issues with dependencies
+
+### Version 1.0.13
+
+1. Using sha-256 for temp files. This prevents issues with long names
+
 ### Version 1.0.12
+
 1. Fixing Null Pointer Exception when runnign with output comitter version 1
 2. [cos] New configuration key to define Guava cache size
 3. [cos] Fixing content type for block uploads
