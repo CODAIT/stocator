@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
@@ -140,6 +142,21 @@ public class ObjectStoreGlobber {
     return path;
   }
 
+  public int getSpecialCharacter(String s) {
+    if (s == null || s.trim().isEmpty()) {
+      LOG.warn("Incorrect format of string {}", s);
+      return 0;
+    }
+    Pattern p = Pattern.compile("[^A-Za-z0-9//:. ]");
+    Matcher m = p.matcher(s);
+    boolean b = m.find();
+    if (b == true) {
+      LOG.trace("There is a special character in my string {} at position {}", s, m.start());
+      return m.start();
+    }
+    return 0;
+  }
+
   public FileStatus[] glob() throws IOException {
     // First we get the scheme and authority of the pattern that was passed
     // in.
@@ -149,7 +166,8 @@ public class ObjectStoreGlobber {
 
     String pathPatternString = pathPattern.toUri().getPath();
     String unescapePathString = unescapePathComponent(pathPatternString);
-    String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
+    int firstSpecialChar = getSpecialCharacter(unescapePathString);
+    String noWildCardPathPrefix = unescapePathString.substring(0, firstSpecialChar);
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ArrayList<FileStatus> candidates;
@@ -157,9 +175,9 @@ public class ObjectStoreGlobber {
     if (!prefix.endsWith("/")) {
       prefix = prefix + "/";
     }
-    // remove ?token from globFilter
-    ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(
-          COSUtils.removeToken(pathPattern.toString()), COSUtils.removeToken(prefix));
+    ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(
+        COSUtils.removeToken(pathPattern.toString()),
+        COSUtils.removeToken(prefix), firstSpecialChar);
 
     if (pathPatternString.contains("?temp_url")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};
