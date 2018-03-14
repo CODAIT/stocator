@@ -241,7 +241,7 @@ public class StocatorPath {
       noPrefix = path.substring(hostNameScheme.length());
     }
     int npIdx = noPrefix.indexOf(HADOOP_TEMPORARY);
-    String objectName = "";
+    String objectName;
     if (npIdx >= 0) {
       if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
         //no object name present
@@ -269,9 +269,10 @@ public class StocatorPath {
           if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
             // We want to prepend the attempt before the extension
             String extension = extractExtension(objName);
-            objName = objName.replace("." + extension, "")
-                      + "-" + taskAttempt
-                      + "." + extension;
+            objName = objName.replace("." + extension, "") + "-" + taskAttempt;
+            if (!extension.equals("")) {
+              objName += "." + extension;
+            }
           }
           objectName = objectName + "/" + objName;
         }

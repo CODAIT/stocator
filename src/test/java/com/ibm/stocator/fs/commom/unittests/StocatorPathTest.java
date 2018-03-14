@@ -122,6 +122,14 @@ public class StocatorPathTest {
     Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
                         expectedResult, result);
 
+    input = "swift2d://a.service/one3/_temporary/0/_temporary/"
+            + "attampt_201610052038_0001_m_000007_15";
+    expectedResult = "one3/_temporary/0/_temporary/"
+                     + "attampt_201610052038_0001_m_000007_15";
+    result = Whitebox.invokeMethod(mStocatorPath, "extractNameFromTempPath",
+                                   new Path(input), false, hostname);
+    Assert.assertEquals("extractObectNameFromTempPath() shows incorrect name",
+                        expectedResult, result);
   }
 
   @Test
@@ -180,6 +188,19 @@ public class StocatorPathTest {
     result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
     Assert.assertEquals("getObjectNameRoot() shows incorrect name",
             expectedResult, result);
+
+    input = "swift2d://a.service/aa/abc.parquet/"
+        + "_temporary/0/_temporary/attempt_20171115113432_0017_m_000076_0/"
+        + "D_DATE=2003-01-10 00%3A00%3A00/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8";
+    expectedResult = "a/aa/abc.parquet/"
+        + "D_DATE=2003-01-10 00%3A00%3A00/"
+        + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8"
+        + "-attempt_20171115113432_0017_m_000076_0";
+
+    result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
+    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+                        expectedResult, result);
 
   }
 
