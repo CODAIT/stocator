@@ -147,7 +147,7 @@ public class ObjectStoreGlobber {
       LOG.warn("Incorrect format of string {}", s);
       return 0;
     }
-    Pattern p = Pattern.compile("[^A-Za-z0-9//:. ]");
+    Pattern p = Pattern.compile("[^A-Za-z0-9//:.+ ]");
     Matcher m = p.matcher(s);
     boolean b = m.find();
     if (b == true) {
