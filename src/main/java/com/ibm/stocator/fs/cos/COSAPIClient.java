@@ -867,8 +867,10 @@ public class COSAPIClient implements IStoreClient {
       for (S3ObjectSummary obj : objectSummaries) {
         if (prevObj == null) {
           prevObj = obj;
+          prevObj.setKey(correctPlusSign(key, prevObj.getKey()));
           continue;
         }
+        obj.setKey(correctPlusSign(key, obj.getKey()));
         String objKey = obj.getKey();
         String unifiedObjectName = extractUnifiedObjectName(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
@@ -1540,5 +1542,41 @@ public class COSAPIClient implements IStoreClient {
       return p;
     }
     return path.makeQualified(filesystemURI, workingDir);
+  }
+
+  /**
+   * Due to SDK bug, list operations may return strings that has spaces instead of +
+   * This method will try to fix names for known patterns
+   *
+   * @param origin original string that may contain
+   * @param stringToCorrect string that may contain original string with spaces instead of +
+   * @return corrected string
+   */
+  private String correctPlusSign(String origin, String stringToCorrect) {
+    if (origin.contains("+")) {
+      LOG.debug("Adapt plus sign in {} to avoid SDK bug on {}", origin, stringToCorrect);
+      StringBuilder tmpStringToCorrect = new StringBuilder(stringToCorrect);
+      boolean hasSign = true;
+      int fromIndex = 0;
+      while (hasSign) {
+        int plusLocation = origin.indexOf("+", fromIndex);
+        if (plusLocation < 0) {
+          hasSign = false;
+          break;
+        }
+        if (tmpStringToCorrect.charAt(plusLocation) == ' ') {
+          tmpStringToCorrect.setCharAt(plusLocation, '+');
+        }
+        if (origin.length() <= plusLocation + 1) {
+          fromIndex = plusLocation + 1;
+        } else {
+          fromIndex = origin.length();
+        }
+      }
+      LOG.debug("Adapt plus sign {} corrected to {}", stringToCorrect,
+          tmpStringToCorrect.toString());
+      return tmpStringToCorrect.toString();
+    }
+    return stringToCorrect;
   }
 }
