@@ -341,10 +341,10 @@ public class COSAPIClient implements IStoreClient {
       clientConf.setProxyWorkstation(Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS,
           PROXY_WORKSTATION));
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Using proxy server {}:{} as user {} with password {} on "
+        LOG.debug("Using proxy server {}:{} as user {} on "
             + "domain {} as workstation {}", clientConf.getProxyHost(),
               clientConf.getProxyPort(), String.valueOf(clientConf.getProxyUsername()),
-              clientConf.getProxyPassword(), clientConf.getProxyDomain(),
+              clientConf.getProxyDomain(),
               clientConf.getProxyWorkstation());
       }
     } else if (proxyPort >= 0) {
