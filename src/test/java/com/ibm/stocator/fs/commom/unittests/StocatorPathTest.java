@@ -180,4 +180,15 @@ public class StocatorPathTest {
 
   }
 
+  @Test
+  public void getBaseDirectoryTest() throws Exception {
+    String input = "swift2d://a.service/b.txt/_temporary/0";
+    String expected = "swift2d://a.service/b.txt";
+    String res = stocPath.getBaseDirectory(input);
+    Assert.assertEquals("Not match", expected, res);
+    input = "swift2d://a.service/m/n/b.txt/_temporary/0";
+    expected = "swift2d://a.service/m/n/b.txt";
+    res = stocPath.getBaseDirectory(input);
+    Assert.assertEquals("Not match", expected, res);
+  }
 }

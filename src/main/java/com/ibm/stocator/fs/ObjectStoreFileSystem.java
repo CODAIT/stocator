@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileAlreadyExistsException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
@@ -431,13 +432,27 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    *
    */
   @Override
-  public boolean mkdirs(Path f) throws IOException {
+  public boolean mkdirs(Path f) throws IOException, FileAlreadyExistsException {
     LOG.debug("mkdirs: {}", f.toString());
     if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
       Path path = storageClient.qualify(f);
       String objNameModified = stocatorPath.getObjectNameRoot(path,true,
           storageClient.getDataRoot(), true);
       Path pathToObj = new Path(objNameModified);
+      LOG.trace("mkdirs {} modified name", objNameModified);
+      // make sure there is no overwrite of existing data
+      try {
+        String directoryToExpect = stocatorPath.getBaseDirectory(f.toString());
+        FileStatus fileStatus = getFileStatus(new Path(directoryToExpect));
+        if (fileStatus != null) {
+          LOG.debug("mkdirs found {} as exists. Directory : {}", directoryToExpect,
+              fileStatus.isDirectory());
+          throw new FileAlreadyExistsException("mkdir on existing directory " + directoryToExpect);
+        }
+      } catch (FileNotFoundException e) {
+        LOG.debug("mkdirs {} - not exists. Proceed", pathToObj.getParent().toString());
+      }
+
       String plainObjName = pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
       Map<String, String> metadata = new HashMap<String, String>();
