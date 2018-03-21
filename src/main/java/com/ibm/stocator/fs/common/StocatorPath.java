@@ -359,4 +359,24 @@ public class StocatorPath {
     return false;
   }
 
+  /**
+   * Transform scheme://hostname/a/b/_temporary/0 into scheme://hostname/a/b/
+   *
+   * @param path input directory with temp prefix
+   * @return modified directory
+   */
+  public String getBaseDirectory(String path) {
+    if (path != null) {
+      int finishIndex = path.indexOf(HADOOP_TEMPORARY);
+      if (finishIndex > 0) {
+        String newPath = path.substring(0, finishIndex);
+        if (newPath.endsWith("/")) {
+          return newPath.substring(0, newPath.length() - 1);
+        }
+        return newPath;
+      }
+    }
+    return path;
+  }
+
 }
