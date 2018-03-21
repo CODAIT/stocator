@@ -3,6 +3,7 @@
 ### Version 1.0.15
 1. [cos] Fixing BUFFER_DIR to provide input for the temp files folders
 2. [swift, cos] Introducing object store flat globber
+3. [cos] partial to support + in object names
 
 ### Version 1.0.14
 
