@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
 
-import com.ibm.stocator.fs.cache.CachedObject;
 import com.ibm.stocator.fs.cache.MemoryCache;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -90,10 +89,13 @@ import org.apache.hadoop.fs.InvalidRequestException;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.CACHE_SIZE;
+import static com.ibm.stocator.fs.common.Constants.GUAVA_CACHE_SIZE_DEFAULT;
 import static com.ibm.stocator.fs.cos.COSConstants.CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_CLIENT_EXEC_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_ESTABLISH_TIMEOUT;
@@ -162,9 +164,9 @@ import static com.ibm.stocator.fs.cos.COSConstants.READAHEAD_RANGE;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_READAHEAD_RANGE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
+import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
-import static com.ibm.stocator.fs.cos.Listing.ACCEPT_ALL;
 
 public class COSAPIClient implements IStoreClient {
 
@@ -222,7 +224,6 @@ public class COSAPIClient implements IStoreClient {
   private COSLocalDirAllocator directoryAllocator;
   private Path workingDir;
   private OnetimeInitialization singletoneInitTimeData;
-  private Listing listing;
   private boolean enableMultiObjectsDelete;
   private boolean blockUploadEnabled;
   private String blockOutputBuffer;
@@ -233,6 +234,10 @@ public class COSAPIClient implements IStoreClient {
   private boolean flatListingFlag;
   private long readAhead;
   private COSInputPolicy inputPolicy;
+  private int cacheSize;
+  private Statistics statistics;
+  private String bufferDirectory;
+  private String bufferDirectoryKey;
 
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
@@ -249,14 +254,15 @@ public class COSAPIClient implements IStoreClient {
   public void initiate(String scheme) throws IOException, ConfigurationParseException {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
-    memoryCache = MemoryCache.getInstance();
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
+    int cacheSize = conf.getInt(CACHE_SIZE, GUAVA_CACHE_SIZE_DEFAULT);
+    memoryCache = MemoryCache.getInstance(cacheSize);
     mBucket = props.getProperty(COS_BUCKET_PROPERTY);
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
         getWorkingDirectory());
-
+    LOG.trace("Working directory set to {}", workingDir);
     fModeAutomaticDelete =
         "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_COS_PROPERTY, "false"));
     mIsV2Signer = "true".equals(props.getProperty(V2_SIGNER_TYPE_COS_PROPERTY, "false"));
@@ -362,7 +368,13 @@ public class COSAPIClient implements IStoreClient {
     // Set block size property
     String mBlockSizeString = props.getProperty(BLOCK_SIZE_COS_PROPERTY, "128");
     mBlockSize = Long.valueOf(mBlockSizeString).longValue() * 1024 * 1024L;
+    bufferDirectory = Utils.getTrimmed(conf, FS_COS, FS_ALT_KEYS,
+        BUFFER_DIR);
+    bufferDirectoryKey = Utils.getConfigKey(conf, FS_COS, FS_ALT_KEYS,
+        BUFFER_DIR);
 
+    LOG.trace("Buffer directory is set to {} for the key {}", bufferDirectory,
+        bufferDirectoryKey);
     boolean autoCreateBucket =
         "true".equalsIgnoreCase((props.getProperty(AUTO_BUCKET_CREATE_COS_PROPERTY, "false")));
 
@@ -380,7 +392,6 @@ public class COSAPIClient implements IStoreClient {
     maxKeys = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
     flatListingFlag = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS, FLAT_LISTING,
         DEFAULT_FLAT_LISTING);
-    listing = new Listing(this);
 
     if (autoCreateBucket) {
       try {
@@ -465,6 +476,11 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
+    FileStatus res = null;
+    FileStatus cached = memoryCache.getFileStatus(path.toString());
+    if (cached != null) {
+      return cached;
+    }
     LOG.trace("getFileStatus(start) for {}, hostname: {}", path, hostName);
     /*
      * The requested path is equal to hostName. HostName is equal to
@@ -474,91 +490,103 @@ public class COSAPIClient implements IStoreClient {
      */
     if (path.toString().equals(hostName) || (path.toString().length() + 1 == hostName.length())) {
       LOG.trace("getFileStatus(completed) {}", path);
-      return new FileStatus(0L, true, 1, mBlockSize, 0L, path);
+      res = new FileStatus(0L, true, 1, mBlockSize, 0L, path);
+      memoryCache.putFileStatus(path.toString(), res);
+      return res;
     }
     if (path.toString().contains(HADOOP_TEMPORARY)) {
       LOG.debug("getFileStatus on temp object {}. Return not found", path.toString());
       throw new FileNotFoundException("Not found " + path.toString());
     }
-    String key = pathToKey(hostName, path);
+    String key = pathToKey(path);
     LOG.debug("getFileStatus: on original key {}", key);
+    FileStatus fileStatus = null;
     try {
-      FileStatus fileStatus = null;
+      fileStatus = getFileStatusKeyBased(key, path);
+    } catch (AmazonS3Exception e) {
+      LOG.warn("file status {} returned {}",
+          key, e.getStatusCode());
+      if (e.getStatusCode() != 404) {
+        LOG.warn("Throw IOException for {}. Most likely authentication failed", key);
+        throw new IOException(e);
+      }
+    }
+    if (fileStatus != null) {
+      LOG.trace("getFileStatus(completed) {}", path);
+      memoryCache.putFileStatus(path.toString(), fileStatus);
+      return fileStatus;
+    }
+    // means key returned not found. Trying to call get file status on key/
+    // probably not needed this call
+    if (!key.endsWith("/")) {
+      String newKey = key + "/";
       try {
-        fileStatus = getFileStatusKeyBased(key, path);
+        LOG.debug("getFileStatus: original key not found. Alternative key {}", key);
+        fileStatus = getFileStatusKeyBased(newKey, path);
       } catch (AmazonS3Exception e) {
         if (e.getStatusCode() != 404) {
           throw new IOException(e);
         }
       }
+
       if (fileStatus != null) {
         LOG.trace("getFileStatus(completed) {}", path);
+        memoryCache.putFileStatus(path.toString(), fileStatus);
         return fileStatus;
-      }
-      // means key returned not found. Trying to call get file status on key/
-      // probably not needed this call
-      if (!key.endsWith("/")) {
-        String newKey = key + "/";
-        try {
-          LOG.debug("getFileStatus: original key not found. Alternative key {}", key);
-          fileStatus = getFileStatusKeyBased(newKey, path);
-        } catch (AmazonS3Exception e) {
-          if (e.getStatusCode() != 404) {
-            throw new IOException(e);
-          }
-        }
+      } else {
+        // if here: both key and key/ returned not found.
+        // trying to see if pseudo directory of the form
+        // a/b/key/d/e (a/b/key/ doesn't exists by itself)
+        // perform listing on the key
+        LOG.debug("getFileStatus: Modifined key {} not found. Trying to lisr", key);
+        key = maybeAddTrailingSlash(key);
+        ListObjectsRequest request = new ListObjectsRequest();
+        request.setBucketName(mBucket);
+        request.setPrefix(key);
+        request.setDelimiter("/");
+        request.setMaxKeys(1);
 
-        if (fileStatus != null) {
-          LOG.trace("getFileStatus(completed) {}", path);
-          return fileStatus;
-        } else {
-          // if here: both key and key/ returned not found.
-          // trying to see if pseudo directory of the form
-          // a/b/key/d/e (a/b/key/ doesn't exists by itself)
-          // perform listing on the key
-          LOG.debug("getFileStatus: Modifined key {} not found. Trying to lisr", key);
-          key = maybeAddTrailingSlash(key);
-          ListObjectsRequest request = new ListObjectsRequest();
-          request.setBucketName(mBucket);
-          request.setPrefix(key);
-          request.setDelimiter("/");
-          request.setMaxKeys(1);
-
-          ObjectListing objects = mClient.listObjects(request);
-          if (!objects.getCommonPrefixes().isEmpty() || !objects.getObjectSummaries().isEmpty()) {
-            LOG.trace("getFileStatus(completed) {}", path);
-            return new FileStatus(0, true, 1, 0, 0, path);
-          } else if (key.isEmpty()) {
-            LOG.debug("Found root directory");
-            LOG.trace("getFileStatus(completed) {}", path);
-            return new FileStatus(0, true, 1, 0, 0, path);
-          }
+        ObjectListing objects = mClient.listObjects(request);
+        if (!objects.getCommonPrefixes().isEmpty() || !objects.getObjectSummaries().isEmpty()) {
+          LOG.debug("getFileStatus(completed) {}", path);
+          res = new FileStatus(0, true, 1, 0, 0, path);
+          memoryCache.putFileStatus(path.toString(), res);
+          return res;
+        } else if (key.isEmpty()) {
+          LOG.trace("Found root directory");
+          LOG.debug("getFileStatus(completed) {}", path);
+          res = new FileStatus(0, true, 1, 0, 0, path);
+          memoryCache.putFileStatus(path.toString(), res);
+          return res;
         }
       }
-    } catch (AmazonS3Exception e) {
-      if (e.getStatusCode() == 403) {
-        throw new IOException(e);
-      }
-    } catch (Exception e) {
-      LOG.debug("Not found {}", path.toString());
-      LOG.warn(e.getMessage());
-      throw new FileNotFoundException("Not found " + path.toString());
     }
+    LOG.debug("Not found {}. Throw FNF exception", path.toString());
     throw new FileNotFoundException("Not found " + path.toString());
   }
 
   private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception {
     LOG.trace("internal method - get file status by key {}, path {}", key, path);
-    CachedObject co = memoryCache.get(key);
-    if (co != null) {
-      return createFileStatus(co.getContentLength(), key, co.getLastModified(), path);
+    FileStatus cachedFS = memoryCache.getFileStatus(path.toString());
+    if (cachedFS != null) {
+      return cachedFS;
     }
     ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
-    memoryCache.put(key, meta.getContentLength(), meta.getLastModified());
-    return createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
+    String sparkOrigin = meta.getUserMetaDataOf("data-origin");
+    boolean stocatorCreated = false;
+    if (sparkOrigin != null) {
+      String tmp = (String) sparkOrigin;
+      if (tmp.equals("stocator")) {
+        stocatorCreated = true;
+      }
+    }
+    mCachedSparkOriginated.put(key, Boolean.valueOf(stocatorCreated));
+    FileStatus fs = createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
+    memoryCache.putFileStatus(path.toString(), fs);
+    return fs;
   }
 
-  private FileStatus getFileStatusObjSummaryBased(S3ObjectSummary objSummary,
+  private FileStatus createFileStatus(S3ObjectSummary objSummary,
       String hostName, Path path)
       throws IllegalArgumentException, IOException {
     String objKey = objSummary.getKey();
@@ -612,10 +640,7 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public boolean exists(String hostName, Path path) throws IOException, FileNotFoundException {
     LOG.trace("Object exists: {}", path);
-    String objName = path.toString();
-    if (path.toString().startsWith(hostName)) {
-      objName = path.toString().substring(hostName.length());
-    }
+    String objName = pathToKey(path);
     if (objName.contains(HADOOP_TEMPORARY)) {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
@@ -633,15 +658,17 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FSDataInputStream getObject(String hostName, Path path) throws IOException {
     LOG.debug("Opening '{}' for reading.", path);
-    String key = pathToKey(hostName, path);
-    final FileStatus fileStatus = getFileStatus(hostName, path, "getObject");
+    String key = pathToKey(path);
+    FileStatus fileStatus = memoryCache.getFileStatus(path.toString());
+    if (fileStatus == null) {
+      fileStatus = getFileStatus(hostName, path, "getObject");
+    }
     if (fileStatus.isDirectory()) {
       throw new FileNotFoundException("Can't open " + path
           + " because it is a directory");
     }
-
     COSInputStream inputStream = new COSInputStream(mBucket, key,
-        fileStatus.getLen(), mClient, readAhead, inputPolicy);
+        fileStatus.getLen(), mClient, readAhead, inputPolicy, statistics);
 
     return new FSDataInputStream(inputStream);
   }
@@ -650,6 +677,7 @@ public class COSAPIClient implements IStoreClient {
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
+    LOG.debug("Create object {}", objName);
     try {
       String objNameWithoutBuket = objName;
       if (objName.startsWith(mBucket + "/")) {
@@ -663,6 +691,7 @@ public class COSAPIClient implements IStoreClient {
                     blockOutputActiveBlocks, true),
                 partSize,
                 blockFactory,
+                contentType,
                 new WriteOperationHelper(objNameWithoutBuket),
                 metadata
             ),
@@ -759,14 +788,11 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException {
-    String obj = path.toString();
-    if (path.toString().startsWith(hostName)) {
-      obj = path.toString().substring(hostName.length());
-    }
-    LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
+    String key = pathToKey(path);
+    LOG.debug("Object name to delete {}. Path {}", key, path.toString());
     try {
-      mClient.deleteObject(new DeleteObjectRequest(mBucket, obj));
-      memoryCache.remove(obj);
+      mClient.deleteObject(new DeleteObjectRequest(mBucket, key));
+      memoryCache.removeFileStatus(path.toString());
       return true;
     } catch (AmazonServiceException e) {
       if (e.getStatusCode() != 404) {
@@ -787,6 +813,7 @@ public class COSAPIClient implements IStoreClient {
    *
    * @param newDir new directory
    */
+  @Override
   public void setWorkingDirectory(Path newDir) {
     workingDir = newDir;
   }
@@ -795,90 +822,88 @@ public class COSAPIClient implements IStoreClient {
     return workingDir;
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * Prefix based
-   * Return everything that starts with the prefix
-   * Fill listing
-   * Return all objects, even zero size
-   * If fileStatus is null means the path is part of some name, neither object
-   * or pseudo directory. Was called by Globber
-   *
-   * @param hostName hostName
-   * @param path path
-   * @param fullListing Return all objects, even zero size
-   * @param prefixBased Return everything that starts with the prefix
-   * @return list
-   * @throws IOException if error
-   */
+  @Override
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
-      boolean prefixBased) throws IOException {
-    String key = pathToKey(hostName, path);
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
+    LOG.debug("Native direct list status for {}", path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    ListObjectsRequest request = new ListObjectsRequest().withBucketName(mBucket).withPrefix(key);
+    String key = pathToKey(path);
+    if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")
+        && !path.toString().equals(hostName)) {
+      key = key + "/";
+      LOG.debug("listNativeDirect modify key to {}", key);
+    }
 
-    String curObj;
-    if (path.toString().equals(mBucket)) {
-      curObj = "";
-    } else if (path.toString().startsWith(mBucket + "/")) {
-      curObj = path.toString().substring(mBucket.length() + 1);
-    } else if (path.toString().startsWith(hostName)) {
-      curObj = path.toString().substring(hostName.length());
-    } else {
-      curObj = path.toString();
+    Map<String, FileStatus> emptyObjects = new HashMap<String, FileStatus>();
+    ListObjectsRequest request = new ListObjectsRequest();
+    request.setBucketName(mBucket);
+    request.setMaxKeys(5000);
+    request.setPrefix(key);
+    if (!flatListing) {
+      request.setDelimiter("/");
     }
 
     ObjectListing objectList = mClient.listObjects(request);
+
     List<S3ObjectSummary> objectSummaries = objectList.getObjectSummaries();
-    if (objectSummaries.size() == 0) {
-      FileStatus[] emptyRes = {};
-      LOG.debug("List for bucket {} is empty", mBucket);
-      return emptyRes;
-    }
+    List<String> commonPrefixes = objectList.getCommonPrefixes();
+
     boolean objectScanContinue = true;
     S3ObjectSummary prevObj = null;
+    // start FTA logic
+    boolean stocatorOrigin = isSparkOrigin(key, path.toString());
+    if (stocatorOrigin) {
+      LOG.debug("Stocator origin is true for {}", key);
+      if (!isJobSuccessful(key)) {
+        LOG.debug("{} created by failed Spark job. Skipped", key);
+        if (fModeAutomaticDelete) {
+          delete(hostName, new Path(key), true);
+        }
+        return new FileStatus[0];
+      }
+    }
     while (objectScanContinue) {
       for (S3ObjectSummary obj : objectSummaries) {
         if (prevObj == null) {
           prevObj = obj;
+          prevObj.setKey(correctPlusSign(key, prevObj.getKey()));
           continue;
         }
+        obj.setKey(correctPlusSign(key, obj.getKey()));
         String objKey = obj.getKey();
         String unifiedObjectName = extractUnifiedObjectName(objKey);
-        if (!prefixBased && !curObj.equals("") && !path.toString().endsWith("/")
-            && !unifiedObjectName.equals(curObj) && !unifiedObjectName.startsWith(curObj + "/")) {
-          LOG.trace("{} does not match {}. Skipped", unifiedObjectName, curObj);
-          continue;
-        }
-        if (isSparkOrigin(unifiedObjectName) && !fullListing) {
+        LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
+        if (stocatorOrigin && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
-          if (!isJobSuccessful(unifiedObjectName)) {
-            LOG.trace("{} created by failed Spark job. Skipped", unifiedObjectName);
-            if (fModeAutomaticDelete) {
-              delete(hostName, new Path(objKey), true);
+          // if we here - data created by spark and job completed
+          // successfully
+          // however there be might parts of failed tasks that
+          // were not aborted
+          // we need to make sure there are no failed attempts
+          if (nameWithoutTaskID(objKey).equals(nameWithoutTaskID(prevObj.getKey()))) {
+            // found failed that was not aborted.
+            LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
+            if (prevObj.getSize() < obj.getSize()) {
+              LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
+              prevObj = obj;
             }
             continue;
-          } else {
-            // if we here - data created by spark and job completed
-            // successfully
-            // however there be might parts of failed tasks that
-            // were not aborted
-            // we need to make sure there are no failed attempts
-            if (nameWithoutTaskID(objKey).equals(nameWithoutTaskID(prevObj.getKey()))) {
-              // found failed that was not aborted.
-              LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
-              if (prevObj.getSize() < obj.getSize()) {
-                LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
-                prevObj = obj;
-              }
-              continue;
-            }
           }
         }
-        if (prevObj.getSize() > 0 || fullListing) {
-          FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
-          tmpResult.add(fs);
+        FileStatus fs = createFileStatus(prevObj, hostName, path);
+        if (fs.getLen() > 0 || fullListing) {
+          LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
+          if (filter == null) {
+            tmpResult.add(fs);
+          } else if (filter != null && filter.accept(fs.getPath())) {
+            tmpResult.add(fs);
+          } else {
+            LOG.trace("{} rejected by path filter during list. Filter {}",
+                fs.getPath(), filter);
+          }
+        } else {
+          emptyObjects.put(fs.getPath().toString(), fs);
         }
         prevObj = obj;
       }
@@ -890,67 +915,48 @@ public class COSAPIClient implements IStoreClient {
         objectScanContinue = false;
       }
     }
-    if (prevObj != null && (prevObj.getSize() > 0 || fullListing)) {
-      FileStatus fs = getFileStatusObjSummaryBased(prevObj, hostName, path);
-      tmpResult.add(fs);
+
+    if (prevObj != null) {
+      FileStatus fs = createFileStatus(prevObj, hostName, path);
+      LOG.trace("Adding the last object from the list {}", fs.getPath());
+      if (fs.getLen() > 0 || fullListing) {
+        LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
+        if (filter == null) {
+          memoryCache.putFileStatus(fs.getPath().toString(), fs);
+          tmpResult.add(fs);
+        } else if (filter != null && filter.accept(fs.getPath())) {
+          memoryCache.putFileStatus(fs.getPath().toString(), fs);
+          tmpResult.add(fs);
+        } else {
+          LOG.trace("{} rejected by path filter during list. Filter {}",
+              fs.getPath(), filter);
+        }
+      } else if (!fs.getPath().getName().equals(HADOOP_SUCCESS)) {
+        emptyObjects.put(fs.getPath().toString(), fs);
+      }
     }
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("COS List to return length {}", tmpResult.size());
-      for (FileStatus fs: tmpResult) {
-        LOG.trace("{}", fs.getPath());
+
+    // get common prefixes
+    for (String comPrefix : commonPrefixes) {
+      LOG.trace("Common prefix is {}", comPrefix);
+      if (emptyObjects.containsKey(keyToQualifiedPath(hostName,
+          comPrefix).toString()) || emptyObjects.isEmpty()) {
+        FileStatus status = new COSFileStatus(true, false, keyToQualifiedPath(hostName,
+            comPrefix));
+        LOG.trace("Match between common prefix and empty object {}. Adding to result", comPrefix);
+        if (filter == null) {
+          memoryCache.putFileStatus(status.getPath().toString(), status);
+          tmpResult.add(status);
+        } else if (filter != null && filter.accept(status.getPath())) {
+          memoryCache.putFileStatus(status.getPath().toString(), status);
+          tmpResult.add(status);
+        } else {
+          LOG.trace("Common prefix {} rejected by path filter during list. Filter {}",
+              status.getPath(), filter);
+        }
       }
     }
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
-  }
-
-  @Override
-  public FileStatus[] listNative(String hostName, Path path) throws FileNotFoundException,
-      IOException {
-    LOG.debug("Native list status for {}", path);
-    try {
-      String key = pathToKey(hostName, path);
-      LOG.debug("Native list inner status for path: {}, key {}", path, key);
-
-      List<FileStatus> result;
-      final FileStatus fileStatus =  getFileStatus(hostName, path, "innerList");
-
-      if (fileStatus.isDirectory()) {
-        if (!key.isEmpty()) {
-          key = key + '/';
-        }
-
-        ListObjectsRequest request = new ListObjectsRequest();
-        request.setBucketName(mBucket);
-        request.setMaxKeys(5000);
-        request.setPrefix(key);
-        request.setDelimiter("/");
-
-        LOG.debug("listStatus: doing listObjects for directory {}", key);
-
-        Listing.FileStatusListingIterator files =
-            listing.createFileStatusListingIterator(path,
-                request,
-                ACCEPT_ALL,
-                new Listing.AcceptAllButSelfAndS3nDirs(path));
-        result = new ArrayList<>(files.getBatchSize());
-        LOG.debug("List of {} completed with {}", path, files.getBatchSize());
-        while (files.hasNext()) {
-          FileStatus fs = files.next();
-          fs.setPath(new Path(hostName, fs.getPath()));
-          LOG.debug("Adding:  {}", fs.getPath());
-          result.add(fs);
-        }
-        return result.toArray(new FileStatus[result.size()]);
-      } else {
-        LOG.debug("Adding: rd (not a dir): {}", path);
-        FileStatus[] stats = new FileStatus[1];
-        stats[0] = fileStatus;
-        return stats;
-      }
-
-    } catch (AmazonClientException e) {
-      throw new IOException("listStatus", e);
-    }
   }
 
   /**
@@ -975,16 +981,12 @@ public class COSAPIClient implements IStoreClient {
   /**
    * Turns a path (relative or otherwise) into an COS key
    *
-   * @host hostName host of the object
    * @param path object full path
    */
-  private String pathToKey(String hostName, Path path) {
+
+  private String pathToKey(Path path) {
     if (!path.isAbsolute()) {
-      String pathStr = path.toUri().getPath();
-      if (pathStr.startsWith(mBucket) && !pathStr.equals(mBucket)) {
-        path = new Path(pathStr.substring(mBucket.length() + 1));
-      }
-      path = new Path(hostName, path);
+      path = new Path(workingDir, path);
     }
 
     if (path.toUri().getScheme() != null && path.toUri().getPath().isEmpty()) {
@@ -1006,16 +1008,19 @@ public class COSAPIClient implements IStoreClient {
    * @return boolean if job is successful
    */
   private boolean isJobSuccessful(String objectKey) {
+    LOG.trace("isJobSuccessful: for {}", objectKey);
     if (mCachedSparkJobsStatus.containsKey(objectKey)) {
+      LOG.trace("isJobSuccessful: {} found cached", objectKey);
       return mCachedSparkJobsStatus.get(objectKey).booleanValue();
     }
     String key = getRealKey(objectKey);
-    String statusKey = String.format("%s/%s", key, HADOOP_SUCCESS);
-    ObjectMetadata statusMetadata = getObjectMetadata(statusKey);
+    Path p = new Path(key, HADOOP_SUCCESS);
+    ObjectMetadata statusMetadata = getObjectMetadata(p.toString());
     Boolean isJobOK = Boolean.FALSE;
     if (statusMetadata != null) {
       isJobOK = Boolean.TRUE;
     }
+    LOG.debug("isJobSuccessful: not cached {}. Status is {}", objectKey, isJobOK);
     mCachedSparkJobsStatus.put(objectKey, isJobOK);
     return isJobOK.booleanValue();
   }
@@ -1081,13 +1086,23 @@ public class COSAPIClient implements IStoreClient {
    * Checks if container/object exists and verifies that it contains
    * Data-Origin=stocator metadata If so, object was created by Spark.
    *
-   * @param objectName
+   * @param objectKey the key of the object
+   * @param path the object path
    * @return boolean if object was created by Spark
    */
-  private boolean isSparkOrigin(String objectKey) {
+  private boolean isSparkOrigin(String objectKey, String path) {
     LOG.debug("check spark origin for {}", objectKey);
+    if (!objectKey.endsWith("/")) {
+      LOG.debug("Key {} has no slash. Return false", objectKey);
+      return false;
+    } else {
+      objectKey = objectKey.substring(0, objectKey.length() - 1);
+    }
+
     if (mCachedSparkOriginated.containsKey(objectKey)) {
-      return mCachedSparkOriginated.get(objectKey).booleanValue();
+      boolean res = mCachedSparkOriginated.get(objectKey).booleanValue();
+      LOG.debug("found cached for spark origin for {}. Status {}", objectKey, res);
+      return res;
     }
     String key = getRealKey(objectKey);
     Boolean sparkOriginated = Boolean.FALSE;
@@ -1101,8 +1116,8 @@ public class COSAPIClient implements IStoreClient {
         }
       }
     }
-    mCachedSparkOriginated.put(objectKey, sparkOriginated);
-    LOG.debug("spark origin for {} is {}", objectKey, sparkOriginated.booleanValue());
+    mCachedSparkOriginated.put(key, sparkOriginated);
+    LOG.debug("spark origin for {} is {} non cached", objectKey, sparkOriginated.booleanValue());
     return sparkOriginated.booleanValue();
   }
 
@@ -1198,22 +1213,16 @@ public class COSAPIClient implements IStoreClient {
     transfers.setConfiguration(transferConfiguration);
   }
 
-  private synchronized File createTmpDirForWrite(String pathStr,
-      String tmpDirName) throws IOException {
-    LOG.trace("tmpDirName is {}", tmpDirName);
+  public synchronized File createTmpFileForWrite(String pathStr) throws IOException {
+    LOG.trace("createTmpFileForWrite {}", pathStr);
     if (directoryAllocator == null) {
-      String bufferDir = "hadoop.tmp.dir";
-      LOG.trace("Local buffer directorykey is {}", bufferDir);
-      directoryAllocator = new COSLocalDirAllocator(conf, bufferDir);
+      String bufferDirKey = bufferDirectory != null
+          ? bufferDirectoryKey : "hadoop.tmp.dir";
+      LOG.trace("Local buffer directorykey is {}", bufferDirKey);
+      directoryAllocator = new COSLocalDirAllocator(bufferDirKey);
     }
     return directoryAllocator.createTmpFileForWrite(pathStr,
       COSLocalDirAllocator.SIZE_UNKNOWN, conf);
-  }
-
-  File createTmpFileForWrite(String pathStr) throws IOException {
-    String tmpDirName = conf.get("hadoop.tmp.dir") + "/stocator";
-    File tmpDir = createTmpDirForWrite(pathStr, tmpDirName);
-    return tmpDir;
   }
 
   /**
@@ -1514,4 +1523,60 @@ public class COSAPIClient implements IStoreClient {
     return flatListingFlag;
   }
 
+  @Override
+  public void setStatistics(Statistics stat) {
+    statistics = stat;
+  }
+
+  /**
+   * Qualify a path
+   * @param path path to qualify
+   * @return a qualified path
+   */
+
+  public Path qualify(Path path) {
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("Working directory {}", workingDir);
+      Path p = path.makeQualified(filesystemURI, workingDir);
+      LOG.trace("Qualify path from {} to {}", path, p);
+      return p;
+    }
+    return path.makeQualified(filesystemURI, workingDir);
+  }
+
+  /**
+   * Due to SDK bug, list operations may return strings that has spaces instead of +
+   * This method will try to fix names for known patterns
+   *
+   * @param origin original string that may contain
+   * @param stringToCorrect string that may contain original string with spaces instead of +
+   * @return corrected string
+   */
+  private String correctPlusSign(String origin, String stringToCorrect) {
+    if (origin.contains("+")) {
+      LOG.debug("Adapt plus sign in {} to avoid SDK bug on {}", origin, stringToCorrect);
+      StringBuilder tmpStringToCorrect = new StringBuilder(stringToCorrect);
+      boolean hasSign = true;
+      int fromIndex = 0;
+      while (hasSign) {
+        int plusLocation = origin.indexOf("+", fromIndex);
+        if (plusLocation < 0) {
+          hasSign = false;
+          break;
+        }
+        if (tmpStringToCorrect.charAt(plusLocation) == ' ') {
+          tmpStringToCorrect.setCharAt(plusLocation, '+');
+        }
+        if (origin.length() <= plusLocation + 1) {
+          fromIndex = plusLocation + 1;
+        } else {
+          fromIndex = origin.length();
+        }
+      }
+      LOG.debug("Adapt plus sign {} corrected to {}", stringToCorrect,
+          tmpStringToCorrect.toString());
+      return tmpStringToCorrect.toString();
+    }
+    return stringToCorrect;
+  }
 }

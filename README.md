@@ -249,6 +249,11 @@ Now you can use URI
 | fs.cos.proxy.password| |Password for authenticating with proxy server |
 | fs.cos.proxy.domain| |Domain for authenticating with proxy server |
 | fs.cos.user.agent.prefix| |User agent prefix |
+| fs.cos.flat.list | true | In flat listing the result will include all objects under specific path prefix, for example bucket/a/b/data.txt, bucket/a/d.data. If listed bucket/a*, then result will include both objects. If flat list is set to flase, then it contains the same list behaviour as community s3a connector. |
+| fs.stocator.cache.size | 2000 | The Guava cache size used by the COS connector |
+| fs.cos.multipart.size | 104857600 | Size in bytes. Define multipart size |
+| fs.cos.multipart.threshold | Max Integer | minimum size in bytes before we start a multipart uploads, default is max integer |
+| fs.cos.fast.upload | false | enable or disable block upload |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 
@@ -550,6 +555,7 @@ More information about Stocator can be find at
 * [Hadoop and object stores: Can we do it better?](https://conferences.oreilly.com/strata/strata-eu/public/schedule/detail/57598) Strata Data Conference, 23-25 May 2017, London, UK
 * [VERY LARGE DATA FILES, OBJECT STORES, AND DEEP LEARNING—LESSONS LEARNED WHILE LOOKING FOR SIGNS OF EXTRA-TERRESTRIAL LIFE](https://spark-summit.org/2017/events/very-large-data-files-object-stores-and-deep-learning-lessons-learned-while-looking-for-signs-of-extra-terrestrial-life/) SPARK SUMMIT 2017 DATA SCIENCE AND ENGINEERING AT SCALE,
 JUNE 5 – 7, 2017 SAN FRANCISCO
+* [Using data connectors to work with IBM Cloud Object Storage in IBM Spectrum Conductor with Spark 2.2.1](https://www.ibm.com/developerworks/community/blogs/281605c9-7369-46dc-ad03-70d9ad377480/entry/Using_data_connectors_to_work_with_IBM_Cloud_Object_Storage_in_IBM_Spectrum_Conductor_with_Spark_2_2_1?lang=en)
 
 
 This research was supported by IOStack, an H2020 project of the EU Commission 

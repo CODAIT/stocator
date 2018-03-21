@@ -36,7 +36,6 @@ import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.UploadPartRequest;
-import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -115,6 +114,7 @@ class COSBlockOutputStream extends OutputStream {
    * Write operation helper; encapsulation of the filesystem operations.
    */
   private final COSAPIClient.WriteOperationHelper writeOperationHelper;
+  private String contentType;
 
   /**
    * An COS output stream which uploads partitions in a separate pool of
@@ -126,6 +126,7 @@ class COSBlockOutputStream extends OutputStream {
    * @param executorServiceT the executor service to use to schedule work
    * @param blockSizeT size of a single block
    * @param blockFactoryT factory for creating stream destinations
+   * @param contentTypeT contentType
    * @param writeOperationHelperT state of the write operation
    * @param metadata Map<String, String> metadata
    * @throws IOException on any problem
@@ -133,17 +134,20 @@ class COSBlockOutputStream extends OutputStream {
   COSBlockOutputStream(COSAPIClient fsT, String keyT, ExecutorService executorServiceT,
       long blockSizeT,
       COSDataBlocks.BlockFactory blockFactoryT,
+      String contentTypeT,
       COSAPIClient.WriteOperationHelper writeOperationHelperT,
       Map<String, String> metadata)
       throws IOException {
     fs = fsT;
     key = keyT;
     blockFactory = blockFactoryT;
+    contentType = contentTypeT;
     blockSize = (int) blockSizeT;
     mMetadata = metadata;
     writeOperationHelper = writeOperationHelperT;
-    Preconditions.checkArgument(blockSize >= COSConstants.MULTIPART_MIN_SIZE,
-        "Block size is too small: %d", blockSize);
+    if (blockSize < COSConstants.MULTIPART_MIN_SIZE) {
+      throw new IllegalArgumentException("Block size is too small: " + blockSize);
+    }
     executorService = MoreExecutors.listeningDecorator(executorServiceT);
     multiPartUpload = null;
     // create that first block. This guarantees that an open + close sequence
@@ -264,7 +268,7 @@ class COSBlockOutputStream extends OutputStream {
     int written = block.write(source, offset, len);
     int remainingCapacity = block.remainingCapacity();
     if (written < len) {
-      // not everything was written —the block has run out
+      // not everything was written, the block has run out
       // of capacity
       // Trigger an upload then process the remainder.
       LOG.debug("writing more data than block has capacity -triggering upload");
@@ -288,7 +292,9 @@ class COSBlockOutputStream extends OutputStream {
    *           upload
    */
   private synchronized void uploadCurrentBlock() throws IOException {
-    Preconditions.checkState(hasActiveBlock(), "No active block");
+    if (!hasActiveBlock()) {
+      throw new IllegalStateException("No active block");
+    }
     LOG.debug("Writing block # {}", blockCount);
     if (multiPartUpload == null) {
       LOG.debug("Initiating Multipart upload");
@@ -374,6 +380,11 @@ class COSBlockOutputStream extends OutputStream {
 
     final ObjectMetadata om = new ObjectMetadata();
     om.setUserMetadata(mMetadata);
+    if (contentType != null && !contentType.isEmpty()) {
+      om.setContentType(contentType);
+    } else {
+      om.setContentType("application/octet-stream");
+    }
     putObjectRequest.setMetadata(om);
     ListenableFuture<PutObjectResult> putObjectResult =
         executorService.submit(new Callable<PutObjectResult>() {

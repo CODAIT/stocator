@@ -1,3 +1,20 @@
+/**
+ * (C) Copyright IBM Corp. 2015, 2016
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package com.ibm.stocator.example.cos;
 
 import org.apache.hadoop.conf.Configuration;
@@ -22,10 +39,20 @@ public class COSObjectCreate {
 
     // "us-geo" is the service name. Can be any other name
     // All configuration keys will have the prefix fs.cos.us-geo
+
+    //Usage with access key and secret key
     mConf.set("fs.cos.us-geo.endpoint", "http://s3-api.us-geo.objectstorage.softlayer.net");
     mConf.set("fs.cos.us-geo.v2.signer.type", "false");
     mConf.set("fs.cos.us-geo.access.key", "ACCESS KEY");
     mConf.set("fs.cos.us-geo.secret.key", "SECRET KEY");
+
+    //Usage with IAM service
+    /*
+    mConf.set("fs.cos.us-geo.endpoint", "http://s3-api.us-geo.objectstorage.softlayer.net");
+    mConf.set("fs.cos.us-geo.v2.signer.type", "false");
+    mConf.set("fs.cos.us-geo.iam.api.key", "API KEY");
+    mConf.set("fs.cos.us-geo.iam.service.id", "SERVICE ID");
+     */
 
     FileSystem fs = null;
     // gvernik is the bucket name

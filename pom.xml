@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.11-SNAPSHOT</version>
+    <version>1.0.15-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -59,17 +59,18 @@
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
         <findbugs.path>build/findbugs</findbugs.path>
-        <slf4j.version>1.7.10</slf4j.version>
+        <slf4j.version>1.7.16</slf4j.version>
         <java.version>1.7</java.version>
         <joss.version>0.9.15</joss.version>
         <hadoop.version>2.7.3</hadoop.version>
         <junit.version>4.12</junit.version>
-        <jackson.version>1.9.7</jackson.version>
-        <httpcomponents.httpcore.version>4.4.5</httpcomponents.httpcore.version>
-        <httpcomponents.httpclient.version>4.5.2</httpcomponents.httpclient.version>
-        <powermock.version>1.6.1</powermock.version>
-        <mockito.version>1.10.8</mockito.version>
+        <jackson.version>1.9.13</jackson.version>
+        <httpcomponents.httpcore.version>4.4.8</httpcomponents.httpcore.version>
+        <httpcomponents.httpclient.version>4.5.4</httpcomponents.httpclient.version>
+        <powermock.version>1.7.3</powermock.version>
+        <mockito.version>1.10.19</mockito.version>
         <amazon.sdk.version>1.11.59</amazon.sdk.version>
+        <google.guava.version>23.5-jre</google.guava.version>
     </properties>
 
     <dependencies>
@@ -110,6 +111,11 @@
                     <groupId>httpclient</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+          <version>${google.guava.version}</version>
         </dependency>
         <dependency>
 	        <groupId>com.googlecode.json-simple</groupId>
@@ -159,7 +165,7 @@
             <groupId>commons-validator</groupId>
             <artifactId>commons-validator</artifactId>
             <version>1.6</version>
-	</dependency>
+	   </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -191,6 +197,11 @@
                    <artifactId>*</artifactId>
                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.6</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -241,14 +252,13 @@
             <directory>src/main/resources</directory>
             <filtering>true</filtering>
           </resource>
-        </resources>  
-    
+        </resources>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.2</version>
+                    <version>3.7.0</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
@@ -262,7 +272,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.14</version>
+                    <version>2.20.1</version>
                     <configuration>
                         <argLine>-Djava.net.preferIPv4Stack=true
                             -Djava.security.krb5.realm= -Djava.security.krb5.kdc=</argLine>
@@ -272,7 +282,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.0.2</version>
                     <configuration>
                         <archive>
                             <manifest>
@@ -287,16 +297,43 @@
             </plugins>
         </pluginManagement>
         <plugins>
+     <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-shade-plugin</artifactId>
+              <version>3.1.0</version>
+              <configuration>
+        			<createDependencyReducedPom>false</createDependencyReducedPom>
+                 <artifactSet>
+                      <includes>
+                          <include>com.google.guava:*</include>
+                      </includes>
+                  </artifactSet>
+                   <relocations>
+                        <relocation>
+                            <pattern>com.google.guava</pattern>
+                            <shadedPattern>com.google.guava.shade</shadedPattern>
+                        </relocation>
+                   </relocations>
+               </configuration>
+               <executions>
+                   <execution>
+                      <phase>package</phase>
+                       <goals>
+                           <goal>shade</goal>
+                       </goals>
+                   </execution>
+               </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>2.5.3</version>
             </plugin>
             <!-- FindBugs -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.2</version>
+                <version>3.0.5</version>
                 <configuration>
                     <excludeFilterFile>${findbugs.path}/findbugs-exclude.xml</excludeFilterFile>
                     <effort>Max</effort>

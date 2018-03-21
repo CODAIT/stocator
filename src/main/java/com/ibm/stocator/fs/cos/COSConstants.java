@@ -110,7 +110,7 @@ public class COSConstants {
 
   // size of each of or multipart pieces in bytes
   public static final String MULTIPART_SIZE = ".multipart.size";
-  public static final long DEFAULT_MULTIPART_SIZE = 104857600; // 100 MB
+  public static final long DEFAULT_MULTIPART_SIZE = 8388608; // 8 MB
 
   // minimum size in bytes before we start a multipart uploads or copy
   public static final String MIN_MULTIPART_THRESHOLD = ".multipart.threshold";
@@ -185,7 +185,7 @@ public class COSConstants {
   public static final long DEFAULT_PURGE_EXISTING_MULTIPART_AGE = 86400;
 
   public static final String FLAT_LISTING = ".flat.list";
-  public static final boolean DEFAULT_FLAT_LISTING = false;
+  public static final boolean DEFAULT_FLAT_LISTING = true;
 
   public static final String INPUT_FADVISE = "experimental.input.fadvise";
   public static final String INPUT_FADV_NORMAL = "normal";

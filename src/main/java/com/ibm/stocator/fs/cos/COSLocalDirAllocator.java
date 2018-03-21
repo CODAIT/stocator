@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,29 +43,20 @@ import org.slf4j.LoggerFactory;
  * time stamp, and finally a uuid number.
  */
 public class COSLocalDirAllocator extends LocalDirAllocator {
-  private static final Logger LOG = LoggerFactory.getLogger(COSAPIClient.class);
-  private Configuration conf;
+  private static final Logger LOG = LoggerFactory.getLogger(COSLocalDirAllocator.class);
   public static final int SIZE_UNKNOWN = -1;
 
-  public COSLocalDirAllocator(Configuration pConf, String bufferDir) {
+  public COSLocalDirAllocator(String bufferDir) {
     super(bufferDir);
-    conf = pConf;
-  }
-
-  private synchronized File createTmpDirForWrite(String tmpDirName) throws IOException {
-    LOG.trace("tmpDirName is {}", tmpDirName);
-    File tmpDir = new File(tmpDirName);
-    if (!tmpDir.exists()) {
-      tmpDir.mkdir();
-    }
-    return tmpDir;
+    LOG.trace("Buffer directory key set to {}", bufferDir);
   }
 
   public File createTmpFileForWrite(String pathStr, long size,
       Configuration conf) throws IOException {
-    Path path = getLocalPathForWrite(pathStr, size, conf, true);
+    String sha256hex = DigestUtils.sha256Hex(pathStr);
+    Path path = getLocalPathForWrite(sha256hex, size, conf, true);
     File tmpDir = new File(path.getParent().toUri().getPath());
-    File tmpFile = new File(tmpDir, pathStr + UUID.randomUUID().toString());
+    File tmpFile = new File(tmpDir, sha256hex + UUID.randomUUID().toString());
     return tmpFile;
   }
 }

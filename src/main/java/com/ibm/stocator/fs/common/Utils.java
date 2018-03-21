@@ -197,7 +197,7 @@ public class Utils {
   }
 
   /**
-   * Read key from core-site.xml and parse it to Swift configuration
+   * Read key from core-site.xml and parse it to connector configuration
    *
    * @param conf source configuration
    * @param prefix configuration key prefix
@@ -237,6 +237,9 @@ public class Utils {
       result = -1;
       for (String alternativePrefix : altPrefix) {
         result = conf.getInt(alternativePrefix + key, defValue);
+        if (result != defValue) {
+          break;
+        }
       }
     }
     if (result == -1) {
@@ -254,6 +257,9 @@ public class Utils {
       result = null;
       for (String alternativePrefix : altPrefix) {
         result = conf.getTrimmed(alternativePrefix + key, defValue);
+        if (!result.equals(defValue)) {
+          break;
+        }
       }
     }
     if (result == null) {
@@ -270,10 +276,40 @@ public class Utils {
     if (result.equals(notExistsValue)) {
       result = null;
       for (String alternativePrefix : altPrefix) {
-        result = conf.getTrimmed(alternativePrefix + key);
+        result = conf.getTrimmed(alternativePrefix + key, notExistsValue);
+        if (!result.equals(notExistsValue)) {
+          break;
+        }
       }
     }
-    return result;
+    if (!result.equals(notExistsValue)) {
+      return result;
+    }
+    return null;
+  }
+
+  public static String getConfigKey(Configuration conf, String prefix, String[] altPrefix,
+      String key) {
+    String result = null;
+    String notExistsValue = "-2";
+    String keyName = prefix + key;
+    result = conf.getTrimmed(keyName, notExistsValue);
+    if (result.equals(notExistsValue)) {
+      // try alternative keys, based on priority
+      result = null;
+      keyName = null;
+      for (String alternativePrefix : altPrefix) {
+        keyName = alternativePrefix + key;
+        result = conf.getTrimmed(keyName, notExistsValue);
+        if (!result.equals(notExistsValue)) {
+          break;
+        }
+      }
+    }
+    if (!result.equals(notExistsValue)) {
+      return keyName;
+    }
+    return null;
   }
 
   public static long getLong(Configuration conf, String prefix, String[] altPrefix,
@@ -285,6 +321,9 @@ public class Utils {
       result = -1;
       for (String alternativePrefix : altPrefix) {
         result = stringToLong(conf.get(alternativePrefix + key), defValue);
+        if (result != defValue) {
+          break;
+        }
       }
     }
     if (result == -1) {

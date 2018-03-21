@@ -92,6 +92,11 @@ public class Constants {
   public static final String SEQ_READ_STRATEGY = "Sequential";
 
   /*
+   * The data that is buffered in memory before opening the HTTP PUT request
+   * and flushing the data
+   */
+  public static final int SWIFT_DATA_BUFFER = 64 * 1024;
+  /*
    * directory mime type
    */
   public static final String APPLICATION_DIRECTORY = "application/directory";
@@ -136,5 +141,7 @@ public class Constants {
   public static final String OUTPUT_COMMITTER_TYPE = "fs.stocator.committer.type";
   public static final String DEFAULT_FOUTPUTCOMMITTER_V1 = "defaultFOutputV1";
   public static final String TRASH_FOLDER = ".Trash";
+  public static final String CACHE_SIZE = "fs.stocator.cache.size";
+  public static final int GUAVA_CACHE_SIZE_DEFAULT = 2000;
 
 }

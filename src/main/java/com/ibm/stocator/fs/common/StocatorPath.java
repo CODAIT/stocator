@@ -96,9 +96,9 @@ public class StocatorPath {
   }
 
   public boolean isTemporaryPathTarget(Path path) {
-    LOG.debug("isTemporaryPathTarget for {}", path);
+    LOG.trace("isTemporaryPathTarget for {}", path);
     if (path.toString().equals(hostNameScheme) || path.getParent() == null) {
-      LOG.debug("Temporary target on the path eauals hostname or null parent {}", path);
+      LOG.trace("Temporary target on the path eauals hostname or null parent {}", path);
       return false;
     }
     String name = path.getName();
@@ -177,7 +177,7 @@ public class StocatorPath {
    */
   private String extractNameFromTempPath(Path p, boolean addTaskID, String hostName,
       boolean onlyPrefix) {
-    LOG.debug("Extract name from {}", p.toString());
+    LOG.trace("Extract name from {}", p.toString());
     String path = p.toString();
     // if path starts with host name - no need it, remove.
     if (path.startsWith(hostName)) {
@@ -188,7 +188,7 @@ public class StocatorPath {
     String midName = "";
     String namePrefix = "";
     for (String tempPath : tempIdentifiers) {
-      LOG.debug("Temp identifier {}",tempPath);
+      LOG.trace("Temp identifier {}",tempPath);
       String taskAttempt = null;
       match = true;
       String[] tempPathComponents = tempPath.split("/");
@@ -284,7 +284,10 @@ public class StocatorPath {
       boolean addTaskIdCompositeName, String hostNameScheme) throws IOException {
     String boundary = HADOOP_TEMPORARY;
     String path = fullPath.toString();
-    String noPrefix = path.substring(hostNameScheme.length());
+    String noPrefix = path;
+    if (path.startsWith(hostNameScheme)) {
+      noPrefix = path.substring(hostNameScheme.length());
+    }
     int npIdx = noPrefix.indexOf(boundary);
     String objectName = "";
     if (npIdx >= 0) {

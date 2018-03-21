@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
@@ -68,11 +70,11 @@ public class ObjectStoreGlobber {
     }
   }
 
-  private FileStatus[] listStatus(Path path) throws IOException {
+  private FileStatus[] listStatus(Path path, boolean isDirectory) throws IOException {
     try {
       if (fs != null) {
         //return fs.listStatus(new Path(path.toString() + "*"));
-        return fs.listStatus(path, filter, true);
+        return fs.listStatus(path, filter, true, isDirectory);
       } else {
         return fc.util().listStatus(path);
       }
@@ -135,6 +137,21 @@ public class ObjectStoreGlobber {
     return path;
   }
 
+  public int getSpecialCharacter(String s) {
+    if (s == null || s.trim().isEmpty()) {
+      LOG.warn("Incorrect format of string {}", s);
+      return 0;
+    }
+    Pattern p = Pattern.compile("[^A-Za-z0-9//:.+ ]");
+    Matcher m = p.matcher(s);
+    boolean b = m.find();
+    if (b == true) {
+      LOG.trace("There is a special character in my string {} at position {}", s, m.start());
+      return m.start();
+    }
+    return 0;
+  }
+
   public FileStatus[] glob() throws IOException {
     // First we get the scheme and authority of the pattern that was passed
     // in.
@@ -144,10 +161,17 @@ public class ObjectStoreGlobber {
 
     String pathPatternString = pathPattern.toUri().getPath();
     String unescapePathString = unescapePathComponent(pathPatternString);
+    int firstSpecialChar = getSpecialCharacter(unescapePathString);
+    String noWildCardPathPrefix = unescapePathString.substring(0, firstSpecialChar);
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ArrayList<FileStatus> candidates;
-    ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString());
+    String prefix = new Path(fs.getHostnameScheme() + noWildCardPathPrefix).toString();
+    if (!prefix.endsWith("/")) {
+      prefix = prefix + "/";
+    }
+    ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(pathPattern.toString(),
+        prefix, firstSpecialChar);
 
     if (pathPatternString.contains("?temp_url")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};
@@ -156,20 +180,21 @@ public class ObjectStoreGlobber {
 
     if (globFilter.hasPattern()) {
       // Get a list of FileStatuses and filter
-      String noWildCardPathPrefix = getPrefixUpToFirstWildcard(unescapePathString);
+      LOG.trace("Glob filter {} no wildcard prefix {}", pathPatternString, noWildCardPathPrefix);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
       LOG.trace("Glob filter {} pattern {}", rootPlaceholder.getPath(),
           pathPatternString.toString());
-      candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath())));
+      String pathToList = rootPlaceholder.getPath().toString();
+      candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath(),
+          noWildCardPathPrefix.endsWith("/"))));
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
-          LOG.debug("Candidate accepted: {}", candidate.getPath().toString());
+          LOG.trace("Candidate accepted: {}", candidate.getPath().toString());
           results.add(candidate);
         } else {
-          if (LOG.isTraceEnabled()) {
-            LOG.debug("Candidate rejected: {}", candidate.getPath().toString());
-          }
+          LOG.trace("Candidate rejected: {} Pattern {}", candidate.getPath().toString(),
+              rootPlaceholder.getPath());
         }
       }
     } else {
