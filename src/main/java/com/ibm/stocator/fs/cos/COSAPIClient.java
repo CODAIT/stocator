@@ -538,7 +538,7 @@ public class COSAPIClient implements IStoreClient {
         // trying to see if pseudo directory of the form
         // a/b/key/d/e (a/b/key/ doesn't exists by itself)
         // perform listing on the key
-        LOG.debug("getFileStatus: Modifined key {} not found. Trying to lisr", key);
+        LOG.debug("getFileStatus: Modifined key {} not found. Trying to list", key);
         key = maybeAddTrailingSlash(key);
         ListObjectsRequest request = new ListObjectsRequest();
         request.setBucketName(mBucket);
