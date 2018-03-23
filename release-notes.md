@@ -1,9 +1,11 @@
 ## Release notes
 
 ### Version 1.0.15
+
 1. [cos] Fixing BUFFER_DIR to provide input for the temp files folders
 2. [swift, cos] Introducing object store flat globber
 3. [cos] partial to support + in object names
+4. avoid mkdirs on the directory that already exists. This resolved bug with TeraGen where mkdir writes into folder with existing data
 
 ### Version 1.0.14
 

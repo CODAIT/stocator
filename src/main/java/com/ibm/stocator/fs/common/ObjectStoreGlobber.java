@@ -15,7 +15,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *
- *  (C) Copyright IBM Corp. 2015, 2016
+ *  (C) Copyright IBM Corp. 2018
  */
 
 package com.ibm.stocator.fs.common;
@@ -24,7 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,7 +76,6 @@ public class ObjectStoreGlobber {
   private FileStatus[] listStatus(Path path, boolean isDirectory) throws IOException {
     try {
       if (fs != null) {
-        //return fs.listStatus(new Path(path.toString() + "*"));
         return fs.listStatus(path, filter, true, isDirectory);
       } else {
         return fc.util().listStatus(path);
@@ -94,21 +92,6 @@ public class ObjectStoreGlobber {
    */
   private static String unescapePathComponent(String name) {
     return name.replaceAll("\\\\(.)", "$1");
-  }
-
-  /**
-   * Translate an absolute path into a list of path components. We merge double
-   * slashes into a single slash here. POSIX root path, i.e. '/', does not get
-   * an entry in the list.
-   */
-  private static List<String> getPathComponents(String path) throws IOException {
-    ArrayList<String> ret = new ArrayList<String>();
-    for (String component : path.split(Path.SEPARATOR)) {
-      if (!component.isEmpty()) {
-        ret.add(component);
-      }
-    }
-    return ret;
   }
 
   private String schemeFromPath(Path path) throws IOException {
@@ -129,17 +112,6 @@ public class ObjectStoreGlobber {
       }
     }
     return authority;
-  }
-
-  private String getPrefixUpToFirstWildcard(String path) {
-    for (int i = 0; i < path.length(); i++) {
-      char c = path.charAt(i);
-      if (c == '*' || c == '{' || c == '[' || (c == '?'
-          && !path.substring(i, i + 7).equals("?token="))) { // discard ?token=
-        return path.substring(0, i);
-      }
-    }
-    return path;
   }
 
   public int getSpecialCharacter(String s) {
@@ -191,7 +163,6 @@ public class ObjectStoreGlobber {
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
       LOG.trace("Glob filter {} pattern {}", rootPlaceholder.getPath(),
           pathPatternString.toString());
-      String pathToList = rootPlaceholder.getPath().toString();
       candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath(),
           noWildCardPathPrefix.endsWith("/"))));
       for (FileStatus candidate : candidates) {
