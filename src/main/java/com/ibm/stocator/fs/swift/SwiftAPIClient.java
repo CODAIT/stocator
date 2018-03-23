@@ -433,7 +433,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(container) + "/"
             + getURLEncodedObjName(objName));
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
@@ -451,7 +451,7 @@ public class SwiftAPIClient implements IStoreClient {
         if (res[0].getPath().toString().startsWith(hostName)) {
           objName = res[0].getPath().toString().substring(hostName.length());
         }
-        url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
+        url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(container) + "/"
                 + getURLEncodedObjName(objName));
       }
     }
