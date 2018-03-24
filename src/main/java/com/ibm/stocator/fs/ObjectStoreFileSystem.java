@@ -38,6 +38,7 @@ import org.apache.hadoop.util.Progressable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.net.UrlEscapers;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
@@ -89,7 +90,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
-    uri = URI.create(fsuri.getScheme() + "://" + fsuri.getAuthority());
+    String escapedAuthority = UrlEscapers.urlPathSegmentEscaper().escape(fsuri.getAuthority());
+    uri = URI.create(fsuri.getScheme() + "://" + escapedAuthority);
     setConf(conf);
     String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
     if (storageClient == null) {
