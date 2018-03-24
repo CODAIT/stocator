@@ -108,7 +108,6 @@ public class PasswordScopeAccessProvider implements AccessProvider {
    * Authentication logic
    *
    * @return Access JOSS access object
-   * @throws IOException if failed to parse the response
    */
   @Override
   public Access authenticate() {
