@@ -138,6 +138,7 @@ public class Utils {
    *
    * @param uri schema URI
    * @return true if hostName of the form container.service
+   * @throws IOException if error
    */
   public static boolean validSchema(URI uri) throws IOException {
     LOG.trace("Checking schema {}", uri.toString());
@@ -168,6 +169,7 @@ public class Utils {
    *
    * @param uri object store uri
    * @return host name
+   * @throws IOException if error
    */
   public static String getHost(URI uri) throws IOException {
     String host = uri.getHost();

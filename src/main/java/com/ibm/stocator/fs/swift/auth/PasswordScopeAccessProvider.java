@@ -25,13 +25,20 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.javaswift.joss.client.factory.AuthenticationMethod.AccessProvider;
+import org.javaswift.joss.command.impl.core.httpstatus.HttpStatusChecker;
+import org.javaswift.joss.command.impl.core.httpstatus.HttpStatusMatch;
+import org.javaswift.joss.command.impl.core.httpstatus.HttpStatusSuccessCondition;
+import org.javaswift.joss.exception.CommandException;
 import org.javaswift.joss.model.Access;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.http.HttpStatus;
 
 /**
  * KeyStone V3 authentication
@@ -46,6 +53,12 @@ public class PasswordScopeAccessProvider implements AccessProvider {
    */
   private static final Logger LOG = LoggerFactory
       .getLogger(PasswordScopeAccessProvider.class);
+
+  /*
+   * Http Status Checker
+   */
+  private static final HttpStatusChecker[] STATUS_CHECKERS =
+      { new HttpStatusSuccessCondition(new HttpStatusMatch(HttpStatus.SC_CREATED)) };
 
   /*
    * User ID
@@ -95,11 +108,9 @@ public class PasswordScopeAccessProvider implements AccessProvider {
    * Authentication logic
    *
    * @return Access JOSS access object
-   * @throws IOException if failed to parse the response
    */
-  public Access passwordScopeAuth() throws IOException {
-    InputStreamReader reader = null;
-    BufferedReader bufReader = null;
+  @Override
+  public Access authenticate() {
     try {
       JSONObject user = new JSONObject();
       user.put("id", mUserId);
@@ -127,42 +138,24 @@ public class PasswordScopeAccessProvider implements AccessProvider {
       connection.setRequestProperty("Content-Type", "application/json");
       OutputStream output = connection.getOutputStream();
       output.write(requestBody.toString().getBytes());
-      int status = connection.getResponseCode();
-      if (status != 201) {
-        return null;
+      HttpStatusChecker.verifyCode(STATUS_CHECKERS, connection.getResponseCode());
+      final String res;
+      try (final BufferedReader bufReader =
+          new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+        res = bufReader.readLine();
       }
-      reader = new InputStreamReader(connection.getInputStream());
-      bufReader = new BufferedReader(reader);
-      String res = bufReader.readLine();
       JSONParser parser = new JSONParser();
       JSONObject jsonResponse = (JSONObject) parser.parse(res);
 
       String token = connection.getHeaderField("X-Subject-Token");
       PasswordScopeAccess access = new PasswordScopeAccess(jsonResponse, token,
           mPrefferedRegion);
-      bufReader.close();
-      reader.close();
       connection.disconnect();
       return access;
-
-    } catch (Exception e) {
-      if (bufReader != null) {
-        bufReader.close();
-      }
-      if (reader != null) {
-        reader.close();
-      }
-      throw new IOException(e);
-    }
-  }
-
-  @Override
-  public Access authenticate() {
-    try {
-      return passwordScopeAuth();
-    } catch (IOException e) {
+    } catch (IOException | ParseException e) {
       LOG.error(e.getMessage());
-      return null;
+      throw new CommandException("Unable to execute the HTTP call or to convert the HTTP Response",
+              e);
     }
   }
 }
