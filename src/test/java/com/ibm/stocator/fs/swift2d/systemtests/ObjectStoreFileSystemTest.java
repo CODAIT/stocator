@@ -30,13 +30,17 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.reflect.Whitebox;
 
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.StocatorPath;
 
+@Category({ SwiftTest.class, SystemTest.class })
 public class ObjectStoreFileSystemTest extends SwiftBaseTest {
 
   private ObjectStoreFileSystem mMockObjectStoreFileSystem;

@@ -21,6 +21,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.MessageFormat;
 
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
 import com.ibm.stocator.fs.common.ObjectStoreGlobFilter;
 import com.ibm.stocator.fs.common.ObjectStoreGlobber;
 import org.apache.hadoop.fs.FileStatus;
@@ -28,7 +30,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category({ SwiftTest.class, SystemTest.class })
 public class TestSwiftOperations extends SwiftBaseTest {
 
   protected byte[] data = SwiftTestUtils.generateDataset(getBlockSize() * 2, 0, 255);

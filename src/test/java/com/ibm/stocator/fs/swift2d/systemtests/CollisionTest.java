@@ -24,7 +24,12 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
+
+@Category({ SwiftTest.class, SystemTest.class })
 public class CollisionTest extends SwiftBaseTest {
 
   protected byte[] data = SwiftTestUtils.generateDataset(getBlockSize() * 2, 0, 255);

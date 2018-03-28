@@ -22,12 +22,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.assertFileHasLength;
 import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.readBytesToString;
@@ -38,6 +42,7 @@ import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.writeTextFi
  * -this is a JUnit4 test suite used to initially test the Swift
  * component. Once written, there's no reason not to retain these tests.
  */
+@Category({ SwiftTest.class, SystemTest.class })
 public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
 
   private static final Log LOG =

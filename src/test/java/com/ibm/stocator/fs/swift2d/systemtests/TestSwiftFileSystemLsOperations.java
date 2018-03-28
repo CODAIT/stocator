@@ -26,6 +26,10 @@ import org.apache.hadoop.fs.PathFilter;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
 
 import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.assertListStatusFinds;
 import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.cleanup;
@@ -35,6 +39,7 @@ import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.touch;
 /**
  * Test the FileSystem#listStatus() operations
  */
+@Category({ SwiftTest.class, SystemTest.class })
 public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
   private static Path[] sTestDirs;

@@ -23,10 +23,15 @@ import java.io.IOException;
 import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
 
 /**
  * Test deletion operations
  */
+@Category({ SwiftTest.class, SystemTest.class })
 public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)

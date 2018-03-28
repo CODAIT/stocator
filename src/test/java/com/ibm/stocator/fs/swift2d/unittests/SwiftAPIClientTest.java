@@ -29,6 +29,7 @@ import org.javaswift.joss.client.mock.AccountMock;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.api.mockito.PowerMockito;
@@ -36,12 +37,16 @@ import org.powermock.reflect.Whitebox;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileStatus;
+
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.UnitTest;
 import com.ibm.stocator.fs.swift.SwiftAPIClient;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Utils.lastModifiedAsLong;
 
+@Category({ SwiftTest.class, UnitTest.class })
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(StoredObject.class)
 public class SwiftAPIClientTest {

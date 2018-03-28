@@ -266,6 +266,7 @@
                         <argLine>-Djava.net.preferIPv4Stack=true
                             -Djava.security.krb5.realm= -Djava.security.krb5.kdc=</argLine>
                         <redirectTestOutputToFile>${test.output.redirect}</redirectTestOutputToFile>
+                        <groups>${testcase.groups}</groups>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -502,6 +503,23 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+          <id>all-unit-tests</id>
+          <properties>
+            <testcase.groups>
+              com.ibm.stocator.fs.commom.UnitTest
+            </testcase.groups>
+          </properties>
+        </profile>
+        <profile>
+          <id>all-unit-and-system-tests</id>
+          <properties>
+            <testcase.groups>
+              com.ibm.stocator.fs.commom.UnitTest,
+              com.ibm.stocator.fs.commom.SystemTest
+            </testcase.groups>
+          </properties>
         </profile>
     </profiles>
     <reporting>

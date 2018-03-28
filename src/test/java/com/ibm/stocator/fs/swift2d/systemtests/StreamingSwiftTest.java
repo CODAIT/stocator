@@ -28,11 +28,15 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
 
 import static com.ibm.stocator.fs.common.Utils.getHost;
 
+@Category({ SwiftTest.class, SystemTest.class })
 public class StreamingSwiftTest {
 
   private boolean objectExpired = false;

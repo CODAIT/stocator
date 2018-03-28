@@ -24,12 +24,17 @@ import java.io.IOException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
 
 import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.readBytesToString;
 import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.writeTextFile;
 /**
  * Test filesystem read operations
  */
+@Category({ SwiftTest.class, SystemTest.class })
 public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
 
   /**

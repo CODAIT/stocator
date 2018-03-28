@@ -25,9 +25,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.experimental.categories.Category;
 
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.UnitTest;
 
+@Category({ SwiftTest.class, UnitTest.class })
 public class SwiftPublicContainerTest {
 
   private static final String PUBLIC_URI_PROPERTY = "fs.swift2d.public.uri";

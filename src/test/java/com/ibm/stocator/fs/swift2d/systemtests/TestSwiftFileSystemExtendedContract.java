@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.net.URI;
 
 import com.ibm.stocator.fs.ObjectStoreVisitor;
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -32,7 +35,9 @@ import com.ibm.stocator.fs.common.Constants;
 import org.apache.hadoop.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category({ SwiftTest.class, SystemTest.class })
 public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest {
 
   private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";

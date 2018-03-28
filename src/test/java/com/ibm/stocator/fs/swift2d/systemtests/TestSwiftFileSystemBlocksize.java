@@ -21,11 +21,16 @@ package com.ibm.stocator.fs.swift2d.systemtests;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.ibm.stocator.fs.commom.SwiftTest;
+import com.ibm.stocator.fs.commom.SystemTest;
 
 /**
  * Tests that blocksize is never zero for a file, either in the FS default
  * or the FileStatus value of a queried file
  */
+@Category({ SwiftTest.class, SystemTest.class })
 public class TestSwiftFileSystemBlocksize extends SwiftFileSystemBaseTest {
 
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
