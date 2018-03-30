@@ -33,6 +33,8 @@ public class ConnectionConfiguration {
   public static final int DEFAULT_REQUEST_CONNECT_TIMEOUT = 5000;
   public static final int DEFAULT_REQUEST_CONNECTION_TIMEOUT = 5000;
   public static final int DEFAULT_REQUEST_SOCKET_TIMEOUT = 50000;
+  public static final String TLS_V12 = "TLSv1.2";
+  public static final String DEFAULT_TLS = "default";
 
   /*
    * maximal connections per IP route
@@ -67,8 +69,24 @@ public class ConnectionConfiguration {
    * a maximum period inactivity between two consecutive data packets).
    */
   private int reqSocketTimeout;
+  private String newTLSVersion = null;
 
   public ConnectionConfiguration() {
+  }
+
+  public void setTLSVersion(String newTLS) {
+    newTLSVersion = newTLS;
+  }
+
+  public String getNewTLSVersion() {
+    return newTLSVersion;
+  }
+
+  public boolean isNewTLSneed() {
+    if (newTLSVersion != null && !newTLSVersion.equals(DEFAULT_TLS)) {
+      return true;
+    }
+    return false;
   }
 
   public int getMaxPerRoute() {
