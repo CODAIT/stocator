@@ -55,6 +55,8 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_DELETE_TEMP_DATA;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
 import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD;
 import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROPERTY;
+import static com.ibm.stocator.fs.swift.SwiftConstants.TLS_VERSION;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TLS_VERSION_PROPERTY;
 
 /**
  * Integrates Hadoop configuration with the Swift implementation
@@ -81,6 +83,8 @@ public final class ConfigurationHandler {
       String[] prefix = new String[]{SWIFT_SERVICE_PREFIX + service};
       String prefix2D = SWIFT2D_SERVICE_PREFIX + service;
       props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
+      Utils.updateProperty(conf, prefix2D, prefix, TLS_VERSION, props,
+          SWIFT_TLS_VERSION_PROPERTY, false);
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, USERNAME, props, SWIFT_USERNAME_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, PASSWORD, props, SWIFT_PASSWORD_PROPERTY, true);

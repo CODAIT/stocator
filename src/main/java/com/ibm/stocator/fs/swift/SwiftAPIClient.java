@@ -84,6 +84,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROP
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TLS_VERSION_PROPERTY;
 
 /**
  * Swift back-end driver
@@ -216,6 +217,9 @@ public class SwiftAPIClient implements IStoreClient {
         ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT));
     connectionConfiguration.setSoTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
         ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
+    connectionConfiguration.setTLSVersion(props.getProperty(SWIFT_TLS_VERSION_PROPERTY,
+        ConnectionConfiguration.TLS_V12));
+    LOG.trace("Set user provided TLS to {}", connectionConfiguration.getNewTLSVersion());
     LOG.trace("{} set connection manager", filesystemURI.toString());
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
     LOG.trace("{}", connectionConfiguration.toString());

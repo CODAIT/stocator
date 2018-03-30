@@ -314,6 +314,7 @@ The following is the list of the configuration keys
 |fs.swift2d.service.SERVICE_NAME.region | Mandatory for Keystone|
 |fs.swift2d.service.SERVICE_NAME.auth.method | Optional. Values: keystone, swiftauth, keystoneV3| keystoneV3
 |fs.swift2d.service.SERVICE_NAME.nonstreaming.upload | Optional. If set to true then any object upload will be stored locally in the temp file and uploaded on close method. Disable stocator streaming mode | false
+|fs.swift.service.SERVICE_NAME.tls.version | false | if not provided, then TLVv1.2 is used by default. To let system decide TLS version, use value 'default'
 
 
 #### Example of core-site.xml keys
