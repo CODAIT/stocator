@@ -217,7 +217,7 @@ public class SwiftAPIClient implements IStoreClient {
         ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT));
     connectionConfiguration.setSoTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
         ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
-    connectionConfiguration.setTLSVersion(props.getProperty(SWIFT_TLS_VERSION_PROPERTY,
+    connectionConfiguration.setTLSVersion(conf.get(SWIFT_TLS_VERSION_PROPERTY,
         ConnectionConfiguration.DEFAULT_TLS));
     LOG.trace("Set user provided TLS to {}", connectionConfiguration.getNewTLSVersion());
     LOG.trace("{} set connection manager", filesystemURI.toString());
