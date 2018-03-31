@@ -317,7 +317,7 @@ The following is the list of the configuration keys
 |fs.swift2d.service.SERVICE_NAME.region | Mandatory for Keystone|
 |fs.swift2d.service.SERVICE_NAME.auth.method | Optional. Values: keystone, swiftauth, keystoneV3| keystoneV3
 |fs.swift2d.service.SERVICE_NAME.nonstreaming.upload | Optional. If set to true then any object upload will be stored locally in the temp file and uploaded on close method. Disable stocator streaming mode | false
-|fs.swift2d.service.SERVICE_NAME.tls.version | false | if not provided, then system choosen is the default. In certain cases user may setup custom value, like TLSv1.2
+
 
 
 #### Example of core-site.xml keys
@@ -429,6 +429,7 @@ Below is the optional configuration that can be provided to Stocator and used in
 | fs.stocator.ReqConnectionRequestTimeout | 5000 | Request level connection timeout. Returns the timeout in milliseconds used when requesting a connection from the connection manager
 | fs.stocator.ReqSocketTimeout | 5000 | Defines the socket timeout (SO_TIMEOUT) in milliseconds, which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets).
 | fs.stocator.joss.synchronize.time | false | Will disable JOSS to synchronize time with the server. Setting this value to 'false' will badly impact on temp url. However this will reduce HEAD on account which might be problematic if the user doesn't has access rights to HEAD an account |
+|fs.stocator.tls.version | false | if not provided, then system choosen is the default. In certain cases user may setup custom value, like TLSv1.2
 
 ## Configure Stocator's schemas (optional)
 By default Stocator exposes `swift2d://` for Swift API and `cos://` for IBM Cloud Object Storage. It possible to configure Stocator to expose different schema.
