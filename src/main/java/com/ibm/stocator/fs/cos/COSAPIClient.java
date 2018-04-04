@@ -521,7 +521,7 @@ public class COSAPIClient implements IStoreClient {
     if (!key.endsWith("/")) {
       String newKey = key + "/";
       try {
-        LOG.debug("getFileStatus: original key not found. Alternative key {}", key);
+        LOG.debug("getFileStatus: original key not found. Alternative key {}", newKey);
         fileStatus = getFileStatusKeyBased(newKey, path);
       } catch (AmazonS3Exception e) {
         if (e.getStatusCode() != 404) {
