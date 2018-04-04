@@ -584,7 +584,7 @@ public class COSAPIClient implements IStoreClient {
     if (!key.endsWith("/")) {
       String newKey = key + "/";
       try {
-        LOG.debug("getFileStatus: original key not found. Alternative key {}", key);
+        LOG.debug("getFileStatus: original key not found. Alternative key {}", newKey);
         fileStatus = getFileStatusKeyBased(newKey, path);
       } catch (AmazonS3Exception e) {
         if (e.getStatusCode() != 404) {
@@ -645,6 +645,7 @@ public class COSAPIClient implements IStoreClient {
     }
     mCachedSparkOriginated.put(key, Boolean.valueOf(stocatorCreated));
     FileStatus fs = createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
+    LOG.trace("getFileStatusKeyBased: key {} fs.path {}", key, fs.getPath());
     memoryCache.putFileStatus(path.toString(), fs);
     return fs;
   }
