@@ -144,7 +144,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     Path path = storageClient.qualify(f);
     try {
       FileStatus fileStatus = getFileStatus(path);
-      LOG.debug("is directory: {}" + path.toString() + " " + fileStatus.isDirectory());
+      LOG.debug("is directory: {} : {}", path.toString(), fileStatus.isDirectory());
       return fileStatus.isDirectory();
     } catch (FileNotFoundException e) {
       return false;
