@@ -582,6 +582,7 @@ public class COSAPIClient implements IStoreClient {
     }
     mCachedSparkOriginated.put(key, Boolean.valueOf(stocatorCreated));
     FileStatus fs = createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
+    LOG.trace("getFileStatusKeyBased: key {} fs.path {}", key, fs.getPath());
     memoryCache.putFileStatus(path.toString(), fs);
     return fs;
   }
