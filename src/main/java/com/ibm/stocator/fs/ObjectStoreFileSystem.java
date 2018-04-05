@@ -350,9 +350,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     FileStatus fileStatus = null;
     if (isDirectory == null) {
       try {
+        LOG.trace("listStatus: internal get status-start for {}", f);
         fileStatus = getFileStatus(f);
         if (fileStatus != null) {
-          LOG.trace("listStatus for {} completed,  directory : {}", f.toString(),
+          LOG.trace("listStatus: internal get status-finish for {}. Directory {}", f.toString(),
               fileStatus.isDirectory());
           if (fileStatus.isDirectory()) {
             isDirectory = Boolean.TRUE;
@@ -365,28 +366,28 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       }
     }
     // we need this,since ObjectStoreGlobber may send prefix
-    // container/objectperfix* and objectperfix is not exists as an object or
+    // container/objectprefix* and objectprefix is not exists as an object or
     // pseudo directory
     if (fileStatus != null && !(prefixBased || (isDirectory != null && isDirectory))) {
-      LOG.debug("listStatus: {} is not a directory, but a file. Return single result",
+      LOG.debug("listStatus: {} is not a directory, but a file. Return single element",
           f.toString());
       FileStatus[] stats = new FileStatus[1];
       stats[0] = fileStatus;
       return stats;
     }
-    LOG.debug("listStatus: {} is not exiists, prefix based listing set to {}. Perform list",
+    LOG.debug("listStatus: {} -not found. Prefix based listing set to {}. Perform list",
         f.toString(), prefixBased);
     Path path = storageClient.qualify(f);
     if (!storageClient.isFlatListing()) {
-      LOG.debug("Using s3a style, non flat list. Requested via configuration flag for {}",
-          f);
+      LOG.trace("Using hadoop list style, non flat list {}", f);
       listing =  storageClient.list(hostNameScheme, path, false, prefixBased,
           isDirectory, storageClient.isFlatListing(), filter);
     } else {
+      LOG.trace("Using stocator list style, flat list {}", f);
       listing = storageClient.list(hostNameScheme, path, false, prefixBased, isDirectory,
           storageClient.isFlatListing(), filter);
     }
-    LOG.debug("listStatus: {} list completed with {} results", path.toString(),
+    LOG.debug("listStatus: {} completed. return {} results", path.toString(),
         listing.length);
     return listing;
   }

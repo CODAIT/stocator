@@ -87,13 +87,11 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.InvalidRequestException;
 import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
-import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.CACHE_SIZE;
 import static com.ibm.stocator.fs.common.Constants.GUAVA_CACHE_SIZE_DEFAULT;
 import static com.ibm.stocator.fs.cos.COSConstants.CLIENT_EXEC_TIMEOUT;
@@ -827,13 +825,14 @@ public class COSAPIClient implements IStoreClient {
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
       boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
-    LOG.debug("Native direct list status for {}", path);
+    LOG.debug("list:(start) {}. full listing {}, prefix based {}, flat list {}",
+        path, fullListing, prefixBased, flatListing);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(path);
     if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")
         && !path.toString().equals(hostName)) {
       key = key + "/";
-      LOG.debug("listNativeDirect modify key to {}", key);
+      LOG.debug("list:(mid) {}, modify key to {}", path, key);
     }
 
     Map<String, FileStatus> emptyObjects = new HashMap<String, FileStatus>();
@@ -842,6 +841,7 @@ public class COSAPIClient implements IStoreClient {
     request.setMaxKeys(5000);
     request.setPrefix(key);
     if (!flatListing) {
+      LOG.trace("ist:(mid) {}, set delimiter", path);
       request.setDelimiter("/");
     }
 
@@ -873,7 +873,7 @@ public class COSAPIClient implements IStoreClient {
         }
         obj.setKey(correctPlusSign(key, obj.getKey()));
         String objKey = obj.getKey();
-        String unifiedObjectName = extractUnifiedObjectName(objKey);
+        String unifiedObjectName = stocatorPath.extractUnifiedObjectName(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
         if (stocatorOrigin && !fullListing) {
           LOG.trace("{} created by Spark", unifiedObjectName);
@@ -882,7 +882,8 @@ public class COSAPIClient implements IStoreClient {
           // however there be might parts of failed tasks that
           // were not aborted
           // we need to make sure there are no failed attempts
-          if (nameWithoutTaskID(objKey).equals(nameWithoutTaskID(prevObj.getKey()))) {
+          if (stocatorPath.nameWithoutTaskID(objKey)
+              .equals(stocatorPath.nameWithoutTaskID(prevObj.getKey()))) {
             // found failed that was not aborted.
             LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
             if (prevObj.getSize() < obj.getSize()) {
@@ -1024,63 +1025,6 @@ public class COSAPIClient implements IStoreClient {
     LOG.debug("isJobSuccessful: not cached {}. Status is {}", objectKey, isJobOK);
     mCachedSparkJobsStatus.put(objectKey, isJobOK);
     return isJobOK.booleanValue();
-  }
-
-  /**
-   * Accepts any object name. If object name of the form
-   * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   * .csv-attempt_20160317132wrong_0000_m_000000_1 Then a/b/c/gil.data is
-   * returned. Code testing that attempt_20160317132wrong_0000_m_000000_1 is
-   * valid task id identifier
-   *
-   * @param objectKey
-   * @return unified object name
-   */
-  private String extractUnifiedObjectName(String objectKey) {
-    return extractFromObjectKeyWithTaskID(objectKey, true);
-  }
-
-  /**
-   * Accepts any object name. If object name is of the form
-   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   * .csv-attempt_20160317132wrong_0000_m_000000_1 Then
-   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is
-   * returned. Perform test that attempt_20160317132wrong_0000_m_000000_1 is
-   * valid task id identifier
-   *
-   * @param objectName
-   * @return unified object name
-   */
-  private String nameWithoutTaskID(String objectKey) {
-    return extractFromObjectKeyWithTaskID(objectKey, false);
-  }
-
-  /**
-   * Extracts from the object key an unified object name or name without task ID
-   *
-   * @param objectKey
-   * @param isUnifiedObjectKey
-   * @return
-   */
-  private String extractFromObjectKeyWithTaskID(String objectKey, boolean isUnifiedObjectKey) {
-    Path p = new Path(objectKey);
-    int index = objectKey.indexOf("-" + HADOOP_ATTEMPT);
-    if (index > 0) {
-      String attempt = objectKey.substring(objectKey.lastIndexOf("-") + 1);
-      try {
-        TaskAttemptID.forName(attempt);
-        if (isUnifiedObjectKey) {
-          return p.getParent().toString();
-        } else {
-          return objectKey.substring(0, index);
-        }
-      } catch (IllegalArgumentException e) {
-        return objectKey;
-      }
-    } else if (isUnifiedObjectKey && objectKey.indexOf(HADOOP_SUCCESS) > 0) {
-      return p.getParent().toString();
-    }
-    return objectKey;
   }
 
   /**

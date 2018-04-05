@@ -21,10 +21,12 @@ import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 
@@ -314,6 +316,66 @@ public class StocatorPath {
       }
     }
     return path;
+  }
+
+  /**
+   * Accepts any object name. If object name of the form
+   * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
+   * .csv-attempt_20160317132wrong_0000_m_000000_1 Then a/b/c/gil.data is
+   * returned. Code testing that attempt_20160317132wrong_0000_m_000000_1 is
+   * valid task id identifier
+   *
+   * @param objectKey object key
+   * @return unified object name
+   */
+  public String extractUnifiedObjectName(String objectKey) {
+    return extractFromObjectKeyWithTaskID(objectKey, true);
+  }
+
+  /**
+   * Accepts any object name. If object name is of the form
+   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
+   * .csv-attempt_20160317132wrong_0000_m_000000_1 Then
+   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is
+   * returned. Perform test that attempt_20160317132wrong_0000_m_000000_1 is
+   * valid task id identifier
+   *
+   * @param objectKey object key
+   * @return unified object name
+   */
+  public String nameWithoutTaskID(String objectKey) {
+    return extractFromObjectKeyWithTaskID(objectKey, false);
+  }
+
+  /**
+   * Extracts from the object key an unified object name or name without task ID
+   *
+   * @param objectKey object key
+   * @param isUnifiedObjectKey
+   * @return
+   */
+  private String extractFromObjectKeyWithTaskID(String objectKey, boolean isUnifiedObjectKey) {
+    Path p = new Path(objectKey);
+    int index = objectKey.indexOf("-" + HADOOP_ATTEMPT);
+    if (index > 0) {
+      String attempt = objectKey.substring(objectKey.lastIndexOf("-") + 1);
+      try {
+        if (attempt.indexOf(".") > 0) {
+          attempt = attempt.substring(0, attempt.indexOf("."));
+        }
+        TaskAttemptID.forName(attempt);
+        if (isUnifiedObjectKey) {
+          return p.getParent().toString();
+        } else {
+          return objectKey.substring(0, index);
+        }
+      } catch (IllegalArgumentException e) {
+        return objectKey;
+      }
+    } else if (isUnifiedObjectKey && objectKey.indexOf(HADOOP_SUCCESS) > 0) {
+      return p.getParent().toString();
+    }
+    return objectKey;
   }
 
 }

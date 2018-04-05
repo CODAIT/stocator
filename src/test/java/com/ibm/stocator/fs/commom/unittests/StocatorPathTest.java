@@ -215,4 +215,18 @@ public class StocatorPathTest {
     res = stocPath.getBaseDirectory(input);
     Assert.assertEquals("Not match", expected, res);
   }
+
+  @Test
+  public void extractFromObjectKeyWithTaskIDTest() throws Exception {
+    String input =
+        "gilv0505v3cos/a/data/part-00000-e5eede57-4d16-4cd6-bc51-c877e232ce81-"
+        + "attempt_20180405072427_0001_m_000000_0.json";
+    String expected = "gilv0505v3cos/a/data";
+    String res = stocPath.extractUnifiedObjectName(input);
+    Assert.assertEquals("Not match", expected, res);
+    expected = "gilv0505v3cos/a/data/part-00000-e5eede57-4d16-4cd6-bc51-c877e232ce81";
+    res = stocPath.nameWithoutTaskID(input);
+    Assert.assertEquals("Not match", expected, res);
+  }
+
 }
