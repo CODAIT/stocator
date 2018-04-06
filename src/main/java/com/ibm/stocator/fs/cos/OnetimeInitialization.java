@@ -49,10 +49,11 @@ public class OnetimeInitialization {
     try {
       prop.load(in);
       userAgentName += " " + prop.getProperty("stocator.version");
-    } catch (IOException e) {
+    } catch (Exception e) {
       // Do nothing and just ignore the exception.  We'll end up with
       // a stocator signature that has no version number, but hopefully
       // we won't fail the run.
+      LOG.warn(e.getMessage());
     } finally {
       try {
         in.close();
