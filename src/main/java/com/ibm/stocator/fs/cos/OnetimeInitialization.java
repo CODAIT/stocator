@@ -17,7 +17,6 @@
 
 package com.ibm.stocator.fs.cos;
 
-import java.io.IOException;
 import java.util.Properties;
 import java.io.InputStream;
 
