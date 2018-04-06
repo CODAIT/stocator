@@ -56,8 +56,9 @@ public class OnetimeInitialization {
     } finally {
       try {
         in.close();
-      } catch (IOException e) {
+      } catch (Exception e) {
         // Do nothing as per the comment above.
+        LOG.warn(e.getMessage());
       }
     }
     LOG.trace("userAgent = {}", userAgentName);
