@@ -82,11 +82,11 @@ Stocator verifies that
 If not modified, the default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`.
 
 ## Configuration keys
-Stocator uses configuration keys that can be configured via `core-site.xml` or provided in run time without using `core-sites.xml`. To provide keys in run time use SparkContext variable with
+Stocator uses configuration keys that can be configured via spark's `conf/core-site.xml` or provided in run time without using `core-site.xml`. To provide keys in run time use SparkContext variable with
 
 	sc.hadoopConfiguration.set("KEY","VALUE")
 
-For usage with `core-sites.xml`, see the configuration template located under `conf/core-site.xml.template`.
+For usage with `core-site.xml`, see the configuration template located under `conf/core-site.xml.template`.
 
 
 ## Stocator and IBM Cloud Object Storage (COS)
