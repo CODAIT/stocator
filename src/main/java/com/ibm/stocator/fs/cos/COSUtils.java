@@ -26,10 +26,10 @@ import java.nio.file.AccessDeniedException;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.ibm.cloud.objectstorage.AmazonClientException;
+import com.ibm.cloud.objectstorage.AmazonServiceException;
+import com.ibm.cloud.objectstorage.services.s3.model.AmazonS3Exception;
+import com.ibm.cloud.objectstorage.services.s3.model.S3ObjectSummary;
 import com.ibm.stocator.fs.cos.exception.COSClientIOException;
 import com.ibm.stocator.fs.cos.exception.COSIOException;
 import com.ibm.stocator.fs.cos.exception.COSServiceIOException;
@@ -283,5 +283,55 @@ public final class COSUtils {
     builder.append("size=").append(summary.getSize());
     return builder.toString();
   }
+  /**
+   * Removes the ?token=abc from the path and returns the clean path
+   * @param path with token for example: "cos://spark1.myCos/one6.txt?token=abc"
+   * @return path without token for example: "cos://spark1.myCos/one6.txt"
+   */
+  public static String removeToken(String path) {
+    if (path.indexOf("?token=") == -1 && path.indexOf("%3Ftoken=") == -1) {
+      return path;
+    }
+    // try ?token
+    int tokenIdxStart = path.indexOf("?token=");
+    // then its %3Ftoken
+    if (tokenIdxStart == -1) {
+      tokenIdxStart = path.indexOf("%3Ftoken=");
+    }
+    int tokenIdxEnd = path.length();
+    int separatorIdx = path.indexOf("/", tokenIdxStart);
+    if (separatorIdx != -1) {
+      tokenIdxEnd = separatorIdx;
+    }
+    int tokenLength = path.substring(tokenIdxStart, tokenIdxEnd).length();
+    StringBuilder url = new StringBuilder();
+    url.append(path.substring(0, tokenIdxStart));
+    url.append(path.substring(tokenIdxStart + tokenLength));
+    return url.toString();
+  }
 
+  /**
+   * Extracts the token from the path
+   * @param path path with token for example: "cos://spark1.myCos/one6.txt?token=abc"
+   * @return the token for example: "abc"
+   */
+  public static String extractToken(String path) {
+    if (path.indexOf("?token=") == -1 && path.indexOf("%3Ftoken=") == -1) {
+      return null;
+    }
+    // try ?token
+    int tokenIdxStart = path.indexOf("?token=");
+    int tokenKeyLen = 7;
+    // then its %3Ftoken
+    if (tokenIdxStart == -1) {
+      tokenIdxStart = path.indexOf("%3Ftoken=");
+      tokenKeyLen = 9;
+    }
+    int tokenIdxEnd = path.indexOf("/", tokenIdxStart);
+    if (tokenIdxEnd == -1) {
+      tokenIdxEnd = path.length();
+    }
+    String token = path.substring(tokenIdxStart + tokenKeyLen, tokenIdxEnd);
+    return token;
+  }
 }

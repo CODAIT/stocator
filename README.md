@@ -82,11 +82,11 @@ Stocator verifies that
 If not modified, the default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`.
 
 ## Configuration keys
-Stocator uses configuration keys that can be configured via `core-site.xml` or provided in run time without using `core-sites.xml`. To provide keys in run time use SparkContext variable with
+Stocator uses configuration keys that can be configured via spark's `conf/core-site.xml` or provided in run time without using `core-site.xml`. To provide keys in run time use SparkContext variable with
 
 	sc.hadoopConfiguration.set("KEY","VALUE")
 
-For usage with `core-sites.xml`, see the configuration template located under `conf/core-site.xml.template`.
+For usage with `core-site.xml`, see the configuration template located under `conf/core-site.xml.template`.
 
 
 ## Stocator and IBM Cloud Object Storage (COS)
@@ -167,6 +167,9 @@ The following is the list of the Stocator configuration keys. `<service>` can be
 |fs.cos.`<service>`.iam.api.key | API key  | mandatory | value of `apiKey`
 |fs.cos.`<service>`.iam.service.id  | Service ID | mandatory | Value of `iam_serviceid_crn`. In certain cases you need only value after `:serviceid:`
 |fs.cos.`<service>`.endpoint | COS endpoint | mandatory | Open link from `endpoints` and choose relevant endpoint. This endpoint should go here
+|fs.cos.`<service>`.iam.token.max.retry | IAM token retrieval max retry  | Optional |
+|fs.cos.`<service>`.iam.token.refresh | IAM token refresh time offset in seconds  | Optional |
+
 
 Example, configure `<service>` as `myCOS`:
 
@@ -189,7 +192,7 @@ Now you can use URI
 
 
 An optional, it is possible to provide existing token instead of using API key.
-Instead of providing `fs.cos.myCos.iam.api.key`, Stocator supports `fs.cos.myCos.iam.api.token` that may contain value of the existing token. When token is expired, Stocator will throw `403` exception. It's the user responsibility to provide long activation token or re-create token outside of Stocator.
+Instead of providing `fs.cos.myCos.iam.api.key`, Stocator supports `fs.cos.myCos.iam.token` that may contain value of the existing token. When token is expired, Stocator will throw `403` exception. It's the user responsibility to provide long activation token or re-create token outside of Stocator.
 
 #### COS Connector configuration without IAM
 

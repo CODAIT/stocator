@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.18-SNAPSHOT</version>
+    <version>1.0.17-IBM-SDK</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -69,21 +69,15 @@
         <httpcomponents.httpclient.version>4.5.5</httpcomponents.httpclient.version>
         <powermock.version>1.7.3</powermock.version>
         <mockito.version>1.10.19</mockito.version>
-        <amazon.sdk.version>1.11.59</amazon.sdk.version>
+        <ibm.sdk.version>2.0.2</ibm.sdk.version>
         <google.guava.version>24.1-jre</google.guava.version>
     </properties>
 
     <dependencies>
         <dependency>
-           <groupId>com.amazonaws</groupId>
-           <artifactId>aws-java-sdk</artifactId>
-           <version>${amazon.sdk.version}</version>
-           <exclusions>
-                <exclusion>
-                    <artifactId>org.apache.httpcomponents</artifactId>
-                    <groupId>httpclient</groupId>
-                </exclusion>
-            </exclusions>
+           <groupId>com.ibm.cos</groupId>
+           <artifactId>ibm-cos-java-sdk-bundle</artifactId>
+           <version>${ibm.sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -161,11 +155,6 @@
                </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>commons-validator</groupId>
-            <artifactId>commons-validator</artifactId>
-            <version>1.6</version>
-	   </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -255,7 +244,7 @@
         </resources>
         <pluginManagement>
             <plugins>
-                <plugin>
+                   <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.7.0</version>
@@ -297,23 +286,46 @@
             </plugins>
         </pluginManagement>
         <plugins>
-     <plugin>
+           <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-shade-plugin</artifactId>
               <version>3.1.0</version>
               <configuration>
-        			<createDependencyReducedPom>false</createDependencyReducedPom>
-                 <artifactSet>
+                <artifactSet>
                       <includes>
+                          <include>com.ibm.cos:*</include>
+                          <include>org.javaswift:*</include>
+                          <include>org.apache.httpcomponents:*</include>
                           <include>com.google.guava:*</include>
+                          <include>com.google.errorprone:*</include>
+                          <include>com.googlecode.json-simple:*</include>
                       </includes>
                   </artifactSet>
                    <relocations>
                         <relocation>
-                            <pattern>com.google.guava</pattern>
-                            <shadedPattern>com.google.guava.shade</shadedPattern>
+                            <pattern>com.ibm.cloud.objectstorage</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.cos</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.javaswift.joss</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.joss</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.http</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.http</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.google</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.google</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.json.simple</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.json</shadedPattern>
                         </relocation>
                    </relocations>
+                   <shadedArtifactAttached>false</shadedArtifactAttached>
+                   <createDependencyReducedPom>true</createDependencyReducedPom>
+                   <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                </configuration>
                <executions>
                    <execution>
@@ -321,9 +333,14 @@
                        <goals>
                            <goal>shade</goal>
                        </goals>
+                       <configuration>
+                           <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                           </transformers>
+                       </configuration>
                    </execution>
                </executions>
-            </plugin>
+           </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>

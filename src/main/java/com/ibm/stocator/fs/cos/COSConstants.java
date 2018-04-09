@@ -49,6 +49,18 @@ public class COSConstants {
   public static final String ACCESS_KEY = ".access.key";
   public static final String ACCESS_KEY_COS_PROPERTY = FS_COS + ACCESS_KEY;
 
+  public static final String API_KEY = ".iam.api.key";
+  public static final String API_KEY_IAM_PROPERTY = FS_COS + API_KEY;
+
+  public static final String IAM_TOKEN = ".iam.token";
+  public static final String IAM_TOKEN_PROPERTY = FS_COS + IAM_TOKEN;
+
+  public static final String IAM_ENDPOINT = ".iam.endpoint";
+  public static final String IAM_ENDPOINT_PROPERTY = FS_COS + IAM_ENDPOINT;
+
+  public static final String IAM_SERVICE_INSTANCE_ID = ".iam.service.id";
+  public static final String IAM_SERVICE_INSTANCE_ID_PROPERTY = FS_COS + IAM_SERVICE_INSTANCE_ID;
+
   public static final String SECRET_KEY = ".secret.key";
   public static final String SECRET_KEY_COS_PROPERTY = FS_COS + SECRET_KEY;
 
@@ -191,5 +203,11 @@ public class COSConstants {
   public static final String INPUT_FADV_NORMAL = "normal";
   public static final String INPUT_FADV_SEQUENTIAL = "sequential";
   public static final String INPUT_FADV_RANDOM = "random";
+
+  public static final String IAM_TOKEN_MAX_RETRY = ".iam.token.max.retry";
+  public static final String IAM_TOKEN_MAX_RETRY_PROPERTY = FS_COS + IAM_TOKEN_MAX_RETRY;
+
+  public static final String IAM_TOKEN_REFRESH_OFFSET = ".iam.token.refresh";
+  public static final String IAM_TOKEN_REFRESH_OFFSET_PROPERTY = FS_COS + IAM_TOKEN_REFRESH_OFFSET;
 
 }

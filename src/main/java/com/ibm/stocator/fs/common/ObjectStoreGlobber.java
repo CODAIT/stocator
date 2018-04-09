@@ -35,6 +35,8 @@ import org.apache.hadoop.fs.PathFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ibm.stocator.fs.cos.COSUtils;
+
 public class ObjectStoreGlobber {
   public static final Logger LOG = LoggerFactory.getLogger(ObjectStoreGlobber.class.getName());
 
@@ -44,16 +46,18 @@ public class ObjectStoreGlobber {
   private final PathFilter filter;
 
   public ObjectStoreGlobber(ExtendedFileSystem fsT, Path pathPatternT, PathFilter filterT) {
-    fs = fsT;
-    fc = null;
-    pathPattern = pathPatternT;
-    filter = filterT;
+    this(null, fsT, pathPatternT, filterT);
   }
 
   public ObjectStoreGlobber(FileContext fcT, Path pathPatternT, PathFilter filterT) {
-    fs = null;
-    fc = fcT;
+    this(fcT, null, pathPatternT, filterT);
+  }
+
+  private ObjectStoreGlobber(FileContext fcT, ExtendedFileSystem fsT, Path pathPatternT,
+                PathFilter filterT) {
     pathPattern = pathPatternT;
+    fs = fsT;
+    fc = fcT;
     filter = filterT;
   }
 
@@ -143,8 +147,9 @@ public class ObjectStoreGlobber {
     if (!prefix.endsWith("/")) {
       prefix = prefix + "/";
     }
-    ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(pathPattern.toString(),
-        prefix, firstSpecialChar);
+    ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(
+        COSUtils.removeToken(pathPattern.toString()),
+        COSUtils.removeToken(prefix), firstSpecialChar);
 
     if (pathPatternString.contains("?temp_url")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};
@@ -173,13 +178,21 @@ public class ObjectStoreGlobber {
       LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
           pathPattern.toString());
       candidates = new ArrayList<>(Arrays.asList(getFileStatus(new Path(pathPattern.toString()))));
-      if (candidates.isEmpty()) {
+      if (candidates == null || candidates.isEmpty()) {
         return new FileStatus[0];
       }
+      LOG.debug("About to loop over candidates");
       for (FileStatus candidate : candidates) {
+        if (candidate == null) {
+          throw new FileNotFoundException("Not found " + pathPatternString);
+        }
+        LOG.trace("Loop over {}", candidate);
+        // if ?token exists then compare to pattern without the ?token=
         if (filter.accept(candidate.getPath())
-            && (candidate.getPath().toString().startsWith(pathPattern.toString() + "/")
-                || (candidate.getPath().toString().equals(pathPattern.toString())))) {
+            && (candidate.getPath().toString().startsWith(
+                COSUtils.removeToken(pathPattern.toString()) + "/")
+                || (candidate.getPath().toString().equals(
+                    COSUtils.removeToken(pathPattern.toString()))))) {
           results.add(candidate);
         }
       }
