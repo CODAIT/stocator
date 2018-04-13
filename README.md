@@ -550,8 +550,8 @@ More information about Stocator can be find at
 * [MapReduce and object stores – How can we do it better?](https://developer.ibm.com/code/2017/05/19/mapreduce-object-stores-can-better/)
 * [Advantages and complexities of integrating Hadoop with object stores](https://www.ibm.com/blogs/cloud-computing/2017/05/integrating-hadoop-object-stores/)
 * [Stocator on developerWorks Open](https://developer.ibm.com/open/openprojects/stocator/)
-* [Fast Lane for Connecting Object Stores to Apache Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
-* [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
+* [Analyze data faster using Spark and IBM Cloud Object Storage](https://www.ibm.com/developerworks/library/ba-1612spark-cloud-object-storage-stocator-keystone/index.html)
+* [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html?m=1)
 * [Simulating E.T.
  or: how to insert individual files into object storage from within a map function in Apache Spark](https://medium.com/ibm-watson-data-lab/simulating-e-t-e34f4fa7a4f0)
 * [Hadoop and object stores: Can we do it better?](https://conferences.oreilly.com/strata/strata-eu/public/schedule/detail/57598) Strata Data Conference, 23-25 May 2017, London, UK
