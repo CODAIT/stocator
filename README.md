@@ -26,7 +26,8 @@ Stocator is a generic connector, that may contain various implementations for ob
 * If you want to build a jar with all the dependencies, please execute 
 
 		mvn clean package -Pall-in-one
-
+		
+ 
 ## Usage with Apache Spark
 Stocator can be used easily with Apache Spark. There are different ways to use Stocator
 
