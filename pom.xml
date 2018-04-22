@@ -67,7 +67,7 @@
         <jackson.version>1.9.13</jackson.version>
         <httpcomponents.httpcore.version>4.4.9</httpcomponents.httpcore.version>
         <httpcomponents.httpclient.version>4.5.5</httpcomponents.httpclient.version>
-        <powermock.version>1.7.3</powermock.version>
+        <powermock.version>1.7.4</powermock.version>
         <mockito.version>1.10.19</mockito.version>
         <amazon.sdk.version>1.11.59</amazon.sdk.version>
         <google.guava.version>24.1-jre</google.guava.version>
