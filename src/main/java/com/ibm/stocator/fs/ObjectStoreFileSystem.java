@@ -444,6 +444,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       Path pathToObj = new Path(objNameModified);
       LOG.trace("mkdirs {} modified name", objNameModified);
       // make sure there is no overwrite of existing data
+      // if we here, means getfilestatus() returned false and
+      // fileoutputcomitter is about to create job temp folder
+      // in this case there is no need to check wether base directory exists
+      // as it was already checked in getfilestatus() method
+      /*
       try {
         String directoryToExpect = stocatorPath.getBaseDirectory(f.toString());
         FileStatus fileStatus = getFileStatus(new Path(directoryToExpect));
@@ -455,7 +460,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       } catch (FileNotFoundException e) {
         LOG.debug("mkdirs {} - not exists. Proceed", pathToObj.getParent().toString());
       }
-
+      */
       String plainObjName = pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
       Map<String, String> metadata = new HashMap<String, String>();
