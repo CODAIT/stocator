@@ -69,7 +69,7 @@
         <httpcomponents.httpclient.version>4.5.5</httpcomponents.httpclient.version>
         <powermock.version>1.7.3</powermock.version>
         <mockito.version>1.10.19</mockito.version>
-        <ibm.sdk.version>2.0.2</ibm.sdk.version>
+        <ibm.sdk.version>2.1.1</ibm.sdk.version>
         <google.guava.version>24.1-jre</google.guava.version>
     </properties>
 
