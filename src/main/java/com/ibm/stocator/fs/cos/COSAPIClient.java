@@ -1417,16 +1417,6 @@ public class COSAPIClient implements IStoreClient {
     }
   }
 
-  private String getFirstName(String p) {
-    if (p.startsWith("/")) {
-      p = p.substring(p.indexOf("/"));
-    }
-    if (p.indexOf("/") > 0) {
-      return p.substring(0, p.indexOf("/"));
-    }
-    return p;
-  }
-
   /**
    * Initiate a {@code listObjects} operation, incrementing metrics
    * in the process.
