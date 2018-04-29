@@ -89,6 +89,7 @@
 6. Support for temp urls
 7. Added thread pool for create method
 8. Support spaces in the names
+
 ### Version 1.0.7
 1. Modified JOSS to disable HEAD on account when accessing containers. This caused issues when user doesn't has access on account level, but only on container level.
 2. Fixed regression caused by consumeQueitely. This fix improved read by 3 times
