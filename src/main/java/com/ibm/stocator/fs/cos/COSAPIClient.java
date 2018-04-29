@@ -603,6 +603,7 @@ public class COSAPIClient implements IStoreClient {
         ListObjectsRequest request = new ListObjectsRequest();
         request.setBucketName(mBucket);
         request.setPrefix(key);
+        request.withEncodingType("UTF-8");
         request.setDelimiter("/");
         request.setMaxKeys(1);
 
@@ -917,6 +918,7 @@ public class COSAPIClient implements IStoreClient {
     request.setBucketName(mBucket);
     request.setMaxKeys(5000);
     request.setPrefix(key);
+    request.withEncodingType("UTF-8");
     if (!flatListing) {
       LOG.trace("ist:(mid) {}, set delimiter", path);
       request.setDelimiter("/");
@@ -1490,16 +1492,6 @@ public class COSAPIClient implements IStoreClient {
         throw translateException("put", putObjectRequest.getKey(), e);
       }
     }
-  }
-
-  private String getFirstName(String p) {
-    if (p.startsWith("/")) {
-      p = p.substring(p.indexOf("/"));
-    }
-    if (p.indexOf("/") > 0) {
-      return p.substring(0, p.indexOf("/"));
-    }
-    return p;
   }
 
   /**

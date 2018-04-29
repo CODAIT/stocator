@@ -61,13 +61,13 @@
         <findbugs.path>build/findbugs</findbugs.path>
         <slf4j.version>1.7.25</slf4j.version>
         <java.version>1.7</java.version>
-        <joss.version>0.10.1</joss.version>
+        <joss.version>0.10.2</joss.version>
         <hadoop.version>2.7.3</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.13</jackson.version>
         <httpcomponents.httpcore.version>4.4.9</httpcomponents.httpcore.version>
         <httpcomponents.httpclient.version>4.5.5</httpcomponents.httpclient.version>
-        <powermock.version>1.7.3</powermock.version>
+        <powermock.version>1.7.4</powermock.version>
         <mockito.version>1.10.19</mockito.version>
         <ibm.sdk.version>2.0.2</ibm.sdk.version>
         <google.guava.version>24.1-jre</google.guava.version>
