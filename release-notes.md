@@ -1,5 +1,30 @@
 ## Release notes
 
+### Version 1.0.19
+
+1. [bug] Additional globber fixes
+
+### Version 1.0.18
+
+1. 
+[bug] fixing csv partitions that may fail with CSV files
+
+### Version 1.0.17
+
+1. [swift] Allow to configure TLS protocol version
+2. [cos] ignore exception if stocator.properties not found
+3. [cos] Fixing issues with unified object name extraction
+4. Fixes to globber
+
+### Version 1.0.16
+
+1. Preserve file extensions for data parts
+2. [swift] Allow Swift container name to contain spaces
+3. Add shade generated pom to gitignore
+4. [swift] Pass back failed keystone authentication failures
+5. Update thirdparty dependencies to the latest compatible versions
+6. [swift] Update PasswordScopeAccessProvider.java
+
 ### Version 1.0.15
 
 1. [cos] Fixing BUFFER_DIR to provide input for the temp files folders
