@@ -22,6 +22,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
+import com.ibm.stocator.fs.common.FileSystemTestUtils;
+
 /**
  * Tests that blocksize is never zero for a file, either in the FS default
  * or the FileStatus value of a queried file
@@ -48,7 +50,7 @@ public class TestSwiftFileSystemBlocksize extends SwiftFileSystemBaseTest {
   @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
   public void testBlocksizeNonZeroForFile() throws Throwable {
     Path smallfile = new Path(getBaseURI() + "/test/smallfile");
-    SwiftTestUtils.writeTextFile(sFileSystem, smallfile, "blocksize", true);
+    FileSystemTestUtils.writeTextFile(sFileSystem, smallfile, "blocksize", true);
     createFile(smallfile);
     FileStatus status = getFs().getFileStatus(smallfile);
     assertTrue("Zero blocksize in " + status,

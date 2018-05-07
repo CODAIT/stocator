@@ -29,9 +29,9 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.assertFileHasLength;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.readBytesToString;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.writeTextFile;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.assertFileHasLength;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.readBytesToString;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.writeTextFile;
 
 /**
  * Test basic filesystem operations.

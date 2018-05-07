@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
 
@@ -27,9 +27,9 @@ import org.junit.Assume;
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
 
 /**
- * This is the base class for most of the Swift tests
+ * This is the base class for most of the COS tests
  */
-public class SwiftFileSystemBaseTest extends SwiftBaseTest {
+public class COSFileSystemBaseTest extends COSBaseTest {
 
   protected byte[] data = FileSystemTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
 
@@ -119,7 +119,6 @@ public class SwiftFileSystemBaseTest extends SwiftBaseTest {
    * @param actual actual value
    */
   protected void assertNotEqual(String message, int expected, int actual) {
-    assertTrue(message,
-               actual != expected);
+    assertTrue(message, actual != expected);
   }
 }

@@ -27,10 +27,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.assertListStatusFinds;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.cleanup;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.dumpStats;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.touch;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.assertListStatusFinds;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.cleanup;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.touch;
 
 /**
  * Test the FileSystem#listStatus() operations

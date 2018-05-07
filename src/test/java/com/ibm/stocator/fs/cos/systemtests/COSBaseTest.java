@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
 import java.net.URI;
@@ -37,14 +37,14 @@ import com.ibm.stocator.fs.ObjectStoreFileSystem;
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
 
 /**
- * This is the base class for most of the Swift tests
+ * This is the base class for most of the COS tests
  */
-public class SwiftBaseTest extends Assert {
+public class COSBaseTest extends Assert {
 
-  protected static final Logger LOG = LoggerFactory.getLogger(SwiftBaseTest.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(COSBaseTest.class);
   protected static ObjectStoreFileSystem sFileSystem;
   protected static String sBaseURI;
-  private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
+  private static final String BASE_URI_PROPERTY = "fs.cos.test.uri";
   private static Configuration sConf;
 
   @Before
@@ -54,18 +54,18 @@ public class SwiftBaseTest extends Assert {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    createSwiftFileSystem();
+    createCOSFileSystem();
   }
 
   public void manualSetUp(String containerName) throws Exception {
-    createSwiftFileSystem(containerName);
+    createCOSFileSystem(containerName);
   }
 
-  public static void createSwiftFileSystem() throws Exception {
-    createSwiftFileSystem("");
+  public static void createCOSFileSystem() throws Exception {
+    createCOSFileSystem("");
   }
 
-  public static void createSwiftFileSystem(String containerName) throws Exception {
+  public static void createCOSFileSystem(String containerName) throws Exception {
     sConf = new Configuration();
     sBaseURI = sConf.get(BASE_URI_PROPERTY);
     if (sBaseURI == null || sBaseURI.equals("")) {

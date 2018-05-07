@@ -121,6 +121,9 @@ public class StocatorPath {
     }
     if (!res.equals("")) {
       if (addRoot) {
+        if (res != null && res.startsWith("/")) {
+          res = res.substring(1);
+        }
         return dataRoot + "/" + res;
       }
       return res;

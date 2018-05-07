@@ -24,6 +24,8 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.ibm.stocator.fs.common.FileSystemTestUtils;
+
 /**
  * Test deletion operations
  */
@@ -33,7 +35,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
   public void testDeleteEmptyFile() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteEmptyFile");
     createEmptyFile(file);
-    SwiftTestUtils.noteAction("about to delete");
+    FileSystemTestUtils.noteAction("about to delete");
     assertDeleted(file, true);
   }
 
@@ -42,7 +44,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     final Path file = new Path(getBaseURI() + "/test/testDeleteEmptyFileTwice");
     createEmptyFile(file);
     assertDeleted(file, true);
-    SwiftTestUtils.noteAction("multiple creates, and deletes");
+    FileSystemTestUtils.noteAction("multiple creates, and deletes");
     assertFalse("Delete returned true", sFileSystem.delete(file, false));
     createEmptyFile(file);
     assertDeleted(file, true);

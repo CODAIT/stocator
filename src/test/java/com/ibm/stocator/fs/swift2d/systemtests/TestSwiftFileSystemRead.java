@@ -25,8 +25,9 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.readBytesToString;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.writeTextFile;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.readBytesToString;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.writeTextFile;
+
 /**
  * Test filesystem read operations
  */
