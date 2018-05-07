@@ -25,19 +25,22 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
+import com.ibm.stocator.fs.common.FileSystemBaseTest;
+import com.ibm.stocator.fs.common.TestConstants;
+
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.readBytesToString;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.writeTextFile;
 
 /**
  * Test filesystem read operations
  */
-public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
+public class TestSwiftFileSystemRead extends FileSystemBaseTest {
 
   /**
    * Read past the end of a file: expect the operation to fail
    * @throws IOException
    */
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testOverRead() throws IOException {
     final String message = "message";
     final Path filePath = new Path(getBaseURI() + "/test/file.txt");
@@ -56,7 +59,7 @@ public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
    * Read and write some JSON
    * @throws IOException
    */
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testRWJson() throws IOException {
     final String message = "{"
                            + " 'json': { 'i':43, 'b':true},"
@@ -76,7 +79,7 @@ public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
    * Read and write some XML
    * @throws IOException
    */
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testRWXML() throws IOException {
     final String message = "<x>"
                            + " <json i='43' 'b'=true/>"

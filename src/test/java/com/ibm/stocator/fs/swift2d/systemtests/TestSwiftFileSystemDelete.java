@@ -25,13 +25,15 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
+import com.ibm.stocator.fs.common.TestConstants;
+import com.ibm.stocator.fs.common.FileSystemBaseTest;
 
 /**
  * Test deletion operations
  */
-public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
+public class TestSwiftFileSystemDelete extends FileSystemBaseTest {
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteEmptyFile() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteEmptyFile");
     createEmptyFile(file);
@@ -51,7 +53,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     assertFalse("Delete returned true", sFileSystem.delete(file, false));
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteNonEmptyFile() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/testDeleteNonEmptyFile");
     createFile(file);
@@ -69,7 +71,7 @@ public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
     assertFalse("Delete returned true", sFileSystem.delete(file, false));
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteTestDir() throws IOException {
     final Path file = new Path(getBaseURI() + "/test/");
     sFileSystem.delete(file, true);

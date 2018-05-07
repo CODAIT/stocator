@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.common;
 
 import java.io.IOException;
 
@@ -24,12 +24,10 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assume;
 
-import com.ibm.stocator.fs.common.FileSystemTestUtils;
-
 /**
  * This is the base class for most of the Swift tests
  */
-public class SwiftFileSystemBaseTest extends SwiftBaseTest {
+public class FileSystemBaseTest extends BaseTest {
 
   protected byte[] data = FileSystemTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
 

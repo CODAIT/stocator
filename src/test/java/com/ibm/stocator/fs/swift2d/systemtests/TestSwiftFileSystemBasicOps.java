@@ -22,6 +22,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
+import com.ibm.stocator.fs.common.FileSystemBaseTest;
+import com.ibm.stocator.fs.common.TestConstants;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
@@ -38,19 +41,19 @@ import static com.ibm.stocator.fs.common.FileSystemTestUtils.writeTextFile;
  * -this is a JUnit4 test suite used to initially test the Swift
  * component. Once written, there's no reason not to retain these tests.
  */
-public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
+public class TestSwiftFileSystemBasicOps extends FileSystemBaseTest {
 
   private static final Log LOG =
           LogFactory.getLog(TestSwiftFileSystemBasicOps.class);
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testLsRoot() throws Throwable {
     Path path = new Path(getBaseURI() + "/");
     FileStatus[] statuses = sFileSystem.listStatus(path);
     assertNotNull(statuses);
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testMkDir() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/MkDir/_temporary/0");
     assertTrue(sFileSystem.mkdirs(path));
@@ -63,14 +66,14 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     assertFalse("delete returned true", sFileSystem.delete(path, false));
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testPutFile() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/PutFile");
     writeTextFile(sFileSystem, path, "Testing a put to a file", false);
     assertDeleted(path, false);
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testPutGetFile() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/PutGetFile");
     try {
@@ -105,7 +108,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     }
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testOverwrite() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/Overwrite");
     try {
@@ -124,7 +127,7 @@ public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
     }
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testOverwriteDirectory() throws Throwable {
     Path path = new Path(getBaseURI() + "/test/testOverwriteDirectory");
     try {

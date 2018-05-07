@@ -29,11 +29,14 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import com.ibm.stocator.fs.common.Constants;
+import com.ibm.stocator.fs.common.FileSystemBaseTest;
+import com.ibm.stocator.fs.common.TestConstants;
+
 import org.apache.hadoop.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest {
+public class TestSwiftFileSystemExtendedContract extends FileSystemBaseTest {
 
   private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
 
@@ -50,12 +53,12 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     }
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testFilesystemHasURI() throws Throwable {
     assertNotNull(sFileSystem.getUri());
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testCreateFile() throws Exception {
     final Path f = new Path(getBaseURI() + "/test/testCreateFile");
     final FSDataOutputStream fsDataOutputStream = sFileSystem.create(f);
@@ -63,7 +66,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     assertExists("created file", f);
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testWriteReadFile() throws Exception {
     final Path f = new Path(getBaseURI() + "/test/test");
     final FSDataOutputStream fsDataOutputStream = sFileSystem.create(f);
@@ -85,20 +88,20 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
     }
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testConfDefinesFilesystem() throws Throwable {
     Configuration conf = new Configuration();
     sBaseURI = conf.get(BASE_URI_PROPERTY);
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testConfIsValid() throws Throwable {
     Configuration conf = new Configuration();
     sBaseURI = conf.get(BASE_URI_PROPERTY);
     ObjectStoreVisitor.getStoreClient(new URI(sBaseURI), conf);
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testGetSchemeImplemented() throws Throwable {
     String scheme = sFileSystem.getScheme();
     assertEquals(Constants.SWIFT2D,scheme);
@@ -111,7 +114,7 @@ public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest
    *
    * @throws Exception failures
    */
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testFilesystemIsCaseSensitive() throws Exception {
     String mixedCaseFilename = "/test/UPPER.TXT";
     Path upper = path(getBaseURI() + mixedCaseFilename);

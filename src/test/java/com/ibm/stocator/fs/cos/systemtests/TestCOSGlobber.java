@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
 
@@ -38,13 +38,13 @@ import static com.ibm.stocator.fs.common.FileSystemTestUtils.touch;
 /**
  * Test the FileSystem#listStatus() operations
  */
-public class TestSwiftFileSystemLsOperations extends FileSystemBaseTest {
+public class TestCOSGlobber extends FileSystemBaseTest {
 
   private static Path[] sTestDirs;
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    createSwiftFileSystem();
+    createCOSFileSystem();
     if (sFileSystem != null) {
       createTestSubdirs();
     }

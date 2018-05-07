@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.common;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,17 +34,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
-import com.ibm.stocator.fs.common.FileSystemTestUtils;
 
 /**
- * This is the base class for most of the Swift tests
+ * This is the base class for most of the COS tests
  */
-public class SwiftBaseTest extends Assert {
+public class BaseTest extends Assert {
 
-  protected static final Logger LOG = LoggerFactory.getLogger(SwiftBaseTest.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(BaseTest.class);
   protected static ObjectStoreFileSystem sFileSystem;
   protected static String sBaseURI;
-  private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
+  private static final String BASE_COS_URI_PROPERTY = "fs.cos.test.uri";
+  private static final String BASE_SWIFT_URI_PROPERTY = "fs.swift2d.test.uri";
   private static Configuration sConf;
 
   @Before
@@ -54,11 +54,40 @@ public class SwiftBaseTest extends Assert {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
+    createCOSFileSystem();
     createSwiftFileSystem();
   }
 
   public void manualSetUp(String containerName) throws Exception {
+    createCOSFileSystem(containerName);
     createSwiftFileSystem(containerName);
+  }
+
+  public static void createCOSFileSystem() throws Exception {
+    createCOSFileSystem("");
+  }
+
+  public static void createCOSFileSystem(String containerName) throws Exception {
+    sConf = new Configuration();
+    sBaseURI = sConf.get(BASE_COS_URI_PROPERTY);
+    if (sBaseURI == null || sBaseURI.equals("")) {
+      return;
+    }
+
+    if (!containerName.isEmpty()) {
+      sBaseURI = sBaseURI.replace(sBaseURI.substring(sBaseURI.indexOf("//") + 2,
+              sBaseURI.indexOf(".")), containerName);
+      System.out.println("New uri is " + sBaseURI);
+    }
+
+    final URI uri = new URI(sBaseURI);
+    sFileSystem = new ObjectStoreFileSystem();
+    try {
+      sFileSystem.initialize(uri, sConf);
+    } catch (Exception e) {
+      sFileSystem = null;
+      throw e;
+    }
   }
 
   public static void createSwiftFileSystem() throws Exception {
@@ -67,7 +96,7 @@ public class SwiftBaseTest extends Assert {
 
   public static void createSwiftFileSystem(String containerName) throws Exception {
     sConf = new Configuration();
-    sBaseURI = sConf.get(BASE_URI_PROPERTY);
+    sBaseURI = sConf.get(BASE_SWIFT_URI_PROPERTY);
     if (sBaseURI == null || sBaseURI.equals("")) {
       return;
     }
