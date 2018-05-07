@@ -27,7 +27,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.ibm.stocator.fs.common.FileSystemBaseTest;
 import com.ibm.stocator.fs.common.TestConstants;
 
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.assertListStatusFinds;
@@ -38,7 +37,7 @@ import static com.ibm.stocator.fs.common.FileSystemTestUtils.touch;
 /**
  * Test the FileSystem#listStatus() operations
  */
-public class TestSwiftFileSystemLsOperations extends FileSystemBaseTest {
+public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
 
   private static Path[] sTestDirs;
 

@@ -24,13 +24,12 @@ import org.junit.Test;
 
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
 import com.ibm.stocator.fs.common.TestConstants;
-import com.ibm.stocator.fs.common.FileSystemBaseTest;
 
 /**
  * Tests that blocksize is never zero for a file, either in the FS default
  * or the FileStatus value of a queried file
  */
-public class TestSwiftFileSystemBlocksize extends FileSystemBaseTest {
+public class TestSwiftFileSystemBlocksize extends SwiftFileSystemBaseTest {
 
   @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDefaultBlocksizeNonZero() throws Throwable {

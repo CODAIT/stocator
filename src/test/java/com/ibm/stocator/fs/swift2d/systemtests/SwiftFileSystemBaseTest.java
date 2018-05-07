@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.common;
+package com.ibm.stocator.fs.swift2d.systemtests;
 
 import java.io.IOException;
 
@@ -24,10 +24,12 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assume;
 
+import com.ibm.stocator.fs.common.FileSystemTestUtils;
+
 /**
  * This is the base class for most of the Swift tests
  */
-public class FileSystemBaseTest extends BaseTest {
+public class SwiftFileSystemBaseTest extends SwiftBaseTest {
 
   protected byte[] data = FileSystemTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
 
@@ -65,7 +67,7 @@ public class FileSystemBaseTest extends BaseTest {
    * @param path path to write
    * @throws IOException on any problem
    */
-  protected void createFile(Path path) throws IOException {
+  public void createFile(Path path) throws IOException {
     createFile(path, data);
   }
 

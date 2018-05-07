@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
-import com.ibm.stocator.fs.common.FileSystemBaseTest;
 import com.ibm.stocator.fs.common.TestConstants;
 
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.readBytesToString;
@@ -34,7 +33,7 @@ import static com.ibm.stocator.fs.common.FileSystemTestUtils.writeTextFile;
 /**
  * Test filesystem read operations
  */
-public class TestSwiftFileSystemRead extends FileSystemBaseTest {
+public class TestSwiftFileSystemRead extends SwiftFileSystemBaseTest {
 
   /**
    * Read past the end of a file: expect the operation to fail

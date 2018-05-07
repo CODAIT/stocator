@@ -26,9 +26,8 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
-import com.ibm.stocator.fs.common.BaseTest;
 
-public class CollisionTest extends BaseTest {
+public class CollisionTest extends SwiftBaseTest {
 
   protected byte[] data = FileSystemTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
   protected byte[] smData = FileSystemTestUtils.generateDataset(getBlockSize(), 0, 255);

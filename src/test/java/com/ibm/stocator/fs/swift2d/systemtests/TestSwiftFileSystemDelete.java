@@ -26,12 +26,11 @@ import org.junit.Test;
 
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
 import com.ibm.stocator.fs.common.TestConstants;
-import com.ibm.stocator.fs.common.FileSystemBaseTest;
 
 /**
  * Test deletion operations
  */
-public class TestSwiftFileSystemDelete extends FileSystemBaseTest {
+public class TestSwiftFileSystemDelete extends SwiftFileSystemBaseTest {
 
   @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDeleteEmptyFile() throws IOException {

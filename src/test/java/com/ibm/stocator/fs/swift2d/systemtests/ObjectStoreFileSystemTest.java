@@ -37,9 +37,8 @@ import com.ibm.stocator.fs.ObjectStoreFileSystem;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
-import com.ibm.stocator.fs.common.BaseTest;
 
-public class ObjectStoreFileSystemTest extends BaseTest {
+public class ObjectStoreFileSystemTest extends SwiftBaseTest {
 
   private ObjectStoreFileSystem mMockObjectStoreFileSystem;
   private StocatorPath mMockStocatorPath;

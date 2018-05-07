@@ -29,14 +29,13 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import com.ibm.stocator.fs.common.Constants;
-import com.ibm.stocator.fs.common.FileSystemBaseTest;
 import com.ibm.stocator.fs.common.TestConstants;
 
 import org.apache.hadoop.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class TestSwiftFileSystemExtendedContract extends FileSystemBaseTest {
+public class TestSwiftFileSystemExtendedContract extends SwiftFileSystemBaseTest {
 
   private static final String BASE_URI_PROPERTY = "fs.swift2d.test.uri";
 

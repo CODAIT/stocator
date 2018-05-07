@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
-import com.ibm.stocator.fs.common.FileSystemBaseTest;
 import com.ibm.stocator.fs.common.TestConstants;
 
 import org.apache.commons.logging.Log;
@@ -41,7 +40,7 @@ import static com.ibm.stocator.fs.common.FileSystemTestUtils.writeTextFile;
  * -this is a JUnit4 test suite used to initially test the Swift
  * component. Once written, there's no reason not to retain these tests.
  */
-public class TestSwiftFileSystemBasicOps extends FileSystemBaseTest {
+public class TestSwiftFileSystemBasicOps extends SwiftFileSystemBaseTest {
 
   private static final Log LOG =
           LogFactory.getLog(TestSwiftFileSystemBasicOps.class);

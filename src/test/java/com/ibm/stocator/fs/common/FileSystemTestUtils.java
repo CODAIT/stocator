@@ -306,6 +306,7 @@ public class FileSystemTestUtils extends org.junit.Assert {
         Path rootDir = new Path(BaseUri + "/");
         FileStatus[] files = fileSystem.listStatus(rootDir);
         for (FileStatus file : files) {
+          System.out.println("Cleanup of : " + file.getPath());
           fileSystem.delete(file.getPath(), false);
         }
       }
