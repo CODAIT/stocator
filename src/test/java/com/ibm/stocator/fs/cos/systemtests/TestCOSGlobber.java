@@ -20,8 +20,12 @@ package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 
 /**
  * Test the FileSystem#listStatus() operations
@@ -29,6 +33,7 @@ import org.junit.BeforeClass;
 public class TestCOSGlobber extends COSFileSystemBaseTest {
 
   private static Path[] sTestData;
+  private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
 
   @BeforeClass
@@ -41,11 +46,46 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
 
   private static void createTestData() throws IOException {
 
-    sTestData = new Path[]{ new Path(sBaseURI + "/test/y=12/a"),
-                            new Path(sBaseURI + "/test/y=14/b")};
+    sTestData = new Path[] {
+        new Path(sBaseURI + "/test/y=2012/a"),
+        new Path(sBaseURI + "/test/y=2014/b"),
+        new Path(sBaseURI + "/test/y=2018/m=12/d=29/data.csv"),
+        new Path(sBaseURI + "/test/y=2018/m=12/d=28/data1.csv"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json/"
+            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json/"
+            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
+            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
+            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data4.json/"
+            + "part-00000-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"
+            + "attempt_20180503181319_0000_m_000000_0.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data4.json/"
+            + "part-00001-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"
+            + "attempt_20180503181319_0000_m_000001_0.json")};
+
+    sEmptyFiles = new Path[] {
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json/_SUCCESS"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data4.json"),
+        new Path(sBaseURI + "/test/y=2018/m=10/d=29/data4.json/_SUCCESS")};
+
     for (Path path : sTestData) {
       createFile(path, sData);
     }
+    for (Path path : sEmptyFiles) {
+      createEmptyFile(path);
+    }
+  }
+
+  @Test
+  public void testListGlobber() throws Exception {
+    FileStatus[] paths;
+    paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/*"));
+    assertEquals(dumpStats("/test/*", paths), 0, sTestData.length);
   }
 
 }
