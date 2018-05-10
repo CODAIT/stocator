@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Hashtable;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -58,15 +59,26 @@ public class COSBaseTest extends Assert {
   }
 
   public void manualSetUp(String containerName) throws Exception {
-    createCOSFileSystem(containerName);
+    createCOSFileSystem(containerName, null);
   }
 
   public static void createCOSFileSystem() throws Exception {
-    createCOSFileSystem("");
+    createCOSFileSystem("", null);
   }
 
-  public static void createCOSFileSystem(String containerName) throws Exception {
+  public static void createCOSFileSystem(Hashtable<String, String> conf) throws Exception {
+    createCOSFileSystem("", conf);
+
+  }
+
+  public static void createCOSFileSystem(String containerName,
+      Hashtable<String, String> sAdditionalConf) throws Exception {
     sConf = new Configuration();
+    if (sAdditionalConf != null && !sAdditionalConf.isEmpty()) {
+      for (String key: sAdditionalConf.keySet()) {
+        sConf.set(key, sAdditionalConf.get(key));
+      }
+    }
     sBaseURI = sConf.get(BASE_COS_URI_PROPERTY);
     if (sBaseURI == null || sBaseURI.equals("")) {
       return;

@@ -254,6 +254,7 @@ Now you can use URI
 | fs.cos.multipart.size | 104857600 | Size in bytes. Define multipart size |
 | fs.cos.multipart.threshold | Max Integer | minimum size in bytes before we start a multipart uploads, default is max integer |
 | fs.cos.fast.upload | false | enable or disable block upload |
+| fs.stocator.glob.bracket.support | false | if true supports Hadoop string patterns of the form {ab,c{de, fh}}. Due to possible collision with object names, this mode prevents from create an object whose name contains {} |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 

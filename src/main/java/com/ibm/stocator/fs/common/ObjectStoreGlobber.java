@@ -42,19 +42,24 @@ public class ObjectStoreGlobber {
   private final FileContext fc;
   private final Path pathPattern;
   private final PathFilter filter;
+  private final boolean bracketSupport;
 
-  public ObjectStoreGlobber(ExtendedFileSystem fsT, Path pathPatternT, PathFilter filterT) {
+  public ObjectStoreGlobber(ExtendedFileSystem fsT, Path pathPatternT, PathFilter filterT,
+      boolean bracketSupportT) {
     fs = fsT;
     fc = null;
     pathPattern = pathPatternT;
     filter = filterT;
+    bracketSupport = bracketSupportT;
   }
 
-  public ObjectStoreGlobber(FileContext fcT, Path pathPatternT, PathFilter filterT) {
+  public ObjectStoreGlobber(FileContext fcT, Path pathPatternT, PathFilter filterT,
+      boolean bracketSupportT) {
     fs = null;
     fc = fcT;
     pathPattern = pathPatternT;
     filter = filterT;
+    bracketSupport = bracketSupportT;
   }
 
   private FileStatus getFileStatus(Path path) throws IOException {
@@ -115,7 +120,7 @@ public class ObjectStoreGlobber {
       LOG.warn("Incorrect format of string {}", s);
       return 0;
     }
-    Pattern p = Pattern.compile("[^A-Za-z0-9-_//:.+ ={},']");
+    Pattern p = Pattern.compile("[^A-Za-z0-9-_//:.+ =,']");
     Matcher m = p.matcher(s);
     boolean b = m.find();
     if (b == true) {
@@ -139,12 +144,8 @@ public class ObjectStoreGlobber {
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ArrayList<FileStatus> candidates;
-    String prefix = new Path(fs.getHostnameScheme() + noWildCardPathPrefix).toString();
-    if (!prefix.endsWith("/")) {
-      prefix = prefix + "/";
-    }
     ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(pathPattern.toString(),
-        prefix, firstSpecialChar);
+        firstSpecialChar, bracketSupport);
 
     if (pathPatternString.contains("?temp_url")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};

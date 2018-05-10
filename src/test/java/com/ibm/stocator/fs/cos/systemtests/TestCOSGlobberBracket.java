@@ -19,6 +19,7 @@
 package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
+import java.util.Hashtable;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -30,15 +31,17 @@ import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 /**
  * Test the FileSystem#listStatus() operations
  */
-public class TestCOSGlobber extends COSFileSystemBaseTest {
+public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
 
   private static Path[] sTestData;
   private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
+  private static Hashtable<String, String> sConf = new Hashtable<String, String>();
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    createCOSFileSystem();
+    sConf.put("fs.stocator.glob.bracket.support", "true");
+    createCOSFileSystem(sConf);
     if (sFileSystem != null) {
       createTestData();
     }
@@ -49,21 +52,23 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
     sTestData = new Path[] {
         new Path(sBaseURI + "/test/y=2012/a"),
         new Path(sBaseURI + "/test/y=2014/b"),
-        new Path(sBaseURI + "/test/y=2014/{c=123}a.csv"),
-        new Path(sBaseURI + "/test/y=2014/{c=123}/a1/b1.csv"),
         new Path(sBaseURI + "/test/y=2018/m=12/d=29/data.csv"),
         new Path(sBaseURI + "/test/y=2018/m=12/d=28/data1.csv"),
+
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json/"
             + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json/"
             + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
             + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
             + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+
         new Path(sBaseURI + "/test/y=2018/m=10/d=28/data4.json/"
             + "part-00000-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"
             + "attempt_20180503181319_0000_m_000000_0.json"),
+
         new Path(sBaseURI + "/test/y=2018/m=10/d=28/data4.json/"
             + "part-00001-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"
             + "attempt_20180503181319_0000_m_000001_0.json")};
@@ -97,11 +102,11 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
   @Test
   public void testAdvancedGlobber() throws Exception {
     FileStatus[] paths;
-    paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2014/{c=123}*"));
-    assertEquals(dumpStats("test/y=2014/{c=123}*", paths), 2, paths.length);
+    paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2018/m=10/{d=29,d=28}*"));
+    assertEquals(dumpStats("test/y=2018/m=10/{d=29,d=28}*", paths), 4, paths.length);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testBracketSupport() throws Exception {
     Path path = new Path(sBaseURI + "/testBr/{y=2018}/m=10/d=29/data2.json");
     createFile(path, sData);
