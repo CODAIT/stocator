@@ -1549,6 +1549,10 @@ public class COSAPIClient implements IStoreClient {
    */
 
   public Path qualify(Path path) {
+    return innerQualify(path);
+  }
+
+  private Path innerQualify(Path path) {
     if (LOG.isTraceEnabled()) {
       LOG.trace("Working directory {}", workingDir);
       Path p = path.makeQualified(filesystemURI, workingDir);

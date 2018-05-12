@@ -44,21 +44,24 @@ public class ObjectStoreGlobber {
   private final FileContext fc;
   private final Path pathPattern;
   private final PathFilter filter;
+  private final boolean bracketSupport;
 
-  public ObjectStoreGlobber(ExtendedFileSystem fsT, Path pathPatternT, PathFilter filterT) {
-    this(null, fsT, pathPatternT, filterT);
-  }
-
-  public ObjectStoreGlobber(FileContext fcT, Path pathPatternT, PathFilter filterT) {
-    this(fcT, null, pathPatternT, filterT);
-  }
-
-  private ObjectStoreGlobber(FileContext fcT, ExtendedFileSystem fsT, Path pathPatternT,
-                PathFilter filterT) {
-    pathPattern = pathPatternT;
+  public ObjectStoreGlobber(ExtendedFileSystem fsT, Path pathPatternT, PathFilter filterT,
+      boolean bracketSupportT) {
     fs = fsT;
+    fc = null;
+    pathPattern = pathPatternT;
+    filter = filterT;
+    bracketSupport = bracketSupportT;
+  }
+
+  public ObjectStoreGlobber(FileContext fcT, Path pathPatternT, PathFilter filterT,
+      boolean bracketSupportT) {
+    pathPattern = pathPatternT;
+    fs = null;
     fc = fcT;
     filter = filterT;
+    bracketSupport = bracketSupportT;
   }
 
   private FileStatus getFileStatus(Path path) throws IOException {
@@ -119,7 +122,7 @@ public class ObjectStoreGlobber {
       LOG.warn("Incorrect format of string {}", s);
       return 0;
     }
-    Pattern p = Pattern.compile("[^A-Za-z0-9-_//:.+ ={},']");
+    Pattern p = Pattern.compile("[^A-Za-z0-9-_//:.+ =,']");
     Matcher m = p.matcher(s);
     boolean b = m.find();
     if (b == true) {
@@ -143,13 +146,9 @@ public class ObjectStoreGlobber {
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ArrayList<FileStatus> candidates;
-    String prefix = new Path(fs.getHostnameScheme() + noWildCardPathPrefix).toString();
-    if (!prefix.endsWith("/")) {
-      prefix = prefix + "/";
-    }
     ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(
         COSUtils.removeToken(pathPattern.toString()),
-        COSUtils.removeToken(prefix), firstSpecialChar);
+        firstSpecialChar, bracketSupport);
 
     if (pathPatternString.contains("?temp_url")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};

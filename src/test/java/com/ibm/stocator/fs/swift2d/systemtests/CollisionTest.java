@@ -25,10 +25,12 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
+import com.ibm.stocator.fs.common.FileSystemTestUtils;
+
 public class CollisionTest extends SwiftBaseTest {
 
-  protected byte[] data = SwiftTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
-  protected byte[] smData = SwiftTestUtils.generateDataset(getBlockSize(), 0, 255);
+  protected byte[] data = FileSystemTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
+  protected byte[] smData = FileSystemTestUtils.generateDataset(getBlockSize(), 0, 255);
 
   private String objectName = "/data7.txt";
   private String objectNameTmp = objectName + "/_temporary";

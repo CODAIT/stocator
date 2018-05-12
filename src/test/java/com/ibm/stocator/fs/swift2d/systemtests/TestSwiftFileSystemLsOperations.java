@@ -27,10 +27,12 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.assertListStatusFinds;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.cleanup;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.dumpStats;
-import static com.ibm.stocator.fs.swift2d.systemtests.SwiftTestUtils.touch;
+import com.ibm.stocator.fs.common.TestConstants;
+
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.assertListStatusFinds;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.cleanup;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
+import static com.ibm.stocator.fs.common.FileSystemTestUtils.touch;
 
 /**
  * Test the FileSystem#listStatus() operations
@@ -84,7 +86,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
                  paths[2].getPath());
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testListStatusEmptyDirectory() throws Exception {
     FileStatus[] paths;
     paths = sFileSystem.listStatus(path(getBaseURI() + "/test/swift/a"));
@@ -92,7 +94,7 @@ public class TestSwiftFileSystemLsOperations extends SwiftFileSystemBaseTest {
                  paths.length);
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testListStatusFile() throws Exception {
     describe("Create a single file under /test;"
              + " assert that listStatus(/test) finds it");

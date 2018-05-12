@@ -143,5 +143,7 @@ public class Constants {
   public static final String TRASH_FOLDER = ".Trash";
   public static final String CACHE_SIZE = "fs.stocator.cache.size";
   public static final int GUAVA_CACHE_SIZE_DEFAULT = 2000;
+  public static final String FS_STOCATOR_GLOB_BRACKET_SUPPORT = "fs.stocator.glob.bracket.support";
+  public static final String FS_STOCATOR_GLOB_BRACKET_SUPPORT_DEFAULT = "false";
 
 }

@@ -16,12 +16,12 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.common;
 
 /**
  * Hard coded constants for the test timeouts
  */
-public class SwiftTestConstants {
+public class TestConstants {
   /**
    * Timeout for swift tests: {@value}
    */
