@@ -15,7 +15,7 @@
  *
  */
 
-package com.ibm.stocator.fs.commom.unittests;
+package com.ibm.stocator.fs.common.unittests;
 
 import java.net.URI;
 
