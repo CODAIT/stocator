@@ -19,6 +19,8 @@
 package com.ibm.stocator.fs.cos;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,6 +30,7 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +77,8 @@ final class COSDataBlocks {
   static BlockFactory createFactory(COSAPIClient owner,
       String name) {
     switch (name) {
+      case COSConstants.FAST_UPLOAD_BUFFER_ARRAY:
+        return new ArrayBlockFactory(owner);
       case COSConstants.FAST_UPLOAD_BUFFER_DISK:
         return new DiskBlockFactory(owner);
       default:
@@ -143,6 +148,121 @@ final class COSDataBlocks {
     @Override
     public void close() throws IOException {
       closeAll(LOG, uploadStream);
+    }
+  }
+
+  // ====================================================================
+
+  /**
+   * Use byte arrays on the heap for storage.
+   */
+  static class ArrayBlockFactory extends BlockFactory {
+
+    ArrayBlockFactory(COSAPIClient owner) {
+      super(owner);
+    }
+
+    @Override
+    DataBlock create(String key, long index, int limit)
+        throws IOException {
+      return new ByteArrayBlock(0, limit);
+    }
+
+  }
+
+  static class COSByteArrayOutputStream extends ByteArrayOutputStream {
+
+    COSByteArrayOutputStream(int size) {
+      super(size);
+    }
+
+    /**
+     * InputStream backed by the internal byte array
+     *
+     * @return
+     */
+    ByteArrayInputStream getInputStream() {
+      ByteArrayInputStream bin = new ByteArrayInputStream(buf, 0, count);
+      reset();
+      buf = null;
+      return bin;
+    }
+  }
+
+  /**
+   * Stream to memory via a {@code ByteArrayOutputStream}.
+   *
+   * This was taken from {@code S3AFastOutputStream} and has the
+   * same problem which surfaced there: it can consume a lot of heap space
+   * proportional to the mismatch between writes to the stream and
+   * the JVM-wide upload bandwidth to the S3 endpoint.
+   * The memory consumption can be limited by tuning the filesystem settings
+   * to restrict the number of queued/active uploads.
+   */
+
+  static class ByteArrayBlock extends DataBlock {
+    private COSByteArrayOutputStream buffer;
+    private final int limit;
+    // cache data size so that it is consistent after the buffer is reset.
+    private Integer dataSize;
+
+    ByteArrayBlock(long index,
+        int limitT) {
+      super(index);
+      limit = limitT;
+      buffer = new COSByteArrayOutputStream(limit);
+      blockAllocated();
+    }
+
+    /**
+     * Get the amount of data; if there is no buffer then the size is 0.
+     * @return the amount of data available to upload
+     */
+    @Override
+    int dataSize() {
+      return dataSize != null ? dataSize : buffer.size();
+    }
+
+    @Override
+    BlockUploadData startUpload() throws IOException {
+      super.startUpload();
+      dataSize = buffer.size();
+      ByteArrayInputStream bufferData = buffer.getInputStream();
+      buffer = null;
+      return new BlockUploadData(bufferData);
+    }
+
+    @Override
+    boolean hasCapacity(long bytes) {
+      return dataSize() + bytes <= limit;
+    }
+
+    @Override
+    int remainingCapacity() {
+      return limit - dataSize();
+    }
+
+    @Override
+    int write(byte[] b, int offset, int len) throws IOException {
+      super.write(b, offset, len);
+      int written = Math.min(remainingCapacity(), len);
+      buffer.write(b, offset, written);
+      return written;
+    }
+
+    @Override
+    protected void innerClose() {
+      buffer = null;
+      blockReleased();
+    }
+
+    @Override
+    public String toString() {
+      return "ByteArrayBlock{"
+          + "index=" + index
+          + ", state=" + getState()
+          + ", limit=" + limit
+          + ", dataSize=" + dataSize + '}';
     }
   }
 
