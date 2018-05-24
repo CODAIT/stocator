@@ -122,16 +122,20 @@ public class ObjectStoreFlatGlobFilter implements PathFilter{
   public boolean accept(Path path) {
     String name = path.getName();
     String pathStr = path.toString();
+    boolean match = true;
     for (String pathPattern : parsedPatterns) {
       LOG.trace("accept on {}, path pattern {}", pathStr, pathPattern);
       if (name != null && name.startsWith("part-")) {
         LOG.trace("accept on parent {}, path pattern {}",
             path.getParent().toString(), pathPattern);
-        return FilenameUtils.wildcardMatch(path.getParent().toString(), pathPattern);
+        match = FilenameUtils.wildcardMatch(path.getParent().toString(), pathPattern);
       }
-      return FilenameUtils.wildcardMatch(pathStr, pathPattern);
+      match = FilenameUtils.wildcardMatch(pathStr, pathPattern);
+      if (match) {
+        return match;
+      }
     }
-    return true;
+    return match;
   }
 
   public boolean hasPattern() {

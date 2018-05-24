@@ -112,4 +112,11 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
     createFile(path, sData);
   }
 
+  @Test(expected = IOException.class)
+  public void testBracketSupport2() throws Exception {
+    FileStatus[] paths;
+    paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2018/m=10/d={29,28}*"));
+    assertEquals(dumpStats("test/y=2018/m=10/d={29,28}*", paths), 4, paths.length);
+  }
+
 }
