@@ -299,16 +299,21 @@ public class FileSystemTestUtils extends org.junit.Assert {
    * @param BaseUri
    * @throws IOException
      */
-  public static void cleanupAllFiles(FileSystem fileSystem, String BaseUri) throws IOException {
+  public static void cleanupAllFiles(FileSystem fileSystem, String baseUri) throws IOException {
     try {
       if (fileSystem != null) {
         // Clean up generated files
+        /*
         Path rootDir = new Path(BaseUri + "/");
         FileStatus[] files = fileSystem.listStatus(rootDir);
         for (FileStatus file : files) {
           System.out.println("Cleanup of : " + file.getPath());
           fileSystem.delete(file.getPath(), false);
         }
+      }
+      */
+        Path rootDir = new Path(baseUri + "/");
+        fileSystem.delete(rootDir, true);
       }
     } catch (Exception e) {
       LOG.error("Error in deleting all files.");
