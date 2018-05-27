@@ -356,7 +356,7 @@ public class StocatorPath {
    *
    * @param objectKey object key
    * @param isUnifiedObjectKey
-   * @return
+   * @return unified name
    */
   private String extractFromObjectKeyWithTaskID(String objectKey, boolean isUnifiedObjectKey) {
     Path p = new Path(objectKey);
@@ -386,7 +386,6 @@ public class StocatorPath {
    * Extracts from the object key an unified object name or name without task ID
    *
    * @param objectKey object key
-   * @param isUnifiedObjectKey
    * @return unified name
    */
   public String extractUnifiedName(String objectKey) {
