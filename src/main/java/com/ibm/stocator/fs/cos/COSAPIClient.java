@@ -174,6 +174,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_MAX_RETRY_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_REFRESH_OFFSET_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
+import static com.ibm.stocator.fs.cos.COSConstants.FMODE_AUTOMATIC_DELETE_COS_PROPERTY_DEFAULT;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 
@@ -279,7 +280,8 @@ public class COSAPIClient implements IStoreClient {
         getWorkingDirectory());
     LOG.trace("Working directory set to {}", workingDir);
     fModeAutomaticDelete =
-        "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_COS_PROPERTY, "false"));
+        "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_COS_PROPERTY,
+            FMODE_AUTOMATIC_DELETE_COS_PROPERTY_DEFAULT));
     mIsV2Signer = "true".equals(props.getProperty(V2_SIGNER_TYPE_COS_PROPERTY, "false"));
     // Define COS client
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
@@ -932,7 +934,7 @@ public class COSAPIClient implements IStoreClient {
     boolean objectScanContinue = true;
     S3ObjectSummary prevObj = null;
     // start FTA logic
-    boolean stocatorOrigin = isSparkOrigin(key, path.toString());
+    boolean stocatorOrigin = isSparkOrigin(key);
     if (stocatorOrigin) {
       LOG.debug("Stocator origin is true for {}", key);
       if (!isJobSuccessful(key)) {
@@ -952,9 +954,13 @@ public class COSAPIClient implements IStoreClient {
         }
         obj.setKey(correctPlusSign(key, obj.getKey()));
         String objKey = obj.getKey();
-        String unifiedObjectName = stocatorPath.extractUnifiedObjectName(objKey);
+        String unifiedObjectName = stocatorPath.extractUnifiedName(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
+        stocatorOrigin = isSparkOrigin(unifiedObjectName);
         if (stocatorOrigin && !fullListing) {
+          if (!isJobSuccessful(unifiedObjectName)) {
+            continue;
+          }
           LOG.trace("{} created by Spark", unifiedObjectName);
           // if we here - data created by spark and job completed
           // successfully
@@ -1111,10 +1117,9 @@ public class COSAPIClient implements IStoreClient {
    * Data-Origin=stocator metadata If so, object was created by Spark.
    *
    * @param objectKey the key of the object
-   * @param path the object path
    * @return boolean if object was created by Spark
    */
-  private boolean isSparkOrigin(String objectKey, String path) {
+  private boolean isSparkOrigin(String objectKey) {
     LOG.debug("check spark origin for {}", objectKey);
     if (!objectKey.endsWith("/")) {
       LOG.debug("Key {} has no slash. Return false", objectKey);

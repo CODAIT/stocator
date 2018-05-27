@@ -146,4 +146,9 @@ public class Constants {
   public static final String FS_STOCATOR_GLOB_BRACKET_SUPPORT = "fs.stocator.glob.bracket.support";
   public static final String FS_STOCATOR_GLOB_BRACKET_SUPPORT_DEFAULT = "false";
 
+  /*
+   * Hadoop identification for PART
+   */
+  public static final String HADOOP_PART = "part-";
+
 }
