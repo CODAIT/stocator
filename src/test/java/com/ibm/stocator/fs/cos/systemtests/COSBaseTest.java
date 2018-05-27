@@ -146,7 +146,7 @@ public class COSBaseTest extends Assert {
 
   protected static void createFile(Path path, byte[] sourceData) throws IOException {
     if (sFileSystem != null) {
-      System.out.println("Create " + path.toString());
+      System.out.println("Create file " + path.toString());
       FSDataOutputStream out = sFileSystem.create(path);
       out.write(sourceData, 0, sourceData.length);
       out.close();
@@ -160,8 +160,18 @@ public class COSBaseTest extends Assert {
    * @throws IOException on a failure
    */
   protected static void createEmptyFile(Path path) throws IOException {
-    FSDataOutputStream out = sFileSystem.create(path);
-    out.close();
+    if (sFileSystem != null) {
+      System.out.println("Create empty file " + path.toString());
+      FSDataOutputStream out = sFileSystem.create(path);
+      out.close();
+    }
+  }
+
+  protected static void createDirectory(Path path) throws IOException {
+    if (sFileSystem != null) {
+      System.out.println("Make directory " + path.toString());
+      sFileSystem.mkdirs(path);
+    }
   }
 
 }
