@@ -387,7 +387,7 @@ public class StocatorPath {
    *
    * @param objectKey object key
    * @param isUnifiedObjectKey
-   * @return
+   * @return unified name
    */
   public String extractUnifiedName(String objectKey) {
     Path p = new Path(objectKey);
