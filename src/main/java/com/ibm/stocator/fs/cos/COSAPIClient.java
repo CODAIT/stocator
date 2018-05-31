@@ -133,7 +133,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL_COS_PROPERTY;
-import static com.ibm.stocator.fs.cos.COSConstants.FMODE_AUTOMATIC_DELETE_COS_PROPERTY;
+import static com.ibm.stocator.fs.common.Constants.FS_STOCATOR_FMODE_DATA_CLEANUP;
 import static com.ibm.stocator.fs.cos.COSConstants.REGION_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECURE_CONNECTIONS;
@@ -163,7 +163,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_READAHEAD_RANGE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
-import static com.ibm.stocator.fs.cos.COSConstants.FMODE_AUTOMATIC_DELETE_COS_PROPERTY_DEFAULT;
+import static com.ibm.stocator.fs.common.Constants.FS_STOCATOR_FMODE_DATA_CLEANUP_DEFAULT;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 
@@ -262,9 +262,8 @@ public class COSAPIClient implements IStoreClient {
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
         getWorkingDirectory());
     LOG.trace("Working directory set to {}", workingDir);
-    fModeAutomaticDelete =
-        "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_COS_PROPERTY,
-            FMODE_AUTOMATIC_DELETE_COS_PROPERTY_DEFAULT));
+    fModeAutomaticDelete = "true".equals(conf.get(FS_STOCATOR_FMODE_DATA_CLEANUP,
+        FS_STOCATOR_FMODE_DATA_CLEANUP_DEFAULT));
     mIsV2Signer = "true".equals(props.getProperty(V2_SIGNER_TYPE_COS_PROPERTY, "false"));
     // Define COS client
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
@@ -828,6 +827,15 @@ public class COSAPIClient implements IStoreClient {
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
       boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
+    return internalList(hostName, path, fullListing, prefixBased, isDirectory, flatListing,
+        filter, fModeAutomaticDelete);
+
+  }
+
+  private FileStatus[] internalList(String hostName, Path path, boolean fullListing,
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing, PathFilter filter,
+      boolean cleanup) throws FileNotFoundException, IOException {
     LOG.debug("list:(start) {}. full listing {}, prefix based {}, flat list {}",
         path, fullListing, prefixBased, flatListing);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
@@ -845,7 +853,7 @@ public class COSAPIClient implements IStoreClient {
     request.setPrefix(key);
     request.withEncodingType("UTF-8");
     if (!flatListing) {
-      LOG.trace("ist:(mid) {}, set delimiter", path);
+      LOG.trace("list:(mid) {}, set delimiter", path);
       request.setDelimiter("/");
     }
 
@@ -862,7 +870,7 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("Stocator origin is true for {}", key);
       if (!isJobSuccessful(key)) {
         LOG.debug("{} created by failed Spark job. Skipped", key);
-        if (fModeAutomaticDelete) {
+        if (cleanup) {
           delete(hostName, new Path(key), true);
         }
         return new FileStatus[0];
@@ -882,6 +890,8 @@ public class COSAPIClient implements IStoreClient {
         stocatorOrigin = isSparkOrigin(unifiedObjectName);
         if (stocatorOrigin && !fullListing) {
           if (!isJobSuccessful(unifiedObjectName)) {
+            // a bit tricky. need to delete entire set
+            // having unified name as a prefix
             continue;
           }
           LOG.trace("{} created by Spark", unifiedObjectName);
@@ -896,6 +906,10 @@ public class COSAPIClient implements IStoreClient {
             LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
             if (prevObj.getSize() < obj.getSize()) {
               LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
+              if (cleanup) {
+                String newMergedPath = getMergedPath(hostName, path, prevObj.getKey());
+                delete(hostName, new Path(newMergedPath) , true);
+              }
               prevObj = obj;
             }
             continue;

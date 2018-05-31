@@ -80,7 +80,7 @@ public final class ConfigurationHandler {
     if (service == null) {
       service =  "service";
     }
-    LOG.debug("bucket: {}, service: {}", bucket , service);
+    LOG.debug("Initiaize for bucket: {}, service: {}", bucket , service);
     String[] altPrefix = new String[]{S3_A_SERVICE_PREFIX + service,
         S3_D_SERVICE_PREFIX + service};
     String prefix = COS_SERVICE_PREFIX + service;
@@ -104,7 +104,7 @@ public final class ConfigurationHandler {
         BLOCK_SIZE_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, REGION, props,
         REGION_COS_PROPERTY, false);
-    LOG.debug("Initialize completed successfully");
+    LOG.debug("Initialize completed successfully for bucket {} service {}", bucket, service);
     return props;
   }
 
