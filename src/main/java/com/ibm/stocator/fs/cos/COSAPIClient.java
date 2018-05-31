@@ -911,6 +911,11 @@ public class COSAPIClient implements IStoreClient {
                 delete(hostName, new Path(newMergedPath) , true);
               }
               prevObj = obj;
+            } else {
+              if (cleanup) {
+                String newMergedPath = getMergedPath(hostName, path, obj.getKey());
+                delete(hostName, new Path(newMergedPath) , true);
+              }
             }
             continue;
           }
