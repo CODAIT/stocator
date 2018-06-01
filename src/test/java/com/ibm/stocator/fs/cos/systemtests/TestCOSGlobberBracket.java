@@ -29,7 +29,7 @@ import org.junit.Test;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 
 /**
- * Test the FileSystem#listStatus() operations
+ * Test Globber operations on the data that was not created by Stocator
  */
 public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
 
