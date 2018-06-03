@@ -170,6 +170,15 @@ public class TestCOSGlobberBracketStocator extends COSFileSystemBaseTest {
   public void testBracketSupport4() throws Exception {
     FileStatus[] paths;
     paths = sFileSystem.globStatus(new Path(getBaseURI(),
+        "test/y=2018/m=10/datestr={2017-01-01,2017-01-02}*"));
+    assertEquals(dumpStats("test/y=2018/m=10/datestr={2017-01-01, 2017-01-02}*", paths), 4,
+        paths.length);
+  }
+
+  @Test
+  public void testBracketSupport5() throws Exception {
+    FileStatus[] paths;
+    paths = sFileSystem.globStatus(new Path(getBaseURI(),
         "test/y=2018/m=10/datestr=2017-01-{01,02}*"));
     assertEquals(dumpStats("test/y=2018/m=10/datestr=2017-01-{01,02}*", paths), 4,
         paths.length);
