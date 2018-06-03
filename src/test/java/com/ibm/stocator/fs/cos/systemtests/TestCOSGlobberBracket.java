@@ -29,7 +29,7 @@ import org.junit.Test;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 
 /**
- * Test the FileSystem#listStatus() operations
+ * Test Globber operations on the data that was not created by Stocator
  */
 public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
 
@@ -71,20 +71,24 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
 
         new Path(sBaseURI + "/test1/y=2018/m=10/d=28/data4.json/"
             + "part-00001-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"
-            + "attempt_20180503181319_0000_m_000001_0.json")};
+            + "attempt_20180503181319_0000_m_000001_0.json"),
 
-    sEmptyFiles = new Path[] {
-        new Path(sBaseURI + "/test1/y=2018/m=10/d=29/data2.json"),
-        new Path(sBaseURI + "/test1/y=2018/m=10/d=29/data2.json/_SUCCESS"),
-        new Path(sBaseURI + "/test1/y=2018/m=10/d=29/data3.json"),
-        new Path(sBaseURI + "/test1/y=2018/m=10/d=28/data4.json"),
-        new Path(sBaseURI + "/test1/y=2018/m=10/d=28/data4.json/_SUCCESS")};
+        // data5.csv
+        // 2 parts, _SUCCESS
+        new Path(sBaseURI + "/test1/y=2018/m=10/datestr=2017-01-01/data5.csv/"
+            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.csv"),
+        new Path(sBaseURI + "/test1/y=2018/m=10/datestr=2017-01-01/data5.csv/"
+            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.csv"),
+
+        // data6.csv
+        // 2 parts, _SUCCESS
+        new Path(sBaseURI + "/test1/y=2018/m=10/datestr=2017-01-02/data6.csv/"
+            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.csv"),
+        new Path(sBaseURI + "/test1/y=2018/m=10/datestr=2017-01-02/data6.csv/"
+            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.csv")};
 
     for (Path path : sTestData) {
       createFile(path, sData);
-    }
-    for (Path path : sEmptyFiles) {
-      createEmptyFile(path);
     }
   }
 
@@ -94,9 +98,9 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/*"));
     assertEquals(dumpStats("/test1/*", paths), sTestData.length, paths.length);
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/y=2018/*"));
-    assertEquals(dumpStats("/test1/*", paths), 8, paths.length);
+    assertEquals(dumpStats("test1/y=2018/*", paths), 12, paths.length);
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/y=2019/*"));
-    assertEquals(dumpStats("/test1/*", paths), 0, paths.length);
+    assertEquals(dumpStats("test1/y=2019/**", paths), 0, paths.length);
   }
 
   @Test
@@ -117,6 +121,24 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
     FileStatus[] paths;
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/y=2018/m=10/d={29,28}*"));
     assertEquals(dumpStats("test1/y=2018/m=10/d={29,28}*", paths), 6, paths.length);
+  }
+
+  @Test
+  public void testBracketSupport3() throws Exception {
+    FileStatus[] paths;
+    paths = sFileSystem.globStatus(new Path(getBaseURI(),
+        "test1/y=2018/m=10/datestr={2017-01-01,2017-01-02}*"));
+    assertEquals(dumpStats("test1/y=2018/m=10/datestr={2017-01-01,2017-01-02}*", paths), 4,
+        paths.length);
+  }
+
+  @Test
+  public void testBracketSupport4() throws Exception {
+    FileStatus[] paths;
+    paths = sFileSystem.globStatus(new Path(getBaseURI(),
+        "test1/y=2018/m=10/datestr=2017-01-{01,02}*"));
+    assertEquals(dumpStats("test1/y=2018/m=10/datestr=2017-01-{01,02}*", paths), 4,
+        paths.length);
   }
 
 }

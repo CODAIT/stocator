@@ -145,6 +145,8 @@ public class Constants {
   public static final int GUAVA_CACHE_SIZE_DEFAULT = 2000;
   public static final String FS_STOCATOR_GLOB_BRACKET_SUPPORT = "fs.stocator.glob.bracket.support";
   public static final String FS_STOCATOR_GLOB_BRACKET_SUPPORT_DEFAULT = "false";
+  public static final String FS_STOCATOR_FMODE_DATA_CLEANUP = "fs.stocator.failure.data.cleanup";
+  public static final String FS_STOCATOR_FMODE_DATA_CLEANUP_DEFAULT = "false";
 
   /*
    * Hadoop identification for PART

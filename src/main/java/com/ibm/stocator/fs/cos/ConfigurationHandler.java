@@ -92,7 +92,7 @@ public final class ConfigurationHandler {
     if (service == null) {
       service =  "service";
     }
-    LOG.debug("bucket: {}, service: {}", bucket , service);
+    LOG.debug("Initiaize for bucket: {}, service: {}", bucket , service);
     String[] altPrefix = new String[]{S3_A_SERVICE_PREFIX + service,
         S3_D_SERVICE_PREFIX + service};
     String prefix = COS_SERVICE_PREFIX + service;
@@ -128,8 +128,7 @@ public final class ConfigurationHandler {
         IAM_TOKEN_MAX_RETRY_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, IAM_TOKEN_REFRESH_OFFSET, props,
         IAM_TOKEN_REFRESH_OFFSET_PROPERTY, false);
-
-    LOG.debug("Initialize completed successfully");
+    LOG.debug("Initialize completed successfully for bucket {} service {}", bucket, service);
     return props;
   }
 
