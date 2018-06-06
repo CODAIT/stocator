@@ -467,7 +467,7 @@ public class COSAPIClient implements IStoreClient {
       ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
       return meta;
     } catch (AmazonClientException e) {
-      LOG.warn(e.getMessage());
+      LOG.debug(e.getMessage());
       return null;
     }
   }
