@@ -528,7 +528,7 @@ public class COSAPIClient implements IStoreClient {
       ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
       return meta;
     } catch (AmazonClientException e) {
-      LOG.warn(e.getMessage());
+      LOG.debug(e.getMessage());
       return null;
     }
   }
@@ -946,10 +946,12 @@ public class COSAPIClient implements IStoreClient {
     if (stocatorOrigin) {
       LOG.debug("Stocator origin is true for {}", key);
       if (!isJobSuccessful(key)) {
-        LOG.debug("{} created by failed Spark job. Skipped", key);
+        LOG.warn("{} created by failed Spark job. Skipped. Delete temporarily disabled ", key);
+        /*
         if (cleanup) {
           delete(hostName, new Path(key), true);
         }
+        */
         return new FileStatus[0];
       }
     }
@@ -985,12 +987,14 @@ public class COSAPIClient implements IStoreClient {
               LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
               if (cleanup) {
                 String newMergedPath = getMergedPath(hostName, path, prevObj.getKey());
+                LOG.warn("Delete failed data part {}", newMergedPath);
                 delete(hostName, new Path(newMergedPath) , true);
               }
               prevObj = obj;
             } else {
               if (cleanup) {
                 String newMergedPath = getMergedPath(hostName, path, obj.getKey());
+                LOG.warn("Delete failed data part {}", newMergedPath);
                 delete(hostName, new Path(newMergedPath) , true);
               }
             }
