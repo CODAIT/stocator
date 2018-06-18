@@ -41,6 +41,11 @@ public class ObjectStoreFlatGlobFilter implements PathFilter{
   @Override
   public boolean accept(Path path) {
     LOG.trace("accept on {}, path pattern {}", path.toString(), pathPattern);
+    String name = path.getName();
+    if (name != null && name.startsWith("part-") && name.contains("attempt_")) {
+      LOG.trace("accept on parent {}, path pattern {}", path.getParent().toString(), pathPattern);
+      return FilenameUtils.wildcardMatch(path.getParent().toString(), pathPattern);
+    }
     return FilenameUtils.wildcardMatch(path.toString(), pathPattern);
   }
 

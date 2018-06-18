@@ -21,6 +21,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -136,8 +138,9 @@ public class Utils {
    *
    * @param uri schema URI
    * @return true if hostName of the form container.service
+   * @throws IOException if error
    */
-  public static boolean validSchema(URI uri) {
+  public static boolean validSchema(URI uri) throws IOException {
     LOG.trace("Checking schema {}", uri.toString());
     String hostName = Utils.getHost(uri);
     LOG.trace("Got hostname as {}", hostName);
@@ -166,8 +169,9 @@ public class Utils {
    *
    * @param uri object store uri
    * @return host name
+   * @throws IOException if error
    */
-  public static String getHost(URI uri) {
+  public static String getHost(URI uri) throws IOException {
     String host = uri.getHost();
     if (host != null) {
       return host;
@@ -176,7 +180,10 @@ public class Utils {
     int sInd = host.indexOf("//") + 2;
     host = host.substring(sInd);
     int eInd = host.indexOf("/");
-    host = host.substring(0,eInd);
+    if (eInd != -1) {
+      host = host.substring(0,eInd);
+    }
+    host = URLDecoder.decode(host, StandardCharsets.UTF_8.toString());
     return host;
   }
 

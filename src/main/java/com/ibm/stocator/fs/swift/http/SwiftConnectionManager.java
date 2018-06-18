@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 
 import org.apache.http.HeaderElement;
@@ -32,9 +34,13 @@ import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.ConnectionKeepAliveStrategy;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.ssl.SSLContexts;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -57,7 +63,7 @@ public class SwiftConnectionManager {
   /*
    * Connection pool
    */
-  private final PoolingHttpClientConnectionManager connectionPool;
+  private PoolingHttpClientConnectionManager connectionPool;
   private ConnectionConfiguration connectionConfiguration;
   private RequestConfig rConfig;
 
@@ -68,7 +74,28 @@ public class SwiftConnectionManager {
    */
   public SwiftConnectionManager(ConnectionConfiguration connectionConfigurationT) {
     connectionConfiguration = connectionConfigurationT;
-    connectionPool = new PoolingHttpClientConnectionManager();
+    if (connectionConfiguration.isNewTLSneed()) {
+      LOG.debug("User provided TLS version {}", connectionConfiguration.getNewTLSVersion());
+      SSLConnectionSocketFactory myFactory = null;
+      try {
+        SSLContext sslContext = SSLContexts.custom().build();
+        myFactory = new SSLConnectionSocketFactory(
+            sslContext,
+            new String[]{connectionConfiguration.getNewTLSVersion()},
+            null,
+            SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+        connectionPool = new PoolingHttpClientConnectionManager(
+            RegistryBuilder.<ConnectionSocketFactory>create()
+            .register("https",myFactory).build());
+      } catch (Exception e) {
+        LOG.trace("Exception. Set default PoolingHttpClientConnectionManager" + e.getMessage());
+        connectionPool = new PoolingHttpClientConnectionManager();
+      }
+    } else {
+      LOG.debug("Default TLS version is used by the system{}",
+          connectionConfiguration.getNewTLSVersion());
+      connectionPool = new PoolingHttpClientConnectionManager();
+    }
     LOG.trace(
         "SwiftConnectionManager: setDefaultMaxPerRoute {}",
         connectionConfiguration.getMaxPerRoute()
@@ -107,7 +134,6 @@ public class SwiftConnectionManager {
     HttpRequestRetryHandler myRetryHandler = new HttpRequestRetryHandler() {
 
       public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
-        System.out.println(executionCount);
         if (executionCount >= connectionConfiguration.getExecutionCount()) {
           // Do not retry if over max retry count
           LOG.debug("Execution count {} is bigger then threashold. Stop", executionCount);

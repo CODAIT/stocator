@@ -69,4 +69,6 @@ public class SwiftConstants {
   public static final String NON_STREAMING_UPLOAD_PROPERTY = Constants.FS_SWIFT2D
       + NON_STREAMING_UPLOAD;
 
+  public static final String SWIFT_TLS_VERSION_PROPERTY = "fs.stocator.tls.version";
+
 }

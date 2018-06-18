@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.15-SNAPSHOT</version>
+    <version>1.0.19-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -59,18 +59,18 @@
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
         <findbugs.path>build/findbugs</findbugs.path>
-        <slf4j.version>1.7.16</slf4j.version>
+        <slf4j.version>1.7.25</slf4j.version>
         <java.version>1.7</java.version>
-        <joss.version>0.9.15</joss.version>
+        <joss.version>0.10.1</joss.version>
         <hadoop.version>2.7.3</hadoop.version>
         <junit.version>4.12</junit.version>
         <jackson.version>1.9.13</jackson.version>
-        <httpcomponents.httpcore.version>4.4.8</httpcomponents.httpcore.version>
-        <httpcomponents.httpclient.version>4.5.4</httpcomponents.httpclient.version>
+        <httpcomponents.httpcore.version>4.4.9</httpcomponents.httpcore.version>
+        <httpcomponents.httpclient.version>4.5.5</httpcomponents.httpclient.version>
         <powermock.version>1.7.3</powermock.version>
         <mockito.version>1.10.19</mockito.version>
         <amazon.sdk.version>1.11.59</amazon.sdk.version>
-        <google.guava.version>23.5-jre</google.guava.version>
+        <google.guava.version>24.1-jre</google.guava.version>
     </properties>
 
     <dependencies>

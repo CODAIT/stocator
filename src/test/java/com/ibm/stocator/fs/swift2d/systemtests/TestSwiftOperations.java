@@ -122,9 +122,6 @@ public class TestSwiftOperations extends SwiftBaseTest {
     ObjectStoreGlobber globber = new ObjectStoreGlobber(getFs(), wildcard,
             new ObjectStoreGlobFilter(wildcard.toString()));
     FileStatus[] results = globber.glob();
-    for (FileStatus res: results) {
-      System.out.println(res.getPath());
-    }
     assertEquals(3, results.length);
 
     wildcard = new Path(getBaseURI() + "/Dir/*"); // Files in "Dir" directory

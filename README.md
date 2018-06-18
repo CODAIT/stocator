@@ -82,11 +82,11 @@ Stocator verifies that
 If not modified, the default value of `mapreduce.fileoutputcommitter.marksuccessfuljobs` is `true`.
 
 ## Configuration keys
-Stocator uses configuration keys that can be configured via `core-site.xml` or provided in run time without using `core-sites.xml`. To provide keys in run time use SparkContext variable with
+Stocator uses configuration keys that can be configured via spark's `core-site.xml` or provided in run time without using `core-site.xml`. To provide keys in run time use SparkContext variable with
 
 	sc.hadoopConfiguration.set("KEY","VALUE")
 
-For usage with `core-sites.xml`, see the configuration template located under `conf/core-site.xml.template`.
+For usage with `core-site.xml`, see the configuration template located under `conf/core-site.xml.template`.
 
 
 ## Stocator and IBM Cloud Object Storage (COS)
@@ -136,14 +136,14 @@ Configure Stocator in `conf/core-site.xml`
 Stocator COS connector expose "fs.cos." keys prefix. For backward compatibility Stocator also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" has the highest priority and will overwrite other keys, if present.
 
 #### COS Connector configuration with IAM
-To work with IAM and provide `api key` please switch to the relevant `ibm-sdk` branch depends on the Stocator version you need. For example for Stocator 1.0.10 release, switch to `1.0.10-ibm-sdk`, for Stocator master 1.0.11-SNAPSHOT, switch to `1.0.11-SNAPSHOT-IBM-SDK` and so on.
+To work with IAM and provide `api key` please switch to the relevant `ibm-sdk` branch depends on the Stocator version you need. For example for Stocator 1.0.16 release, switch to `1.0.16-ibm-sdk`, for Stocator master `1.0.17-SNAPSHOT`, switch to `1.0.17-SNAPSHOT-IBM-SDK` and so on.
 
-You will need to build Stocator manually, for example using 1.0.10-ibm-sdk branch:
+You will need to build Stocator manually, for example using 1.0.16-ibm-sdk branch:
 
 	git clone https://github.com/SparkTC/stocator
 	cd stocator
 	git fetch
-	git checkout -b 1.0.10-ibm-sdk origin/1.0.10-ibm-sdk
+	git checkout -b 1.0.16-ibm-sdk origin/1.0.16-ibm-sdk
 	mvn clean install –DskipTests
 
 ##### Configure Stocator
@@ -224,7 +224,7 @@ Example, configure `<service>` as `myCOS`:
 Now you can use URI
 
 	cos://mybucket.myCos/myobject(s)
-#### COS Connector optional configuration tunning
+#### COS Connector optional configuration tuning
 
 
 | Key | Default | Info |
@@ -314,6 +314,7 @@ The following is the list of the configuration keys
 |fs.swift2d.service.SERVICE_NAME.region | Mandatory for Keystone|
 |fs.swift2d.service.SERVICE_NAME.auth.method | Optional. Values: keystone, swiftauth, keystoneV3| keystoneV3
 |fs.swift2d.service.SERVICE_NAME.nonstreaming.upload | Optional. If set to true then any object upload will be stored locally in the temp file and uploaded on close method. Disable stocator streaming mode | false
+
 
 
 #### Example of core-site.xml keys
@@ -425,6 +426,7 @@ Below is the optional configuration that can be provided to Stocator and used in
 | fs.stocator.ReqConnectionRequestTimeout | 5000 | Request level connection timeout. Returns the timeout in milliseconds used when requesting a connection from the connection manager
 | fs.stocator.ReqSocketTimeout | 5000 | Defines the socket timeout (SO_TIMEOUT) in milliseconds, which is the timeout for waiting for data or, put differently, a maximum period inactivity between two consecutive data packets).
 | fs.stocator.joss.synchronize.time | false | Will disable JOSS to synchronize time with the server. Setting this value to 'false' will badly impact on temp url. However this will reduce HEAD on account which might be problematic if the user doesn't has access rights to HEAD an account |
+|fs.stocator.tls.version | false | if not provided, then system choosen is the default. In certain cases user may setup custom value, like TLSv1.2
 
 ## Configure Stocator's schemas (optional)
 By default Stocator exposes `swift2d://` for Swift API and `cos://` for IBM Cloud Object Storage. It possible to configure Stocator to expose different schema.
@@ -548,8 +550,8 @@ More information about Stocator can be find at
 * [MapReduce and object stores – How can we do it better?](https://developer.ibm.com/code/2017/05/19/mapreduce-object-stores-can-better/)
 * [Advantages and complexities of integrating Hadoop with object stores](https://www.ibm.com/blogs/cloud-computing/2017/05/integrating-hadoop-object-stores/)
 * [Stocator on developerWorks Open](https://developer.ibm.com/open/openprojects/stocator/)
-* [Fast Lane for Connecting Object Stores to Apache Spark](http://www.spark.tc/stocator-the-fast-lane-connecting-object-stores-to-spark/)
-* [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html)
+* [Analyze data faster using Spark and IBM Cloud Object Storage](https://www.ibm.com/developerworks/library/ba-1612spark-cloud-object-storage-stocator-keystone/index.html)
+* [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html?m=1)
 * [Simulating E.T.
  or: how to insert individual files into object storage from within a map function in Apache Spark](https://medium.com/ibm-watson-data-lab/simulating-e-t-e34f4fa7a4f0)
 * [Hadoop and object stores: Can we do it better?](https://conferences.oreilly.com/strata/strata-eu/public/schedule/detail/57598) Strata Data Conference, 23-25 May 2017, London, UK

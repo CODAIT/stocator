@@ -84,6 +84,7 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.NON_STREAMING_UPLOAD_PROP
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_TLS_VERSION_PROPERTY;
 
 /**
  * Swift back-end driver
@@ -216,6 +217,9 @@ public class SwiftAPIClient implements IStoreClient {
         ConnectionConfiguration.DEFAULT_REQUEST_SOCKET_TIMEOUT));
     connectionConfiguration.setSoTimeout(conf.getInt(Constants.SOCKET_TIMEOUT,
         ConnectionConfiguration.DEFAULT_SOCKET_TIMEOUT));
+    connectionConfiguration.setTLSVersion(conf.get(SWIFT_TLS_VERSION_PROPERTY,
+        ConnectionConfiguration.DEFAULT_TLS));
+    LOG.trace("Set user provided TLS to {}", connectionConfiguration.getNewTLSVersion());
     LOG.trace("{} set connection manager", filesystemURI.toString());
     swiftConnectionManager = new SwiftConnectionManager(connectionConfiguration);
     LOG.trace("{}", connectionConfiguration.toString());
@@ -433,7 +437,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
+    URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(container) + "/"
             + getURLEncodedObjName(objName));
     //hadoop sometimes access parts directly, for example
     //path may be like: swift2d://dfsio2.dal05gil/io_write/part-00000
@@ -451,7 +455,7 @@ public class SwiftAPIClient implements IStoreClient {
         if (res[0].getPath().toString().startsWith(hostName)) {
           objName = res[0].getPath().toString().substring(hostName.length());
         }
-        url = new URL(mJossAccount.getAccessURL() + "/" + container + "/"
+        url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(container) + "/"
                 + getURLEncodedObjName(objName));
       }
     }
@@ -761,7 +765,7 @@ public class SwiftAPIClient implements IStoreClient {
    * Accepts any object name.
    * If object name of the form
    * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
+   *    -attempt_20160317132a_wrong_0000_m_000000_1.csv
    * Then a/b/c/gil.data is returned.
    * Code testing that attempt_20160317132a_wrong_0000_m_000000_1 is valid
    * task id identifier
@@ -771,8 +775,10 @@ public class SwiftAPIClient implements IStoreClient {
    */
   private String extractUnifiedObjectName(String objectName) {
     Path p = new Path(objectName);
-    if (objectName.indexOf("-" + HADOOP_ATTEMPT) > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
+    int attemptIndex = objectName.indexOf(HADOOP_ATTEMPT);
+    int dotIndex = objectName.lastIndexOf('.');
+    if (attemptIndex >= 0 && dotIndex > attemptIndex) {
+      String attempt = objectName.substring(attemptIndex, dotIndex);
       try {
         TaskAttemptID.forName(attempt);
         return p.getParent().toString();
@@ -789,7 +795,7 @@ public class SwiftAPIClient implements IStoreClient {
    * Accepts any object name.
    * If object name is of the form
    * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   *    .csv-attempt_20160317132a_wrong_0000_m_000000_1
+   *    -attempt_20160317132a_wrong_0000_m_000000_1.csv
    * Then a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is returned.
    * Perform test that attempt_20160317132a_wrong_0000_m_000000_1 is valid
    * task id identifier
@@ -798,12 +804,12 @@ public class SwiftAPIClient implements IStoreClient {
    * @return unified object name
    */
   private String nameWithoutTaskID(String objectName) {
-    int index = objectName.indexOf("-" + HADOOP_ATTEMPT);
+    int index = objectName.indexOf(HADOOP_ATTEMPT);
     if (index > 0) {
-      String attempt = objectName.substring(objectName.lastIndexOf("-") + 1);
+      String attempt = objectName.substring(index, objectName.lastIndexOf('.'));
       try {
         TaskAttemptID.forName(attempt);
-        return objectName.substring(0, index);
+        return objectName.replace("-" + attempt , "");
       } catch (IllegalArgumentException e) {
         return objectName;
       }
