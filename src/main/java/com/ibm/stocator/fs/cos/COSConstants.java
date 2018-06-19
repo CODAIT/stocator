@@ -61,9 +61,6 @@ public class COSConstants {
   public static final String AUTO_BUCKET_CREATE = ".create.bucket";
   public static final String AUTO_BUCKET_CREATE_COS_PROPERTY = FS_COS + AUTO_BUCKET_CREATE;
 
-  public static final String FMODE_DELETE_TEMP_DATA = ".failure.mode.delete";
-  public static final String FMODE_AUTOMATIC_DELETE_COS_PROPERTY = FS_COS + FMODE_DELETE_TEMP_DATA;
-
   public static final String V2_SIGNER_TYPE = ".v2.signer.type";
   public static final String V2_SIGNER_TYPE_COS_PROPERTY = FS_COS + V2_SIGNER_TYPE;
 

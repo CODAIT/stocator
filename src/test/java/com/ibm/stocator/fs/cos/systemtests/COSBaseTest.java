@@ -16,10 +16,11 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Hashtable;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -33,18 +34,18 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import  com.ibm.stocator.fs.common.FileSystemTestUtils;
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
+import com.ibm.stocator.fs.common.FileSystemTestUtils;
 
 /**
- * This is the base class for most of the Swift tests
+ * This is the base class for most of the COS tests
  */
-public class SwiftBaseTest extends Assert {
+public class COSBaseTest extends Assert {
 
-  protected static final Logger LOG = LoggerFactory.getLogger(SwiftBaseTest.class);
+  protected static final Logger LOG = LoggerFactory.getLogger(COSBaseTest.class);
   protected static ObjectStoreFileSystem sFileSystem;
   protected static String sBaseURI;
-  private static final String BASE_SWIFT_URI_PROPERTY = "fs.swift2d.test.uri";
+  private static final String BASE_COS_URI_PROPERTY = "fs.cos.test.uri";
   private static Configuration sConf;
 
   @Before
@@ -54,20 +55,31 @@ public class SwiftBaseTest extends Assert {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    createSwiftFileSystem();
+    createCOSFileSystem();
   }
 
   public void manualSetUp(String containerName) throws Exception {
-    createSwiftFileSystem(containerName);
+    createCOSFileSystem(containerName, null);
   }
 
-  public static void createSwiftFileSystem() throws Exception {
-    createSwiftFileSystem("");
+  public static void createCOSFileSystem() throws Exception {
+    createCOSFileSystem("", null);
   }
 
-  public static void createSwiftFileSystem(String containerName) throws Exception {
+  public static void createCOSFileSystem(Hashtable<String, String> conf) throws Exception {
+    createCOSFileSystem("", conf);
+
+  }
+
+  public static void createCOSFileSystem(String containerName,
+      Hashtable<String, String> sAdditionalConf) throws Exception {
     sConf = new Configuration();
-    sBaseURI = sConf.get(BASE_SWIFT_URI_PROPERTY);
+    if (sAdditionalConf != null && !sAdditionalConf.isEmpty()) {
+      for (String key: sAdditionalConf.keySet()) {
+        sConf.set(key, sAdditionalConf.get(key));
+      }
+    }
+    sBaseURI = sConf.get(BASE_COS_URI_PROPERTY);
     if (sBaseURI == null || sBaseURI.equals("")) {
       return;
     }
@@ -134,7 +146,7 @@ public class SwiftBaseTest extends Assert {
 
   protected static void createFile(Path path, byte[] sourceData) throws IOException {
     if (sFileSystem != null) {
-      System.out.println("Create " + path.toString());
+      System.out.println("Create file " + path.toString());
       FSDataOutputStream out = sFileSystem.create(path);
       out.write(sourceData, 0, sourceData.length);
       out.close();
@@ -148,8 +160,18 @@ public class SwiftBaseTest extends Assert {
    * @throws IOException on a failure
    */
   protected static void createEmptyFile(Path path) throws IOException {
-    FSDataOutputStream out = sFileSystem.create(path);
-    out.close();
+    if (sFileSystem != null) {
+      System.out.println("Create empty file " + path.toString());
+      FSDataOutputStream out = sFileSystem.create(path);
+      out.close();
+    }
+  }
+
+  protected static void createDirectory(Path path) throws IOException {
+    if (sFileSystem != null) {
+      System.out.println("Make directory " + path.toString());
+      sFileSystem.mkdirs(path);
+    }
   }
 
 }

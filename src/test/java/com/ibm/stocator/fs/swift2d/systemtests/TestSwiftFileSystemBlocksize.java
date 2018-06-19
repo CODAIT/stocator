@@ -22,33 +22,36 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
+import com.ibm.stocator.fs.common.FileSystemTestUtils;
+import com.ibm.stocator.fs.common.TestConstants;
+
 /**
  * Tests that blocksize is never zero for a file, either in the FS default
  * or the FileStatus value of a queried file
  */
 public class TestSwiftFileSystemBlocksize extends SwiftFileSystemBaseTest {
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDefaultBlocksizeNonZero() throws Throwable {
     assertTrue("Zero default blocksize", 0L != getFs().getDefaultBlockSize());
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDefaultBlocksizeRootPathNonZero() throws Throwable {
     assertTrue("Zero default blocksize",
                0L != getFs().getDefaultBlockSize(new Path(getBaseURI() + "/")));
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testDefaultBlocksizeOtherPathNonZero() throws Throwable {
     assertTrue("Zero default blocksize",
                0L != getFs().getDefaultBlockSize(new Path(getBaseURI() + "/test")));
   }
 
-  @Test(timeout = SwiftTestConstants.SWIFT_TEST_TIMEOUT)
+  @Test(timeout = TestConstants.SWIFT_TEST_TIMEOUT)
   public void testBlocksizeNonZeroForFile() throws Throwable {
     Path smallfile = new Path(getBaseURI() + "/test/smallfile");
-    SwiftTestUtils.writeTextFile(sFileSystem, smallfile, "blocksize", true);
+    FileSystemTestUtils.writeTextFile(sFileSystem, smallfile, "blocksize", true);
     createFile(smallfile);
     FileStatus status = getFs().getFileStatus(smallfile);
     assertTrue("Zero blocksize in " + status,

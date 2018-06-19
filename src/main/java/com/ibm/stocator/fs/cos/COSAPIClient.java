@@ -133,7 +133,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL_COS_PROPERTY;
-import static com.ibm.stocator.fs.cos.COSConstants.FMODE_AUTOMATIC_DELETE_COS_PROPERTY;
+import static com.ibm.stocator.fs.common.Constants.FS_STOCATOR_FMODE_DATA_CLEANUP;
 import static com.ibm.stocator.fs.cos.COSConstants.REGION_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECURE_CONNECTIONS;
@@ -163,6 +163,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_READAHEAD_RANGE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
+import static com.ibm.stocator.fs.common.Constants.FS_STOCATOR_FMODE_DATA_CLEANUP_DEFAULT;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 
@@ -261,8 +262,8 @@ public class COSAPIClient implements IStoreClient {
     workingDir = new Path("/user", System.getProperty("user.name")).makeQualified(filesystemURI,
         getWorkingDirectory());
     LOG.trace("Working directory set to {}", workingDir);
-    fModeAutomaticDelete =
-        "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_COS_PROPERTY, "false"));
+    fModeAutomaticDelete = "true".equals(conf.get(FS_STOCATOR_FMODE_DATA_CLEANUP,
+        FS_STOCATOR_FMODE_DATA_CLEANUP_DEFAULT));
     mIsV2Signer = "true".equals(props.getProperty(V2_SIGNER_TYPE_COS_PROPERTY, "false"));
     // Define COS client
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
@@ -466,7 +467,7 @@ public class COSAPIClient implements IStoreClient {
       ObjectMetadata meta = mClient.getObjectMetadata(mBucket, key);
       return meta;
     } catch (AmazonClientException e) {
-      LOG.warn(e.getMessage());
+      LOG.debug(e.getMessage());
       return null;
     }
   }
@@ -541,6 +542,7 @@ public class COSAPIClient implements IStoreClient {
         ListObjectsRequest request = new ListObjectsRequest();
         request.setBucketName(mBucket);
         request.setPrefix(key);
+        request.withEncodingType("UTF-8");
         request.setDelimiter("/");
         request.setMaxKeys(1);
 
@@ -825,6 +827,15 @@ public class COSAPIClient implements IStoreClient {
   public FileStatus[] list(String hostName, Path path, boolean fullListing,
       boolean prefixBased, Boolean isDirectory,
       boolean flatListing, PathFilter filter) throws FileNotFoundException, IOException {
+    return internalList(hostName, path, fullListing, prefixBased, isDirectory, flatListing,
+        filter, fModeAutomaticDelete);
+
+  }
+
+  private FileStatus[] internalList(String hostName, Path path, boolean fullListing,
+      boolean prefixBased, Boolean isDirectory,
+      boolean flatListing, PathFilter filter,
+      boolean cleanup) throws FileNotFoundException, IOException {
     LOG.debug("list:(start) {}. full listing {}, prefix based {}, flat list {}",
         path, fullListing, prefixBased, flatListing);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
@@ -840,8 +851,9 @@ public class COSAPIClient implements IStoreClient {
     request.setBucketName(mBucket);
     request.setMaxKeys(5000);
     request.setPrefix(key);
+    request.withEncodingType("UTF-8");
     if (!flatListing) {
-      LOG.trace("ist:(mid) {}, set delimiter", path);
+      LOG.trace("list:(mid) {}, set delimiter", path);
       request.setDelimiter("/");
     }
 
@@ -853,14 +865,16 @@ public class COSAPIClient implements IStoreClient {
     boolean objectScanContinue = true;
     S3ObjectSummary prevObj = null;
     // start FTA logic
-    boolean stocatorOrigin = isSparkOrigin(key, path.toString());
+    boolean stocatorOrigin = isSparkOrigin(key);
     if (stocatorOrigin) {
       LOG.debug("Stocator origin is true for {}", key);
       if (!isJobSuccessful(key)) {
-        LOG.debug("{} created by failed Spark job. Skipped", key);
-        if (fModeAutomaticDelete) {
+        LOG.warn("{} created by failed Spark job. Skipped. Delete temporarily disabled ", key);
+        /*
+        if (cleanup) {
           delete(hostName, new Path(key), true);
         }
+        */
         return new FileStatus[0];
       }
     }
@@ -873,9 +887,15 @@ public class COSAPIClient implements IStoreClient {
         }
         obj.setKey(correctPlusSign(key, obj.getKey()));
         String objKey = obj.getKey();
-        String unifiedObjectName = stocatorPath.extractUnifiedObjectName(objKey);
+        String unifiedObjectName = stocatorPath.extractUnifiedName(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
+        stocatorOrigin = isSparkOrigin(unifiedObjectName);
         if (stocatorOrigin && !fullListing) {
+          if (!isJobSuccessful(unifiedObjectName)) {
+            // a bit tricky. need to delete entire set
+            // having unified name as a prefix
+            continue;
+          }
           LOG.trace("{} created by Spark", unifiedObjectName);
           // if we here - data created by spark and job completed
           // successfully
@@ -888,7 +908,18 @@ public class COSAPIClient implements IStoreClient {
             LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
             if (prevObj.getSize() < obj.getSize()) {
               LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
+              if (cleanup) {
+                String newMergedPath = getMergedPath(hostName, path, prevObj.getKey());
+                LOG.warn("Delete failed data part {}", newMergedPath);
+                delete(hostName, new Path(newMergedPath) , true);
+              }
               prevObj = obj;
+            } else {
+              if (cleanup) {
+                String newMergedPath = getMergedPath(hostName, path, obj.getKey());
+                LOG.warn("Delete failed data part {}", newMergedPath);
+                delete(hostName, new Path(newMergedPath) , true);
+              }
             }
             continue;
           }
@@ -1032,10 +1063,9 @@ public class COSAPIClient implements IStoreClient {
    * Data-Origin=stocator metadata If so, object was created by Spark.
    *
    * @param objectKey the key of the object
-   * @param path the object path
    * @return boolean if object was created by Spark
    */
-  private boolean isSparkOrigin(String objectKey, String path) {
+  private boolean isSparkOrigin(String objectKey) {
     LOG.debug("check spark origin for {}", objectKey);
     if (!objectKey.endsWith("/")) {
       LOG.debug("Key {} has no slash. Return false", objectKey);
@@ -1415,16 +1445,6 @@ public class COSAPIClient implements IStoreClient {
     }
   }
 
-  private String getFirstName(String p) {
-    if (p.startsWith("/")) {
-      p = p.substring(p.indexOf("/"));
-    }
-    if (p.indexOf("/") > 0) {
-      return p.substring(0, p.indexOf("/"));
-    }
-    return p;
-  }
-
   /**
    * Initiate a {@code listObjects} operation, incrementing metrics
    * in the process.
@@ -1480,6 +1500,10 @@ public class COSAPIClient implements IStoreClient {
    */
 
   public Path qualify(Path path) {
+    return innerQualify(path);
+  }
+
+  private Path innerQualify(Path path) {
     if (LOG.isTraceEnabled()) {
       LOG.trace("Working directory {}", workingDir);
       Path p = path.makeQualified(filesystemURI, workingDir);

@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ import com.ibm.stocator.fs.common.FileSystemTestUtils;
 /**
  * This is the base class for most of the Swift tests
  */
-public class SwiftFileSystemBaseTest extends SwiftBaseTest {
+public class COSFileSystemBaseTest extends COSBaseTest {
 
   protected byte[] data = FileSystemTestUtils.generateDataset(getBlockSize() * 2, 0, 255);
 

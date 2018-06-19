@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package com.ibm.stocator.fs.swift2d.systemtests;
+package com.ibm.stocator.fs.common;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -33,13 +33,13 @@ import org.junit.internal.AssumptionViolatedException;
 /**
  * Utilities used across test cases
  */
-public class SwiftTestUtils extends org.junit.Assert {
+public class FileSystemTestUtils extends org.junit.Assert {
 
   private static final Log LOG =
-              LogFactory.getLog(SwiftTestUtils.class);
+              LogFactory.getLog(FileSystemTestUtils.class);
 
   /**
-   * Read an object from Swift
+   * Read an object from FileSystem
    *
    * @param fs filesystem
    * @param path object bath
@@ -86,7 +86,6 @@ public class SwiftTestUtils extends org.junit.Assert {
   public static void assertPathExists(FileSystem fileSystem, String message,
                                       Path path) throws IOException {
     if (!fileSystem.exists(path)) {
-      //failure, report it
       fail(message + ": not found " + path + " in " + path.getParent());
     }
   }
@@ -300,15 +299,21 @@ public class SwiftTestUtils extends org.junit.Assert {
    * @param BaseUri
    * @throws IOException
      */
-  public static void cleanupAllFiles(FileSystem fileSystem, String BaseUri) throws IOException {
+  public static void cleanupAllFiles(FileSystem fileSystem, String baseUri) throws IOException {
     try {
       if (fileSystem != null) {
         // Clean up generated files
+        /*
         Path rootDir = new Path(BaseUri + "/");
         FileStatus[] files = fileSystem.listStatus(rootDir);
         for (FileStatus file : files) {
+          System.out.println("Cleanup of : " + file.getPath());
           fileSystem.delete(file.getPath(), false);
         }
+      }
+      */
+        Path rootDir = new Path(baseUri + "/");
+        fileSystem.delete(rootDir, true);
       }
     } catch (Exception e) {
       LOG.error("Error in deleting all files.");

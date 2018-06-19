@@ -136,14 +136,14 @@ Configure Stocator in `conf/core-site.xml`
 Stocator COS connector expose "fs.cos." keys prefix. For backward compatibility Stocator also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" has the highest priority and will overwrite other keys, if present.
 
 #### COS Connector configuration with IAM
-To work with IAM and provide `api key` please switch to the relevant `ibm-sdk` branch depends on the Stocator version you need. For example for Stocator 1.0.16 release, switch to `1.0.16-ibm-sdk`, for Stocator master `1.0.17-SNAPSHOT`, switch to `1.0.17-SNAPSHOT-IBM-SDK` and so on.
+To work with IAM and provide `api key` please switch to the relevant `ibm-sdk` branch depends on the Stocator version you need. For example for Stocator 1.0.21 release, switch to `1.0.21-ibm-sdk`, for Stocator master `1.0.22-SNAPSHOT`, switch to `1.0.22-SNAPSHOT-IBM-SDK` and so on.
 
-You will need to build Stocator manually, for example using 1.0.16-ibm-sdk branch:
+You will need to build Stocator manually, for example using 1.0.21-ibm-sdk branch:
 
 	git clone https://github.com/SparkTC/stocator
 	cd stocator
 	git fetch
-	git checkout -b 1.0.16-ibm-sdk origin/1.0.16-ibm-sdk
+	git checkout -b 1.0.21-ibm-sdk origin/1.0.21-ibm-sdk
 	mvn clean install –DskipTests
 
 ##### Configure Stocator
@@ -254,6 +254,7 @@ Now you can use URI
 | fs.cos.multipart.size | 104857600 | Size in bytes. Define multipart size |
 | fs.cos.multipart.threshold | Max Integer | minimum size in bytes before we start a multipart uploads, default is max integer |
 | fs.cos.fast.upload | false | enable or disable block upload |
+| fs.stocator.glob.bracket.support | false | if true supports Hadoop string patterns of the form {ab,c{de, fh}}. Due to possible collision with object names, this mode prevents from create an object whose name contains {} |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 

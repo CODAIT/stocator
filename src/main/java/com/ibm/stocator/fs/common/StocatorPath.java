@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_PART;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
@@ -121,6 +122,9 @@ public class StocatorPath {
     }
     if (!res.equals("")) {
       if (addRoot) {
+        if (res != null && res.startsWith("/")) {
+          res = res.substring(1);
+        }
         return dataRoot + "/" + res;
       }
       return res;
@@ -352,7 +356,7 @@ public class StocatorPath {
    *
    * @param objectKey object key
    * @param isUnifiedObjectKey
-   * @return
+   * @return unified name
    */
   private String extractFromObjectKeyWithTaskID(String objectKey, boolean isUnifiedObjectKey) {
     Path p = new Path(objectKey);
@@ -374,6 +378,23 @@ public class StocatorPath {
       }
     } else if (isUnifiedObjectKey && objectKey.indexOf(HADOOP_SUCCESS) > 0) {
       return p.getParent().toString();
+    }
+    return objectKey;
+  }
+
+  /**
+   * Extracts from the object key an unified object name or name without task ID
+   *
+   * @param objectKey object key
+   * @return unified name
+   */
+  public String extractUnifiedName(String objectKey) {
+    Path p = new Path(objectKey);
+    int index = objectKey.indexOf(HADOOP_PART);
+    if (index > 0) {
+      return objectKey.substring(0, index);
+    } else if (objectKey.indexOf(HADOOP_SUCCESS) > 0) {
+      return objectKey.substring(0, objectKey.indexOf(HADOOP_SUCCESS));
     }
     return objectKey;
   }
