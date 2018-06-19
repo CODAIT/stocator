@@ -348,7 +348,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("listStatus: {},  prefix based {}. Globber is directory status {}",
         f.toString(), prefixBased, isDirectory);
     FileStatus[] listing = null;
-    if (stocatorPath.isTemporaryPathContain(f)) {
+    if (!stocatorPath.isTemporaryPathContain(f)) {
       LOG.debug("{} temporary. Return empty result", f);
       FileStatus[] result = {};
       return result;
