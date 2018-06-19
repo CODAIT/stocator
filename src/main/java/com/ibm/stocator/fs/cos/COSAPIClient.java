@@ -1519,7 +1519,7 @@ public class COSAPIClient implements IStoreClient {
    *
    * @param origin original string that may contain
    * @param stringToCorrect string that may contain original string with spaces instead of +
-   * @return corrected string
+   * @return corrected string with plus sign
    */
   private String correctPlusSign(String origin, String stringToCorrect) {
     if (origin.contains("+")) {
