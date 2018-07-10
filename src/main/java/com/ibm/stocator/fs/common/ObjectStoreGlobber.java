@@ -140,6 +140,8 @@ public class ObjectStoreGlobber {
     String authority = authorityFromPath(pathPattern);
 
     String pathPatternString = pathPattern.toUri().getPath();
+    String token = COSUtils.extractToken(pathPatternString);
+    pathPatternString = COSUtils.removeToken(pathPatternString);
     String unescapePathString = unescapePathComponent(pathPatternString);
     int firstSpecialChar = getSpecialCharacter(unescapePathString);
     String noWildCardPathPrefix = unescapePathString.substring(0, firstSpecialChar);
@@ -160,9 +162,13 @@ public class ObjectStoreGlobber {
       LOG.trace("Glob filter {} no wildcard prefix {}", pathPatternString, noWildCardPathPrefix);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
-      LOG.trace("Glob filter {} pattern {}", rootPlaceholder.getPath(),
+      String pathToList = rootPlaceholder.getPath().toString();
+      if (token != null) {
+        pathToList = pathToList + "?token=" + token;
+      }
+      LOG.trace("Glob filter {} pattern {}", pathToList,
           pathPatternString.toString());
-      candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath(),
+      candidates = new ArrayList<>(Arrays.asList(listStatus(new Path(pathToList),
           noWildCardPathPrefix.endsWith("/"))));
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
