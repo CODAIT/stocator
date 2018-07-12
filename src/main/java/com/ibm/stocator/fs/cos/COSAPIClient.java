@@ -266,9 +266,10 @@ public class COSAPIClient implements IStoreClient {
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
     String token = null;
-    if (filesystemURI.getPath().indexOf("?token=") != -1) {
+    if (COSUtils.isTokenInURL(filesystemURI.getPath().toString())) {
       token = COSUtils.extractToken(filesystemURI.toString());
       filesystemURI = URI.create(COSUtils.removeToken(filesystemURI.toString()));
+      LOG.trace("initiate: token provided in URL. Path modified to {}", filesystemURI.toString());
     }
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
 
@@ -743,7 +744,7 @@ public class COSAPIClient implements IStoreClient {
       Statistics statistics) throws IOException {
     LOG.debug("Create object {}", objName);
     try {
-      if (objName.indexOf("?token=") != -1) {
+      if (COSUtils.isTokenInURL(objName)) {
         customToken.setToken(COSUtils.extractToken(objName));
         objName = COSUtils.removeToken(objName);
       }
@@ -892,7 +893,7 @@ public class COSAPIClient implements IStoreClient {
   }
 
   private Path updatePathAndToken(CustomTokenManager customTokenMgr, Path path) {
-    if (customToken != null && path.toString().indexOf("?token=") != -1) {
+    if (customToken != null && COSUtils.isTokenInURL(path.toString())) {
       customToken.setToken(COSUtils.extractToken(path.toString()));
       return new Path(COSUtils.removeToken(path.toString()));
     }

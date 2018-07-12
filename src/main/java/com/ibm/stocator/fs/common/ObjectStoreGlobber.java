@@ -173,6 +173,14 @@ public class ObjectStoreGlobber {
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
           LOG.trace("Candidate accepted: {}", candidate.getPath().toString());
+          if (token != null) {
+            String pathWithToken = candidate.getPath().toString();
+            if (!COSUtils.isTokenInURL(pathPatternString)) {
+              pathWithToken = pathWithToken + "?token=" + token;
+              LOG.trace("Glob : extend return path with token {}", pathWithToken);
+              candidate.setPath(new Path(pathWithToken));
+            }
+          }
           results.add(candidate);
         } else {
           LOG.trace("Candidate rejected: {} Pattern {}", candidate.getPath().toString(),

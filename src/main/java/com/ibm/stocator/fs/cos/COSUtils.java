@@ -289,7 +289,7 @@ public final class COSUtils {
    * @return path without token for example: "cos://spark1.myCos/one6.txt"
    */
   public static String removeToken(String path) {
-    if (path.indexOf("?token=") == -1 && path.indexOf("%3Ftoken=") == -1) {
+    if (!isTokenInURL(path)) {
       return path;
     }
     // try ?token
@@ -316,7 +316,7 @@ public final class COSUtils {
    * @return the token for example: "abc"
    */
   public static String extractToken(String path) {
-    if (path.indexOf("?token=") == -1 && path.indexOf("%3Ftoken=") == -1) {
+    if (!isTokenInURL(path)) {
       return null;
     }
     // try ?token
@@ -333,5 +333,12 @@ public final class COSUtils {
     }
     String token = path.substring(tokenIdxStart + tokenKeyLen, tokenIdxEnd);
     return token;
+  }
+
+  public static boolean isTokenInURL(String path) {
+    if (path.indexOf("?token=") >= 0 || path.indexOf("%3Ftoken=") >= 0) {
+      return true;
+    }
+    return false;
   }
 }
