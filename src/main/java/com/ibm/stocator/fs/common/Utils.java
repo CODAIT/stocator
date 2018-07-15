@@ -220,17 +220,19 @@ public class Utils {
       String key, Properties props, String propsKey,
       boolean required) throws ConfigurationParseException {
     String val = conf.get(prefix + key);
+    String altKey = prefix + key;
     if (val == null) {
       // try alternative key
       for (String alternativePrefix : altPrefix) {
-        val = conf.get(alternativePrefix + key);
-        LOG.trace("Trying alternative key {}{}", alternativePrefix, key);
+        altKey = alternativePrefix + key;
+        val = conf.get(altKey);
       }
     }
     if (required && val == null) {
       throw new ConfigurationParseException("Missing mandatory configuration: " + key);
     }
     if (val != null) {
+      LOG.trace("Found alternative key {} value {}", altKey, val);
       props.setProperty(propsKey, val.trim());
     }
   }
