@@ -163,7 +163,7 @@ public class ObjectStoreGlobber {
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
       String pathToList = rootPlaceholder.getPath().toString();
-      if (token != null) {
+      if (token != null && !COSUtils.isTokenInURL(pathToList)) {
         pathToList = pathToList + "?token=" + token;
       }
       LOG.trace("Glob filter {} pattern {}", pathToList,
@@ -175,7 +175,7 @@ public class ObjectStoreGlobber {
           LOG.trace("Candidate accepted: {}", candidate.getPath().toString());
           if (token != null) {
             String pathWithToken = candidate.getPath().toString();
-            if (!COSUtils.isTokenInURL(pathPatternString)) {
+            if (!COSUtils.isTokenInURL(pathWithToken)) {
               pathWithToken = pathWithToken + "?token=" + token;
               LOG.trace("Glob : extend return path with token {}", pathWithToken);
               candidate.setPath(new Path(pathWithToken));
@@ -190,11 +190,16 @@ public class ObjectStoreGlobber {
     } else {
       LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
           pathPattern.toString());
-      candidates = new ArrayList<>(Arrays.asList(getFileStatus(new Path(pathPattern.toString()))));
+      String pathToList = pathPattern.toString();
+      if (token != null && !COSUtils.isTokenInURL(pathToList)) {
+        pathToList = pathToList + "?token=" + token;
+      }
+
+      candidates = new ArrayList<>(Arrays.asList(getFileStatus(new Path(pathToList))));
       if (candidates == null || candidates.isEmpty()) {
         return new FileStatus[0];
       }
-      LOG.debug("About to loop over candidates");
+      LOG.trace("About to loop over candidates");
       for (FileStatus candidate : candidates) {
         if (candidate == null) {
           throw new FileNotFoundException("Not found " + pathPatternString);
@@ -206,6 +211,12 @@ public class ObjectStoreGlobber {
                 COSUtils.removeToken(pathPattern.toString()) + "/")
                 || (candidate.getPath().toString().equals(
                     COSUtils.removeToken(pathPattern.toString()))))) {
+          String pathWithToken = candidate.getPath().toString();
+          if (!COSUtils.isTokenInURL(pathWithToken)) {
+            pathWithToken = pathWithToken + "?token=" + token;
+            LOG.debug("Glob : extend return path with token {}", pathWithToken);
+            candidate.setPath(new Path(pathWithToken));
+          }
           results.add(candidate);
         }
       }

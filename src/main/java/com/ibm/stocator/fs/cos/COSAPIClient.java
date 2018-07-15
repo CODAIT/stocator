@@ -651,10 +651,13 @@ public class COSAPIClient implements IStoreClient {
   }
 
   private FileStatus createFileStatus(S3ObjectSummary objSummary,
-      String hostName, Path path)
+      String hostName, Path path, String token)
       throws IllegalArgumentException, IOException {
     String objKey = objSummary.getKey();
     String newMergedPath = getMergedPath(hostName, path, objKey);
+    if (token != null) {
+      newMergedPath = newMergedPath + "?token=" + token;
+    }
     return createFileStatus(objSummary.getSize(), objKey,
         objSummary.getLastModified(), new Path(newMergedPath));
   }
@@ -915,6 +918,7 @@ public class COSAPIClient implements IStoreClient {
       boolean cleanup) throws FileNotFoundException, IOException {
     LOG.debug("list:(start) {}. full listing {}, prefix based {}, flat list {}",
         path, fullListing, prefixBased, flatListing);
+    String token = COSUtils.extractToken(path.toString());
     path = updatePathAndToken(customToken, path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
     String key = pathToKey(path);
@@ -1002,7 +1006,7 @@ public class COSAPIClient implements IStoreClient {
             continue;
           }
         }
-        FileStatus fs = createFileStatus(prevObj, hostName, path);
+        FileStatus fs = createFileStatus(prevObj, hostName, path, token);
         if (fs.getLen() > 0 || fullListing) {
           LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
           if (filter == null) {
@@ -1028,7 +1032,7 @@ public class COSAPIClient implements IStoreClient {
     }
 
     if (prevObj != null) {
-      FileStatus fs = createFileStatus(prevObj, hostName, path);
+      FileStatus fs = createFileStatus(prevObj, hostName, path, token);
       LOG.trace("Adding the last object from the list {}", fs.getPath());
       if (fs.getLen() > 0 || fullListing) {
         LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
