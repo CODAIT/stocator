@@ -655,9 +655,7 @@ public class COSAPIClient implements IStoreClient {
       throws IllegalArgumentException, IOException {
     String objKey = objSummary.getKey();
     String newMergedPath = getMergedPath(hostName, path, objKey);
-    if (token != null) {
-      newMergedPath = newMergedPath + "?token=" + token;
-    }
+    newMergedPath = COSUtils.addTokenToPath(newMergedPath, token);
     return createFileStatus(objSummary.getSize(), objKey,
         objSummary.getLastModified(), new Path(newMergedPath));
   }

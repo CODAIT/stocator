@@ -285,7 +285,7 @@ public final class COSUtils {
   }
   /**
    * Removes the ?token=abc from the path and returns the clean path
-   * @param path with token for example: "cos://spark1.myCos/one6.txt?token=abc"
+   * @param path with token for example: "cos://spark1.myCos/one6.txt/token=abc"
    * @return path without token for example: "cos://spark1.myCos/one6.txt"
    */
   public static String removeToken(String path) {
@@ -293,13 +293,9 @@ public final class COSUtils {
       return path;
     }
     // try ?token
-    int tokenIdxStart = path.indexOf("?token=");
-    // then its %3Ftoken
-    if (tokenIdxStart == -1) {
-      tokenIdxStart = path.indexOf("%3Ftoken=");
-    }
+    int tokenIdxStart = path.indexOf("/token=");
     int tokenIdxEnd = path.length();
-    int separatorIdx = path.indexOf("/", tokenIdxStart);
+    int separatorIdx = path.indexOf("/", tokenIdxStart + 1);
     if (separatorIdx != -1) {
       tokenIdxEnd = separatorIdx;
     }
@@ -312,22 +308,17 @@ public final class COSUtils {
 
   /**
    * Extracts the token from the path
-   * @param path path with token for example: "cos://spark1.myCos/one6.txt?token=abc"
+   * @param path path with token for example: "cos://spark1.myCos/one6.txt/token=abc"
    * @return the token for example: "abc"
    */
   public static String extractToken(String path) {
     if (!isTokenInURL(path)) {
       return null;
     }
-    // try ?token
-    int tokenIdxStart = path.indexOf("?token=");
+    // try token
+    int tokenIdxStart = path.indexOf("/token=");
     int tokenKeyLen = 7;
-    // then its %3Ftoken
-    if (tokenIdxStart == -1) {
-      tokenIdxStart = path.indexOf("%3Ftoken=");
-      tokenKeyLen = 9;
-    }
-    int tokenIdxEnd = path.indexOf("/", tokenIdxStart);
+    int tokenIdxEnd = path.indexOf("/", tokenIdxStart + 1);
     if (tokenIdxEnd == -1) {
       tokenIdxEnd = path.length();
     }
@@ -336,9 +327,17 @@ public final class COSUtils {
   }
 
   public static boolean isTokenInURL(String path) {
-    if (path.indexOf("?token=") >= 0 || path.indexOf("%3Ftoken=") >= 0) {
+    if (path.indexOf("/token=") >= 0) {
       return true;
     }
     return false;
   }
+
+  public static String addTokenToPath(String path, String token) {
+    if (token != null) {
+      return path + "/token=" + token;
+    }
+    return path;
+  }
 }
+
