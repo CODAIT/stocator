@@ -537,10 +537,14 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FileStatus getFileStatus(String hostName,
       Path path, String msg) throws IOException, FileNotFoundException {
+    String token = COSUtils.extractToken(path.toString());
     path = updatePathAndToken(customToken, path);
     FileStatus res = null;
     FileStatus cached = memoryCache.getFileStatus(path.toString());
     if (cached != null) {
+      LOG.trace("getFileStatus cached returned {}", cached.getPath().toString());
+      cached.setPath(new Path(COSUtils.addTokenToPath(path.toString(), token, hostName)));
+      LOG.trace("getFileStatus cached transofrmed to {}", cached.getPath().toString());
       return cached;
     }
     LOG.trace("getFileStatus(start) for {}, hostname: {}", path, hostName);
@@ -655,7 +659,7 @@ public class COSAPIClient implements IStoreClient {
       throws IllegalArgumentException, IOException {
     String objKey = objSummary.getKey();
     String newMergedPath = getMergedPath(hostName, path, objKey);
-    newMergedPath = COSUtils.addTokenToPath(newMergedPath, token);
+    newMergedPath = COSUtils.addTokenToPath(newMergedPath, token, hostName);
     return createFileStatus(objSummary.getSize(), objKey,
         objSummary.getLastModified(), new Path(newMergedPath));
   }
@@ -894,8 +898,13 @@ public class COSAPIClient implements IStoreClient {
   }
 
   private Path updatePathAndToken(CustomTokenManager customTokenMgr, Path path) {
+    /*
     if (customToken != null && COSUtils.isTokenInURL(path.toString())) {
       customToken.setToken(COSUtils.extractToken(path.toString()));
+      return new Path(COSUtils.removeToken(path.toString()));
+    }
+    */
+    if (COSUtils.isTokenInURL(path.toString())) {
       return new Path(COSUtils.removeToken(path.toString()));
     }
     return path;
