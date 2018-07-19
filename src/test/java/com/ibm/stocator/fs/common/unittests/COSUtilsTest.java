@@ -13,7 +13,7 @@ public class COSUtilsTest {
     String token = "123";
     String hostName = "cos://bucket.service/";
     String path =  hostName + "aa";
-    String pathWithToken = COSUtils.addTokenToPath(path, token);
+    String pathWithToken = COSUtils.addTokenToPath(path, token, hostName);
     String extractToken = COSUtils.extractToken(pathWithToken);
     Assert.assertEquals("Token extract failed", extractToken, token);
     String originalPath = COSUtils.removeToken(pathWithToken);

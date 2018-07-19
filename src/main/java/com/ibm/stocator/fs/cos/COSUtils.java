@@ -293,13 +293,9 @@ public final class COSUtils {
       return path;
     }
     // try ?token
-    int tokenIdxStart = path.indexOf("?token=");
-    // then its %3Ftoken
-    if (tokenIdxStart == -1) {
-      tokenIdxStart = path.indexOf("%3Ftoken=");
-    }
+    int tokenIdxStart = path.indexOf("/token=");
     int tokenIdxEnd = path.length();
-    int separatorIdx = path.indexOf("/", tokenIdxStart);
+    int separatorIdx = path.indexOf("/", tokenIdxStart + 1);
     if (separatorIdx != -1) {
       tokenIdxEnd = separatorIdx;
     }
@@ -320,14 +316,9 @@ public final class COSUtils {
       return null;
     }
     // try ?token
-    int tokenIdxStart = path.indexOf("?token=");
+    int tokenIdxStart = path.indexOf("/token=");
     int tokenKeyLen = 7;
-    // then its %3Ftoken
-    if (tokenIdxStart == -1) {
-      tokenIdxStart = path.indexOf("%3Ftoken=");
-      tokenKeyLen = 9;
-    }
-    int tokenIdxEnd = path.indexOf("/", tokenIdxStart);
+    int tokenIdxEnd = path.indexOf("/", tokenIdxStart + 1);
     if (tokenIdxEnd == -1) {
       tokenIdxEnd = path.length();
     }
@@ -336,15 +327,16 @@ public final class COSUtils {
   }
 
   public static boolean isTokenInURL(String path) {
-    if (path.indexOf("?token=") >= 0 || path.indexOf("%3Ftoken=") >= 0) {
+    if (path.indexOf("/token=") >= 0) {
       return true;
     }
     return false;
   }
 
-  public static String addTokenToPath(String path, String token) {
+  public static String addTokenToPath(String path, String token, String hostName) {
     if (token != null) {
-      return path +  "?token=" + token;
+      String st1 = path.substring(hostName.length());
+      return hostName + "token=" + token + "/" + st1;
     }
     return path;
   }
