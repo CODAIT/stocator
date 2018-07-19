@@ -543,7 +543,7 @@ public class COSAPIClient implements IStoreClient {
     FileStatus cached = memoryCache.getFileStatus(path.toString());
     if (cached != null) {
       LOG.trace("getFileStatus cached returned {}", cached.getPath().toString());
-      cached.setPath(new Path(COSUtils.addTokenToPath(path.toString(), token, hostName)));
+      cached.setPath(new Path(COSUtils.addTokenToPath(path.toString(), token)));
       LOG.trace("getFileStatus cached transofrmed to {}", cached.getPath().toString());
       return cached;
     }
@@ -659,7 +659,7 @@ public class COSAPIClient implements IStoreClient {
       throws IllegalArgumentException, IOException {
     String objKey = objSummary.getKey();
     String newMergedPath = getMergedPath(hostName, path, objKey);
-    newMergedPath = COSUtils.addTokenToPath(newMergedPath, token, hostName);
+    newMergedPath = COSUtils.addTokenToPath(newMergedPath, token);
     return createFileStatus(objSummary.getSize(), objKey,
         objSummary.getLastModified(), new Path(newMergedPath));
   }
