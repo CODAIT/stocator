@@ -898,13 +898,8 @@ public class COSAPIClient implements IStoreClient {
   }
 
   private Path updatePathAndToken(CustomTokenManager customTokenMgr, Path path) {
-    /*
     if (customToken != null && COSUtils.isTokenInURL(path.toString())) {
       customToken.setToken(COSUtils.extractToken(path.toString()));
-      return new Path(COSUtils.removeToken(path.toString()));
-    }
-    */
-    if (COSUtils.isTokenInURL(path.toString())) {
       return new Path(COSUtils.removeToken(path.toString()));
     }
     return path;
