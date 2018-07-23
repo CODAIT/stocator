@@ -1,5 +1,5 @@
 Stocator - Storage Connector for Apache Spark
-==============================
+===============================
 Apache Spark can work with multiple data sources that include various object stores like IBM Cloud Object Storage, OpenStack Swift and more. To access an object store, Apache Spark uses Hadoop modules that contain connectors to the various object stores. 
 
 Apache Spark needs only small set of object store functionalities. Specifically, Apache Spark requires object listing, objects creation, read objects, and getting data partitions. Hadoop connectors, however, must be compliant with the Hadoop ecosystem. This means they support many more operations, such as shell operations on directories, including move, copy, rename, etc. (these are not native object store operations). Moreover, Hadoop Map Reduce Client is designed to work with file systems and not object stores. The temp files and folders it uses for every write operation are renamed, copied, and deleted. This leads to dozens of useless requests targeted at the object store. It’s clear that Hadoop is designed to work with file systems and not object stores.
@@ -26,7 +26,7 @@ Stocator is a generic connector, that may contain various implementations for ob
 * If you want to build a jar with all the dependencies, please execute 
 
 		mvn clean package -Pall-in-one
-
+ 
 ## Usage with Apache Spark
 Stocator can be used easily with Apache Spark. There are different ways to use Stocator
 
