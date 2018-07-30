@@ -346,16 +346,12 @@ The following is the list of the configuration keys
 	</property>
 	
 	
-##### IBM Bluemix Object Service using Keystone V3
-
 #### Keystone V3 mapping to keys
 
 | Driver configuration key | Keystone V3 key |
 | ------------------------ | --------------- |
 | fs.swift2d.service.SERVICE_NAME.username | user id |
 | fs.swift2d.service.SERVICE_NAME.tenant | project id |
-
-In order to properly connect to an IBM Bluemix object store service based on Swift API, you need to open that service in the IBM Bluemix dashboard and inspect the service credentials and update the properties below with the correspondent values :
 
 	<property>
 	    <name>fs.swift2d.service.SERVICE_NAME.auth.url</name>
