@@ -98,7 +98,7 @@ public class BaseInputStream extends FilterInputStream implements Releasable {
   public void release() {
     Utils.closeWithoutException(this);
     if (in instanceof Releasable) {
-      Releasable r = (Releasable) in;
+      final Releasable r = (Releasable) in;
       r.release();
     }
   }

@@ -52,7 +52,6 @@ public class SwiftNoStreamingOutputStream extends OutputStream {
   private URL mUrl;
 
   private JossAccount mAccount;
-  private SwiftAPIClient fs;
   /*
    * Output stream
    */
@@ -91,9 +90,8 @@ public class SwiftNoStreamingOutputStream extends OutputStream {
     mAccount = account;
     scm = connectionManager;
     metadata = metadataT;
-    fs = fsT;
     try {
-      mBackupFile = fs.createTmpFileForWrite("output-",
+      mBackupFile = fsT.createTmpFileForWrite("output-",
           LocalDirAllocator.SIZE_UNKNOWN);
 
       LOG.debug("OutputStream for key '{}' writing to tempfile: {}", mUrl.toString(), mBackupFile);
