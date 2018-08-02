@@ -76,10 +76,10 @@ public final class ConfigurationHandler {
     if (!Utils.validSchema(uri)) {
       props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, PUBLIC_ACCESS);
     } else {
-      String container = Utils.getContainerName(host);
-      String service = Utils.getServiceName(host);
-      String[] prefix = new String[]{SWIFT_SERVICE_PREFIX + service};
-      String prefix2D = SWIFT2D_SERVICE_PREFIX + service;
+      final String container = Utils.getContainerName(host);
+      final String service = Utils.getServiceName(host);
+      final String[] prefix = new String[]{SWIFT_SERVICE_PREFIX + service};
+      final String prefix2D = SWIFT2D_SERVICE_PREFIX + service;
       props.setProperty(SWIFT_CONTAINER_PROPERTY, container);
       Utils.updateProperty(conf, prefix2D, prefix, AUTH_URL, props, SWIFT_AUTH_PROPERTY, true);
       Utils.updateProperty(conf, prefix2D, prefix, USERNAME, props, SWIFT_USERNAME_PROPERTY, true);

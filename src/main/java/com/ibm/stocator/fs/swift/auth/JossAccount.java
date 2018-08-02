@@ -45,20 +45,20 @@ public class JossAccount {
   /*
    * Joss configuration
    */
-  private AccountConfig mAccountConfig;
+  private final AccountConfig mAccountConfig;
   /*
    * Keystone region
    */
-  private String mRegion;
+  private final String mRegion;
   /*
    * use public or internal URL for Swift API object store
    */
-  boolean mUsePublicURL;
+  private final boolean mUsePublicURL;
   /*
    * Cached Access object. Will be renewed when token expire
    */
   private Access mAccess;
-  private CloseableHttpClient httpclient = null;
+  private final CloseableHttpClient httpclient;
   private static final Logger LOG = LoggerFactory.getLogger(JossAccount.class);
 
   /**
@@ -72,8 +72,10 @@ public class JossAccount {
    *          use public or internal url
    * @param scm Swift connection manager
    */
-  public JossAccount(AccountConfig config, String region, boolean usePublicURL,
-      SwiftConnectionManager scm) {
+  public JossAccount(final AccountConfig config,
+                     final String region,
+                     final boolean usePublicURL,
+                     final SwiftConnectionManager scm) {
     mAccountConfig = config;
     mRegion = region;
     mUsePublicURL = usePublicURL;

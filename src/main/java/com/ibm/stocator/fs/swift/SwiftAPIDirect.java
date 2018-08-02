@@ -76,18 +76,27 @@ public class SwiftAPIDirect {
    * @return SwiftInputStreamWrapper that includes input stream and length
    * @throws IOException if network errors
    */
-  public static SwiftInputStreamWrapper getObject(Path path, JossAccount account,
-      long bytesFrom, long bytesTo, SwiftConnectionManager scm) throws IOException {
-    Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>>  resp = httpGET(path.toString(),
-        bytesFrom, bytesTo, account, scm);
+  public static SwiftInputStreamWrapper getObject(
+          final Path path,
+          final JossAccount account,
+          final long bytesFrom,
+          final long bytesTo,
+          final SwiftConnectionManager scm) throws IOException {
+    Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>> resp = httpGET(
+            path.toString(),
+            bytesFrom,
+            bytesTo,
+            account,
+            scm);
     if (resp.x.intValue() >= 400) {
       LOG.warn("Re-authentication attempt for GET {}", path.toString());
       account.authenticate();
       resp = httpGET(path.toString(), bytesFrom, bytesTo, account, scm);
     }
 
-    SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
-        resp.y.y.getEntity(), resp.y.x);
+    final SwiftInputStreamWrapper httpStream = new SwiftInputStreamWrapper(
+        resp.y.y.getEntity(), resp.y.x
+    );
     return httpStream;
   }
 
@@ -99,22 +108,25 @@ public class SwiftAPIDirect {
    * @return Tuple with HTTP response method and HttpRequestBase HttpResponse
    * @throws IOException if error
    */
-  private static Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>> httpGET(String path,
-      long bytesFrom, long bytesTo, JossAccount account, SwiftConnectionManager scm)
-          throws IOException {
+  private static Tuple<Integer, Tuple<HttpRequestBase, HttpResponse>> httpGET(
+          final String path,
+          final long bytesFrom,
+          final long bytesTo,
+          final JossAccount account,
+          final SwiftConnectionManager scm) throws IOException {
     LOG.debug("HTTP GET {} request. From {}, To {}", path, bytesFrom, bytesTo);
-    HttpGet httpGet = new HttpGet(path);
+    final HttpGet httpGet = new HttpGet(path);
     httpGet.addHeader("X-Auth-Token", account.getAuthToken());
     if (bytesTo > 0) {
       final String rangeValue = String.format("bytes=%d-%d", bytesFrom, bytesTo);
       httpGet.addHeader(Constants.RANGES_HTTP_HEADER, rangeValue);
     }
     httpGet.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
-    CloseableHttpClient httpclient = scm.createHttpConnection();
-    CloseableHttpResponse response = httpclient.execute(httpGet);
+    final CloseableHttpClient httpclient = scm.createHttpConnection();
+    final CloseableHttpResponse response = httpclient.execute(httpGet);
     int responseCode = response.getStatusLine().getStatusCode();
     LOG.debug("HTTP GET {} response. Status code {}", path, responseCode);
-    Tuple<HttpRequestBase, HttpResponse> respData = new Tuple<HttpRequestBase,
+    final Tuple<HttpRequestBase, HttpResponse> respData = new Tuple<HttpRequestBase,
         HttpResponse>(httpGet, response);
     return new Tuple<Integer, Tuple<HttpRequestBase,
         HttpResponse>>(Integer.valueOf(responseCode), respData);
@@ -135,7 +147,7 @@ public class SwiftAPIDirect {
       Map<String, String> metadata, long size, String type)
           throws IOException {
     LOG.debug("HTTP PUT {} request on {}", path);
-    HttpPut httpPut = new HttpPut(path);
+    final HttpPut httpPut = new HttpPut(path);
     httpPut.addHeader("X-Auth-Token", account.getAuthToken());
     httpPut.addHeader("Content-Type", type);
     httpPut.addHeader(Constants.USER_AGENT_HTTP_HEADER, Constants.STOCATOR_USER_AGENT);
@@ -144,12 +156,12 @@ public class SwiftAPIDirect {
         httpPut.addHeader("X-Object-Meta-" + entry.getKey(), entry.getValue());
       }
     }
-    RequestConfig config = RequestConfig.custom().setExpectContinueEnabled(true).build();
+    final RequestConfig config = RequestConfig.custom().setExpectContinueEnabled(true).build();
     httpPut.setConfig(config);
-    InputStreamEntity entity = new InputStreamEntity(inputStream,size);
+    final InputStreamEntity entity = new InputStreamEntity(inputStream, size);
     httpPut.setEntity(entity);
-    CloseableHttpClient httpclient = scm.createHttpConnection();
-    CloseableHttpResponse response = httpclient.execute(httpPut);
+    final CloseableHttpClient httpclient = scm.createHttpConnection();
+    final CloseableHttpResponse response = httpclient.execute(httpPut);
     int responseCode = response.getStatusLine().getStatusCode();
     LOG.debug("HTTP PUT {} response. Status code {}", path, responseCode);
     response.close();
@@ -169,10 +181,15 @@ public class SwiftAPIDirect {
    * @return HTTP Response code
    * @throws IOException if network errors
    */
-  public static int putObject(String path, JossAccount account,
-      InputStream inputStream, SwiftConnectionManager scm,
-      Map<String, String> metadata, long size, String type) throws IOException {
-    int  resp = httpPUT(path, inputStream, account, scm, metadata, size, type);
+  public static int putObject(
+          final String path,
+          final JossAccount account,
+          final InputStream inputStream,
+          final SwiftConnectionManager scm,
+          final Map<String, String> metadata,
+          final long size,
+          final String type) throws IOException {
+    int resp = httpPUT(path, inputStream, account, scm, metadata, size, type);
     if (resp >= 400) {
       LOG.warn("Re-authentication attempt for GET {}", path);
       account.authenticate();
@@ -185,10 +202,9 @@ public class SwiftAPIDirect {
    * Sends a HEAD request to get an object's length
    */
   public static long getTempUrlObjectLength(Path path, SwiftConnectionManager scm)
-      throws IOException {
-
-    HttpHead head = new HttpHead(path.toString().replace("swift2d", "https"));
-    CloseableHttpResponse response = scm.createHttpConnection().execute(head);
+          throws IOException {
+    final HttpHead head = new HttpHead(path.toString().replace("swift2d", "https"));
+    final CloseableHttpResponse response = scm.createHttpConnection().execute(head);
     return Long.parseLong(response.getFirstHeader("Content-Length").getValue());
   }
 

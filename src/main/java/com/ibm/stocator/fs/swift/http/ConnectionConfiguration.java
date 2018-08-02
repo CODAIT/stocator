@@ -20,6 +20,8 @@
 
 package com.ibm.stocator.fs.swift.http;
 
+import com.google.common.base.MoreObjects;
+
 /**
  * HTTP Connection configuration
  *
@@ -147,13 +149,15 @@ public class ConnectionConfiguration {
 
   @Override
   public String toString() {
-    return "ConnectionConfiguration [maxPerRoute=" + maxPerRoute + ", maxTotal=" + maxTotal
-        + ", soTimeout=" + soTimeout
-        + ", executionCount=" + executionCount + ", reqConnectTimeout="
-        + reqConnectTimeout
-        + ", reqConnectionRequestTimeout=" + reqConnectionRequestTimeout
-        + ", reqSocketTimeout=" + reqSocketTimeout
-        + "]";
+    return MoreObjects.toStringHelper(this)
+            .add("MaxPerRoute", maxPerRoute)
+            .add("MaxTotal", maxTotal)
+            .add("SoTimeout", soTimeout)
+            .add("ExecutionCount", executionCount)
+            .add("RequestConnectTimeout", reqConnectTimeout)
+            .add("RequestConnectionTimeout", reqConnectionRequestTimeout)
+            .add("RequestSocketTimeout", reqSocketTimeout)
+            .toString();
   }
 
 }
