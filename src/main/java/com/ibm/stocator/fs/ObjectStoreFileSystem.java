@@ -474,6 +474,17 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       FSDataOutputStream outStream = storageClient.createObject(plainObjName,
           Constants.APPLICATION_DIRECTORY, metadata, statistics);
       outStream.close();
+    } else if (f.getName().equals("_spark_metadata")) {
+      LOG.debug("mkdirs on non temp object. Create {}", f.toString());
+      String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
+          true);
+      if (!objName.endsWith("/")) {
+        objName = objName + "/";
+      }
+      LOG.trace("mkdirs to create directory {}", objName);
+      FSDataOutputStream outStream = storageClient.createObject(objName,
+          Constants.APPLICATION_DIRECTORY, null, statistics);
+      outStream.close();
     }
     return true;
   }
