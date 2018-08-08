@@ -70,9 +70,7 @@ modify `core/pom.xml` to include `stocator`
      </dependency>
 
 	
-Compile Apache Spark with Haddop support ( example of Hadoop 2.7.3 )
-
-	mvn -Phadoop-2.7 -Dhadoop.version=2.7.3 -DskipTests package
+Compile Apache Spark with Haddop support as described [here](https://spark.apache.org/docs/latest/building-spark.html)
 
 ## General requirements
 Stocator verifies that 
@@ -89,15 +87,15 @@ Stocator uses configuration keys that can be configured via spark's `core-site.x
 For usage with `core-site.xml`, see the configuration template located under `conf/core-site.xml.template`.
 
 
-## Stocator and IBM Cloud Object Storage (COS)
-Stocator allows to access IBM Cloud Object Service via `cos://` schema. The general URI is the form
+## Stocator and IBM Cloud Object Storage (IBM COS)
+Stocator allows to access IBM Cloud Object Storage via `cos://` schema. The general URI is the form
 
 	cos://<bucket>.<service>/object(s)
 
 where `bucket` is object storage bucket and `<service>` identifies configuration group entry.
 
 ### Using multiple service names
-Each `<service>` may be any name, without special characters. Each service may has it's specific credentials and has different endpoint. By using multiple `<service>` allows to use different endpoints simultaneously. 
+Each `<service>` may be any text, without special characters. Each service may use it's specific credentials and has different endpoint. By using multiple `<service>` allows to use different endpoints simultaneously. 
 
 For example,  `service=myObjectStore`, then URI will be of the form
 
@@ -346,46 +344,17 @@ The following is the list of the configuration keys
 	</property>
 	<property>
        <name>fs.swift2d.service.SERVICE_NAME.auth.method</name>
+       <!-- swiftauth if needed -->
     	<value>keystone</value>
 	</property>
 	
-##### SoftLayer Dallas 05
-
-	<property>
-    	<name>fs.swift2d.service.dal05.auth.url</name>
-    	<value>https://dal05.objectstorage.softlayer.net/auth/v1.0/</value>
-	</property>
-	<property>
-    	<name>fs.swift2d.service.dal05.public</name>
-    	<value>true</value>
-	</property>
-	<property>
-    	<name>fs.swift2d.service.dal05.tenant</name>
-    	<value>TENANT</value>
-	</property>
-	<property>
-    	<name>fs.swift2d.service.dal05.password</name>
-    	<value>API KEY</value>
-	</property>
-	<property>
-    	<name>fs.swift2d.service.dal05.username</name>
-    	<value>USERNAME</value>
-	</property>
-	<property>
-    	<name>fs.swift2d.service.dal05.auth.method</name>
-    	<value>swiftauth</value>
-	</property>
 	
-##### IBM Bluemix Object Service using Keystone V3
-
 #### Keystone V3 mapping to keys
 
 | Driver configuration key | Keystone V3 key |
 | ------------------------ | --------------- |
 | fs.swift2d.service.SERVICE_NAME.username | user id |
 | fs.swift2d.service.SERVICE_NAME.tenant | project id |
-
-In order to properly connect to an IBM Bluemix object store service based on Swift API, you need to open that service in the IBM Bluemix dashboard and inspect the service credentials and update the properties below with the correspondent values :
 
 	<property>
 	    <name>fs.swift2d.service.SERVICE_NAME.auth.url</name>
@@ -475,7 +444,7 @@ The following example, will configure Stocator to respond to `swift://` in addit
 
 	val data = Array(1, 2, 3, 4, 5, 6, 7, 8)
 	val distData = sc.parallelize(data)
-	distData.saveAsTextFile("cos://mydata.service/one1.txt")
+	distData.saveAsTextFile("cos://mybucket.service/one1.txt")
 
 Listing bucket `mydata` directly with a REST client will display
 
@@ -489,6 +458,10 @@ Listing bucket `mydata` directly with a REST client will display
 	one1.txt/part-00005-taskid
 	one1.txt/part-00006-taskid
 	one1.txt/part-00007-taskid
+
+### Using dataframes
+	val squaresDF = spark.sparkContext.makeRDD(1 to 5).map(i => (i, i * i)).toDF("value","square")
+	squaresDF.write.format("parquet").save("cos://mybucket.service/data.parquet")
 
 ### Running Terasort
 
@@ -553,7 +526,7 @@ More information about Stocator can be find at
 * [Stocator: A High Performance Object Store Connector for Spark](https://arxiv.org/abs/1709.01812)
 * [MapReduce and object stores – How can we do it better?](https://developer.ibm.com/code/2017/05/19/mapreduce-object-stores-can-better/)
 * [Advantages and complexities of integrating Hadoop with object stores](https://www.ibm.com/blogs/cloud-computing/2017/05/integrating-hadoop-object-stores/)
-* [Stocator on developerWorks Open](https://developer.ibm.com/open/openprojects/stocator/)
+* [Stocator on IBM Code](https://developer.ibm.com/code/open/projects/stocator/)
 * [Analyze data faster using Spark and IBM Cloud Object Storage](https://www.ibm.com/developerworks/library/ba-1612spark-cloud-object-storage-stocator-keystone/index.html)
 * [Exabytes, Elephants, Objects and Apache Spark](http://ibmresearchnews.blogspot.co.il/2016/02/exabytes-elephants-objects-and-spark.html?m=1)
 * [Simulating E.T.

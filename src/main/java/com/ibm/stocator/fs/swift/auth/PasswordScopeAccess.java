@@ -63,23 +63,24 @@ public class PasswordScopeAccess implements Access {
    * @param manualToken1 manual token if present
    * @param prefRegion Keystone preffered region
    */
-  public PasswordScopeAccess(JSONObject jsonResponse, String manualToken1,
-      String prefRegion) {
+  public PasswordScopeAccess(final JSONObject jsonResponse,
+                             final String manualToken1,
+                             final String prefRegion) {
     prefferedRegion = prefRegion;
     manualToken = manualToken1;
-    JSONObject token = (JSONObject) jsonResponse.get("token");
-    JSONArray catalog = (JSONArray) token.get("catalog");
+    final JSONObject token = (JSONObject) jsonResponse.get("token");
+    final JSONArray catalog = (JSONArray) token.get("catalog");
     for (Object obj: catalog) {
-      JSONObject jObj = (JSONObject) obj;
-      String name = (String) jObj.get("name");
-      String type = (String) jObj.get("type");
+      final JSONObject jObj = (JSONObject) obj;
+      final String name = (String) jObj.get("name");
+      final String type = (String) jObj.get("type");
       if (name.equals("swift") && type.equals("object-store")) {
-        JSONArray endPoints = (JSONArray) jObj.get("endpoints");
+        final JSONArray endPoints = (JSONArray) jObj.get("endpoints");
         for (Object endPointObj: endPoints) {
-          JSONObject endPoint = (JSONObject) endPointObj;
-          String region = (String) endPoint.get("region");
+          final JSONObject endPoint = (JSONObject) endPointObj;
+          final String region = (String) endPoint.get("region");
           if (region.equals(prefferedRegion)) {
-            String interfaceType = (String) endPoint.get("interface");
+            final String interfaceType = (String) endPoint.get("interface");
             if (interfaceType.equals("public")) {
               publicURL = (String) endPoint.get("url");
             } else if (interfaceType.equals("internal")) {

@@ -32,7 +32,7 @@ import com.google.common.cache.CacheBuilder;
  * This cache is populated by the list function and on-the-fly requests for objects.
  */
 public class MemoryCache {
-  Cache<String, FileStatus> fsCache;
+  private final Cache<String, FileStatus> fsCache;
 
   /**
    * Logger
@@ -48,7 +48,7 @@ public class MemoryCache {
   }
 
   private MemoryCache(int cacheSize) {
-    LOG.debug("Guava initiated with size {} expiration 30 secods", cacheSize);
+    LOG.debug("Guava initiated with size {} expiration 30 seconds", cacheSize);
     fsCache = CacheBuilder.newBuilder()
         .maximumSize(cacheSize)
         .expireAfterWrite(30, TimeUnit.SECONDS).build();

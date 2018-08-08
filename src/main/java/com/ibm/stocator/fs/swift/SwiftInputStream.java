@@ -81,7 +81,7 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
   /**
    * Swift API client
    */
-  private JossAccount mJossAccount;
+  private final JossAccount mJossAccount;
 
   private final SwiftConnectionManager scm;
 
@@ -101,9 +101,13 @@ public class SwiftInputStream extends FSInputStream implements CanSetReadahead {
    * @param objectCacheT object cache manager
    * @param objNameT object name without host
    */
-  public SwiftInputStream(String pathT, JossAccount jossAccountT,
-      SwiftConnectionManager scmT, long readAheadT, SwiftObjectCache objectCacheT,
-      String objNameT) {
+  public SwiftInputStream(
+          final String pathT,
+          final JossAccount jossAccountT,
+          final SwiftConnectionManager scmT,
+          final long readAheadT,
+          final SwiftObjectCache objectCacheT,
+          final String objNameT) {
     mJossAccount = jossAccountT;
     objectCache = objectCacheT;
     scm = scmT;

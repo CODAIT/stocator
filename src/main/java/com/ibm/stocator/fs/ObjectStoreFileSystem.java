@@ -93,7 +93,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (!conf.getBoolean("mapreduce.fileoutputcommitter.marksuccessfuljobs", true)) {
       throw new IOException("mapreduce.fileoutputcommitter.marksuccessfuljobs should be enabled");
     }
-    String escapedAuthority = UrlEscapers.urlPathSegmentEscaper().escape(fsuri.getAuthority());
+    final String escapedAuthority = UrlEscapers
+            .urlPathSegmentEscaper()
+            .escape(fsuri.getAuthority());
     uri = URI.create(fsuri.getScheme() + "://" + escapedAuthority);
     setConf(conf);
     String committerType = conf.get(OUTPUT_COMMITTER_TYPE, DEFAULT_FOUTPUTCOMMITTER_V1);
@@ -142,11 +144,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    * qualify path if doesn't of the form scheme://bucket
    */
   @Override
-  public boolean isDirectory(Path f) throws IOException {
+  public boolean isDirectory(final Path f) throws IOException {
     if (stocatorPath.isTemporaryPathContain(f)) {
       return false;
     }
-    Path path = storageClient.qualify(f);
+    final Path path = storageClient.qualify(f);
     try {
       FileStatus fileStatus = getFileStatus(path);
       LOG.debug("is directory: {} : {}", path.toString(), fileStatus.isDirectory());
@@ -164,7 +166,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (stocatorPath.isTemporaryPathContain(f)) {
       return true;
     }
-    Path path = storageClient.qualify(f);
+    final Path path = storageClient.qualify(f);
     try {
       FileStatus fileStatus = getFileStatus(path);
       LOG.debug("is file: {}" + path.toString() + " " + fileStatus.isFile());
@@ -190,16 +192,15 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   }
 
   @Override
-  public FSDataInputStream open(Path f) throws IOException {
-    LOG.debug("open: {} without buffer size" , f.toString());
-    Path path = storageClient.qualify(f);
-    return storageClient.getObject(hostNameScheme, path);
+  public FSDataInputStream open(Path path) throws IOException {
+    return open(path, 0);
   }
 
-  public FSDataInputStream open(Path f, int bufferSize) throws IOException {
-    LOG.debug("open: {} with buffer size {}", f.toString(), bufferSize);
-    Path path = storageClient.qualify(f);
-    return storageClient.getObject(hostNameScheme, path);
+  @Override
+  public FSDataInputStream open(Path path, int bufferSize) throws IOException {
+    LOG.debug("open: {} with buffer size {}", path.toString(), bufferSize);
+    Path qualifiedPath = storageClient.qualify(path);
+    return storageClient.getObject(hostNameScheme, qualifiedPath);
   }
 
   /**
@@ -219,8 +220,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       short replication, long blockSize, Progressable progress) throws IOException {
     LOG.debug("Create: {}, overwrite is: {}", f.toString(), overwrite);
     validateBracketSupport(f.toString());
-    Path path = storageClient.qualify(f);
-    String objNameModified = "";
+    final Path path = storageClient.qualify(f);
+    final String objNameModified;
     // check if request is dataroot/objectname/_SUCCESS
     if (path.getName().equals(Constants.HADOOP_SUCCESS)) {
       // no need to add attempt id to the _SUCCESS
@@ -231,9 +232,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       objNameModified = stocatorPath.getObjectNameRoot(path, true,
           storageClient.getDataRoot(), true);
     }
-    FSDataOutputStream outStream = storageClient.createObject(objNameModified,
+    return storageClient.createObject(objNameModified,
         "application/octet-stream", null, statistics);
-    return outStream;
   }
 
   public FSDataOutputStream append(Path f, int bufferSize,
@@ -247,7 +247,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    * names.
    */
   @Override
-  public boolean rename(Path src, Path dst) throws IOException {
+  public boolean rename(final Path src, final Path dst) throws IOException {
     LOG.debug("rename from {} to {}", src, dst);
     if (src == null || dst == null) {
       LOG.debug("Source path and dest path can not be null");
@@ -257,12 +257,12 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
-    if (src == null || dst == null || !exists(src)) {
+    if (!exists(src)) {
       LOG.debug("Source {} does not exists. Exit", src);
       return false;
     }
-    Path srcPath = storageClient.qualify(src);
-    Path dstPath = storageClient.qualify(dst);
+    final Path srcPath = storageClient.qualify(src);
+    final Path dstPath = storageClient.qualify(dst);
     return storageClient.rename(hostNameScheme, srcPath.toString(), dstPath.toString());
   }
 
@@ -272,7 +272,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     if (stocatorPath.isTemporaryPathContain(f.toString())) {
       return true;
     }
-    Path path = storageClient.qualify(f);
+    final Path path = storageClient.qualify(f);
     if (path.toString().equals(hostNameScheme)) {
       LOG.warn("{} {}", path.toString(), "Cannot delete root path");
       return true;
@@ -331,8 +331,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   }
 
   @Override
-  public FileStatus[] listStatus(Path f,
-      PathFilter filter) throws FileNotFoundException, IOException {
+  public FileStatus[] listStatus(Path f, PathFilter filter)
+          throws FileNotFoundException, IOException {
     return listStatus(f, filter, false, null);
   }
 
@@ -347,11 +347,9 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       Boolean isDirectory) throws FileNotFoundException, IOException {
     LOG.debug("listStatus: {},  prefix based {}. Globber is directory status {}",
         f.toString(), prefixBased, isDirectory);
-    FileStatus[] listing = null;
     if (stocatorPath.isTemporaryPathContain(f)) {
       LOG.debug("{} temporary. Return empty result", f);
-      FileStatus[] result = {};
-      return result;
+      return new FileStatus[]{};
     }
     FileStatus fileStatus = null;
     if (isDirectory == null) {
@@ -384,6 +382,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("listStatus: {} -not found. Prefix based listing set to {}. Perform list",
         f.toString(), prefixBased);
     Path path = storageClient.qualify(f);
+    final FileStatus[] listing;
     if (!storageClient.isFlatListing()) {
       LOG.trace("Using hadoop list style, non flat list {}", f);
       listing =  storageClient.list(hostNameScheme, path, false, prefixBased,
@@ -445,10 +444,10 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.debug("mkdirs: {}", f.toString());
     validateBracketSupport(f.toString());
     if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
-      Path path = storageClient.qualify(f);
+      final Path path = storageClient.qualify(f);
       String objNameModified = stocatorPath.getObjectNameRoot(path,true,
           storageClient.getDataRoot(), true);
-      Path pathToObj = new Path(objNameModified);
+      final Path pathToObj = new Path(objNameModified);
       LOG.trace("mkdirs {} modified name", objNameModified);
       // make sure there is no overwrite of existing data
       // if we here, means getfilestatus() returned false and
@@ -470,10 +469,21 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       */
       String plainObjName = pathToObj.getParent().toString();
       LOG.debug("Going to create identifier {}", plainObjName);
-      Map<String, String> metadata = new HashMap<String, String>();
+      final Map<String, String> metadata = new HashMap<>();
       metadata.put("Data-Origin", "stocator");
       FSDataOutputStream outStream = storageClient.createObject(plainObjName,
           Constants.APPLICATION_DIRECTORY, metadata, statistics);
+      outStream.close();
+    } else if (f.getName().equals("_spark_metadata")) {
+      LOG.debug("mkdirs on non temp object. Create {}", f.toString());
+      String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
+          true);
+      if (!objName.endsWith("/")) {
+        objName = objName + "/";
+      }
+      LOG.trace("mkdirs to create directory {}", objName);
+      FSDataOutputStream outStream = storageClient.createObject(objName,
+          Constants.APPLICATION_DIRECTORY, null, statistics);
       outStream.close();
     }
     return true;
@@ -482,7 +492,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     LOG.debug("get file status: {}", f.toString());
-    Path path = storageClient.qualify(f);
+    final Path path = storageClient.qualify(f);
     return storageClient.getFileStatus(hostNameScheme, path, "fileStatus");
   }
 
@@ -506,7 +516,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public long getDefaultBlockSize(Path f) {
-    long defaultBlockSize = super.getDefaultBlockSize(f);
+    final long defaultBlockSize = super.getDefaultBlockSize(f);
     LOG.trace("Default block size for: {} is {}", f.toString(), defaultBlockSize);
     return defaultBlockSize;
   }

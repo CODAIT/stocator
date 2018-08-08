@@ -33,14 +33,14 @@ import com.ibm.stocator.fs.common.Utils;
  * This cache is populated by the list function and on-the-fly requests for objects.
  */
 public class SwiftObjectCache {
-  private HashMap<String, SwiftCachedObject> cache;
-  private Container container;
+  private final HashMap<String, SwiftCachedObject> cache;
+  private final Container container;
   /**
    * Logger
    */
   private static final Logger LOG = LoggerFactory.getLogger(SwiftObjectCache.class);
 
-  public SwiftObjectCache(Container cont) {
+  public SwiftObjectCache(final Container cont) {
     cache = new HashMap<>();
     container = cont;
   }
@@ -54,11 +54,11 @@ public class SwiftObjectCache {
    * @return cached entry of the object
    * @throws IOException if failed to parse time stamp
    */
-  public SwiftCachedObject get(String objName) throws IOException {
-    LOG.trace("Get from cache  {} ", objName);
+  public SwiftCachedObject get(final String objName) throws IOException {
+    LOG.trace("Get from cache: {}", objName);
     SwiftCachedObject res = cache.get(objName);
     if (res == null) {
-      LOG.trace("Cache get:  {} is not in the cache. Access Swift to get content length", objName);
+      LOG.trace("Cache get: {} is not in the cache. Access Swift to get content length", objName);
       StoredObject rawObj = container.getObject(removeTrailingSlash(objName));
       if (rawObj != null && rawObj.exists()) {
         res = new SwiftCachedObject(rawObj.getContentLength(),
@@ -72,7 +72,7 @@ public class SwiftObjectCache {
   }
 
   public void put(String objNameKey, long contentLength, long lastModified) {
-    LOG.trace("Add to cache  {} ", objNameKey);
+    LOG.trace("Add to cache: {} ", objNameKey);
     cache.put(objNameKey, new SwiftCachedObject(contentLength, lastModified));
   }
 
@@ -81,10 +81,8 @@ public class SwiftObjectCache {
   }
 
   public void remove(String objName) {
-    LOG.trace("Remove from cache  {} ", objName);
-    if (cache.containsKey(objName)) {
-      cache.remove(objName);
-    }
+    LOG.trace("Remove from cache: {} ", objName);
+    cache.remove(objName);
   }
 
   /**
@@ -92,11 +90,10 @@ public class SwiftObjectCache {
    * an request on an object (not a container) that has a trailing slash will lead
    * to a 404 response message
    */
-  private String removeTrailingSlash(String objName) {
-    String res = objName;
-    if (res.endsWith("/")) {
-      res = res.substring(0, res.length() - 1);
+  private String removeTrailingSlash(final String objName) {
+    if (objName.endsWith("/")) {
+      return objName.substring(0, objName.length() - 1);
     }
-    return res;
+    return objName;
   }
 }

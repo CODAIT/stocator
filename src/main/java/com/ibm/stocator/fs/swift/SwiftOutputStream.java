@@ -66,12 +66,12 @@ public class SwiftOutputStream extends OutputStream {
   /*
    * Access url
    */
-  private URL mUrl;
+  private final URL mUrl;
 
   /*
    * Client used
    */
-  private CloseableHttpClient client;
+  private final CloseableHttpClient client;
 
   // Holds the pending http request
   private Future<Integer> futureTask;

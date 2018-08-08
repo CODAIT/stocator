@@ -64,29 +64,29 @@ public class SwiftConnectionManager {
    * Connection pool
    */
   private PoolingHttpClientConnectionManager connectionPool;
-  private ConnectionConfiguration connectionConfiguration;
-  private RequestConfig rConfig;
+  private final ConnectionConfiguration connectionConfiguration;
+  private final RequestConfig rConfig;
 
   /**
    * Default constructor
    *
    * @param connectionConfigurationT connection conf
    */
-  public SwiftConnectionManager(ConnectionConfiguration connectionConfigurationT) {
+  public SwiftConnectionManager(final ConnectionConfiguration connectionConfigurationT) {
     connectionConfiguration = connectionConfigurationT;
     if (connectionConfiguration.isNewTLSneed()) {
       LOG.debug("User provided TLS version {}", connectionConfiguration.getNewTLSVersion());
-      SSLConnectionSocketFactory myFactory = null;
       try {
         SSLContext sslContext = SSLContexts.custom().build();
-        myFactory = new SSLConnectionSocketFactory(
+        final SSLConnectionSocketFactory myFactory = new SSLConnectionSocketFactory(
             sslContext,
             new String[]{connectionConfiguration.getNewTLSVersion()},
             null,
-            SSLConnectionSocketFactory.getDefaultHostnameVerifier());
+            SSLConnectionSocketFactory.getDefaultHostnameVerifier()
+        );
         connectionPool = new PoolingHttpClientConnectionManager(
-            RegistryBuilder.<ConnectionSocketFactory>create()
-            .register("https",myFactory).build());
+            RegistryBuilder.<ConnectionSocketFactory>create().register("https", myFactory).build()
+        );
       } catch (Exception e) {
         LOG.trace("Exception. Set default PoolingHttpClientConnectionManager" + e.getMessage());
         connectionPool = new PoolingHttpClientConnectionManager();
@@ -110,18 +110,20 @@ public class SwiftConnectionManager {
         "Generate SocketConfig with soTimeout of {}",
         connectionConfiguration.getSoTimeout()
     );
-    SocketConfig socketConfig = SocketConfig.custom()
-                                            .setSoKeepAlive(false)
-                                            .setSoTimeout(connectionConfiguration.getSoTimeout())
-                                            .build();
+    final SocketConfig socketConfig = SocketConfig
+            .custom()
+            .setSoKeepAlive(false)
+            .setSoTimeout(connectionConfiguration.getSoTimeout())
+            .build();
     connectionPool.setDefaultSocketConfig(socketConfig);
-    rConfig = RequestConfig.custom()
-                           .setExpectContinueEnabled(true)
-                           .setConnectTimeout(connectionConfiguration.getReqConnectTimeout())
-                           .setConnectionRequestTimeout(
-                               connectionConfiguration.getReqConnectionRequestTimeout())
-                           .setSocketTimeout(connectionConfiguration.getReqSocketTimeout())
-                           .build();
+    rConfig = RequestConfig
+                .custom()
+                .setExpectContinueEnabled(true)
+                .setConnectTimeout(connectionConfiguration.getReqConnectTimeout())
+                .setConnectionRequestTimeout(
+                    connectionConfiguration.getReqConnectionRequestTimeout())
+                .setSocketTimeout(connectionConfiguration.getReqSocketTimeout())
+                .build();
   }
 
   /**
@@ -130,13 +132,12 @@ public class SwiftConnectionManager {
    * @return retry handler
    */
   private HttpRequestRetryHandler getRetryHandler() {
-
-    HttpRequestRetryHandler myRetryHandler = new HttpRequestRetryHandler() {
+    final HttpRequestRetryHandler myRetryHandler = new HttpRequestRetryHandler() {
 
       public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
         if (executionCount >= connectionConfiguration.getExecutionCount()) {
           // Do not retry if over max retry count
-          LOG.debug("Execution count {} is bigger then threashold. Stop", executionCount);
+          LOG.debug("Execution count {} is bigger than threshold. Stop", executionCount);
           return false;
         }
         if (exception instanceof NoHttpResponseException) {
@@ -167,8 +168,8 @@ public class SwiftConnectionManager {
           LOG.debug("SSLException Retry count {}", executionCount);
           return true;
         }
-        HttpClientContext clientContext = HttpClientContext.adapt(context);
-        HttpRequest request = clientContext.getRequest();
+        final HttpClientContext clientContext = HttpClientContext.adapt(context);
+        final HttpRequest request = clientContext.getRequest();
         boolean idempotent = !(request instanceof HttpEntityEnclosingRequest);
         if (idempotent) {
           LOG.debug("HttpEntityEnclosingRequest. Retry count {}", executionCount);
@@ -181,16 +182,16 @@ public class SwiftConnectionManager {
     return myRetryHandler;
   }
 
-  ConnectionKeepAliveStrategy myStrategy = new ConnectionKeepAliveStrategy() {
+  final ConnectionKeepAliveStrategy myStrategy = new ConnectionKeepAliveStrategy() {
     @Override
-    public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
+    public long getKeepAliveDuration(final HttpResponse response, final HttpContext context) {
       // Honor 'keep-alive' header
-      HeaderElementIterator it = new BasicHeaderElementIterator(
+      final HeaderElementIterator it = new BasicHeaderElementIterator(
           response.headerIterator(HTTP.CONN_KEEP_ALIVE));
       while (it.hasNext()) {
-        HeaderElement he = it.nextElement();
-        String param = he.getName();
-        String value = he.getValue();
+        final HeaderElement he = it.nextElement();
+        final String param = he.getName();
+        final String value = he.getValue();
         if (value != null && param.equalsIgnoreCase("timeout")) {
           try {
             return Long.parseLong(value) * 1000;
@@ -211,13 +212,12 @@ public class SwiftConnectionManager {
    */
   public CloseableHttpClient createHttpConnection() {
     LOG.trace("HTTP build new connection based on connection pool");
-    CloseableHttpClient httpclient = HttpClients.custom()
-                                                .setRetryHandler(getRetryHandler())
-                                                .setConnectionManager(connectionPool)
-                                                .setDefaultRequestConfig(rConfig)
-                                                .setKeepAliveStrategy(myStrategy)
-                                                .build();
-    LOG.trace("HTTP created connection based on connection pool");
-    return httpclient;
+    return HttpClients
+            .custom()
+            .setRetryHandler(getRetryHandler())
+            .setConnectionManager(connectionPool)
+            .setDefaultRequestConfig(rConfig)
+            .setKeepAliveStrategy(myStrategy)
+            .build();
   }
 }

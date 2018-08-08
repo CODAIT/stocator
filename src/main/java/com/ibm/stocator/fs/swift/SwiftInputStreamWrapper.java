@@ -39,15 +39,12 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
    */
   private boolean finish;
 
-  /*
-   * Http entity that contains the input stream
-   */
-  private HttpEntity httpEntity;
-
   public SwiftInputStreamWrapper(HttpEntity entity, HttpRequestBase httpRequestT)
           throws IOException {
     super(entity.getContent());
-    httpEntity = entity;
+    /*
+     * Http entity that contains the input stream
+     */
     httpRequest = httpRequestT;
   }
 
@@ -61,10 +58,6 @@ public class SwiftInputStreamWrapper extends BaseInputStream {
       httpRequest.abort();
     }
     Utils.closeWithoutException(in);
-  }
-
-  public HttpRequestBase getHttpRequest() {
-    return httpRequest;
   }
 
   @Override

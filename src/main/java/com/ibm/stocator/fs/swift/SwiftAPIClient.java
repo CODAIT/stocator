@@ -487,12 +487,17 @@ public class SwiftAPIClient implements IStoreClient {
    * @return Array of Hadoop FileStatus
    * @throws IOException in case of network failure
    */
-  public FileStatus[] list(String hostName, Path path, boolean fullListing,
-      boolean prefixBased, Boolean isDirectory,
-      boolean flatListing, PathFilter filter) throws IOException {
+  public FileStatus[] list(
+          final String hostName,
+          final Path path,
+          final boolean fullListing,
+          final boolean prefixBased,
+          final Boolean isDirectory,
+          final boolean flatListing,
+          final PathFilter filter) throws IOException {
     LOG.debug("List container: raw path parent {} container {} hostname {}", path.toString(),
         container, hostName);
-    Container cObj = mJossAccount.getAccount().getContainer(container);
+    final Container cObj = mJossAccount.getAccount().getContainer(container);
     String obj;
     if (path.toString().equals(container) || publicContainer) {
       obj = "";
@@ -636,7 +641,7 @@ public class SwiftAPIClient implements IStoreClient {
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata, Statistics statistics) throws IOException {
-    URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
+    final URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
 
     // When overwriting an object, cached metadata will be outdated
@@ -644,7 +649,7 @@ public class SwiftAPIClient implements IStoreClient {
     objectCache.remove(cachedName);
 
     try {
-      OutputStream sos;
+      final OutputStream sos;
       if (nonStreamingUpload) {
         sos = new SwiftNoStreamingOutputStream(mJossAccount, url, contentType,
             metadata, swiftConnectionManager, this);
@@ -661,9 +666,11 @@ public class SwiftAPIClient implements IStoreClient {
 
   @Override
   public boolean delete(String hostName, Path path, boolean recursive) throws IOException {
-    String obj = path.toString();
+    final String obj;
     if (path.toString().startsWith(hostName)) {
       obj = getObjName(hostName, path);
+    } else {
+      obj = path.toString();
     }
     LOG.debug("Object name to delete {}. Path {}", obj, path.toString());
     try {
@@ -699,7 +706,7 @@ public class SwiftAPIClient implements IStoreClient {
     // Although it's not needed by Spark, it still in use when native Hadoop uses Stocator
     // Current approach is similar to the hadoop-openstack logic that generates working folder
     // We should re-consider another approach
-    String username = System.getProperty("user.name");
+    final String username = System.getProperty("user.name");
     return new Path("/user", username)
         .makeQualified(filesystemURI, new Path(username));
   }
@@ -719,9 +726,9 @@ public class SwiftAPIClient implements IStoreClient {
     }
     String obj = objectName;
     Boolean sparkOriginated = Boolean.FALSE;
-    StoredObject so = mJossAccount.getAccount().getContainer(container).getObject(obj);
+    final StoredObject so = mJossAccount.getAccount().getContainer(container).getObject(obj);
     if (so != null && so.exists()) {
-      Object sparkOrigin = so.getMetadata("Data-Origin");
+      final Object sparkOrigin = so.getMetadata("Data-Origin");
       if (sparkOrigin != null) {
         String tmp = (String) sparkOrigin;
         if (tmp.equals("stocator")) {
@@ -747,11 +754,12 @@ public class SwiftAPIClient implements IStoreClient {
     if (cachedSparkJobsStatus.containsKey(objectName)) {
       return cachedSparkJobsStatus.get(objectName).booleanValue();
     }
-    String obj = objectName;
-    Account account = mJossAccount.getAccount();
+    final String obj = objectName;
+    final Account account = mJossAccount.getAccount();
     LOG.trace("HEAD {}", obj + "/" + HADOOP_SUCCESS);
-    StoredObject so = account.getContainer(container).getObject(obj
-        + "/" + HADOOP_SUCCESS);
+    final StoredObject so = account.getContainer(container).getObject(
+            obj + "/" + HADOOP_SUCCESS
+    );
     Boolean isJobOK = Boolean.FALSE;
     if (so.exists()) {
       LOG.debug("{} exists", obj + "/" + HADOOP_SUCCESS);

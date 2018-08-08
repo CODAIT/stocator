@@ -96,13 +96,13 @@ public class ObjectStoreVisitor {
    * @throws IOException if error
    */
   public static IStoreClient getStoreClient(URI fsuri, Configuration conf) throws IOException {
-    String fsSchema = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
-    ClassLoader classLoader = ObjectStoreVisitor.class.getClassLoader();
+    final String fsSchema = fsuri.toString().substring(0, fsuri.toString().indexOf("://"));
+    final ClassLoader classLoader = ObjectStoreVisitor.class.getClassLoader();
     String[] supportedSchemas = conf.get("fs.stocator.scheme.list", Constants.SWIFT).split(",");
     for (String scheme: supportedSchemas) {
-      String supportedScheme = conf.get("fs.stocator." + scheme.trim() + ".scheme",
+      final String supportedScheme = conf.get("fs.stocator." + scheme.trim() + ".scheme",
           Constants.SWIFT2D);
-      String implementation = conf.get("fs.stocator." + scheme.trim() + ".impl",
+      final String implementation = conf.get("fs.stocator." + scheme.trim() + ".impl",
           "com.ibm.stocator.fs.swift.SwiftAPIClient");
       LOG.debug("Stocator schema space : {}, provided {}. Implementation {}",
           fsSchema, supportedScheme, implementation);
@@ -115,7 +115,7 @@ public class ObjectStoreVisitor {
             LOG.debug("Load direct init for COSAPIClient. Overwrite {}", implementation);
             storeClient = new COSAPIClient(fsuri, conf);
           } else {
-            Class<?> aClass = classLoader.loadClass(implementation);
+            final Class<?> aClass = classLoader.loadClass(implementation);
             storeClient = (IStoreClient) aClass.getConstructor(URI.class,
                 Configuration.class).newInstance(fsuri, conf);
           }
