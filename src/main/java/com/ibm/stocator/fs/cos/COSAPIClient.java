@@ -51,6 +51,8 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.event.ProgressEvent;
+import com.amazonaws.event.ProgressListener;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -60,7 +62,7 @@ import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
 import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
@@ -69,6 +71,7 @@ import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.Copy;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
 import com.amazonaws.services.s3.transfer.Upload;
@@ -85,7 +88,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem.Statistics;
-import org.apache.hadoop.fs.InvalidRequestException;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
@@ -1172,8 +1174,84 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public boolean rename(String hostName, String srcPath, String dstPath) throws IOException {
-    // Not yet implemented
-    return false;
+    LOG.debug("Rename path {} to {}", srcPath, dstPath);
+    Path src = new Path(srcPath);
+    Path dst = new Path(dstPath);
+    String srcKey = pathToKey(src);
+    String dstKey = pathToKey(dst);
+
+    if (srcKey.isEmpty()) {
+      throw new IOException("Rename failed " + srcPath + " to " + dstPath
+          + " source is root directory");
+    }
+    if (dstKey.isEmpty()) {
+      throw new IOException("Rename failed " + srcPath + " to " + dstPath
+          + " dest is root directory");
+    }
+
+    // get the source file status; this raises a FNFE if there is no source
+    // file.
+    FileStatus srcStatus = getFileStatus(hostName, src, "rename");
+
+    if (srcKey.equals(dstKey)) {
+      LOG.debug("rename: src and dest refer to the same file or directory: {}",
+          dstPath);
+      throw new IOException("source + " + srcPath + "and dest " + dstPath
+          + " refer to the same file or directory");
+    }
+
+    FileStatus dstStatus = null;
+    try {
+      dstStatus = getFileStatus(hostName, dst, "rename");
+      // if there is no destination entry, an exception is raised.
+      // hence this code sequence can assume that there is something
+      // at the end of the path; the only detail being what it is and
+      // whether or not it can be the destination of the rename.
+      if (srcStatus.isDirectory()) {
+        if (dstStatus.isFile()) {
+          throw new IOException("source + " + srcPath + "and dest " + dstPath
+              +  "source is a directory and dest is a file");
+        }
+        // at this point the destination is an empty directory
+      } else {
+        // source is a file. The destination must be a directory,
+        // empty or not
+        if (dstStatus.isFile()) {
+          throw new IOException("source + " + srcPath + "and dest " + dstPath
+              +  "Cannot rename onto an existing file");
+        }
+      }
+
+    } catch (FileNotFoundException e) {
+      LOG.debug("rename: destination path {} not found", dstPath);
+    }
+
+    if (srcStatus.isFile()) {
+      LOG.debug("rename: renaming file {} to {}", src, dst);
+      long length = srcStatus.getLen();
+      if (dstStatus != null && dstStatus.isDirectory()) {
+        String newDstKey = dstKey;
+        if (!newDstKey.endsWith("/")) {
+          newDstKey = newDstKey + "/";
+        }
+        String filename =
+            srcKey.substring(pathToKey(src.getParent()).length() + 1);
+        newDstKey = newDstKey + filename;
+        copyFile(srcKey, newDstKey, length);
+      } else {
+        copyFile(srcKey, dstKey, srcStatus.getLen());
+      }
+      delete(hostName, src, false);
+    } else {
+      LOG.debug("rename: renaming file {} to {} failed. Source file is directory", src, dst);
+    }
+
+    if (src.getParent() != dst.getParent()) {
+      LOG.debug("{} is not eguals to {}. Going to create directory {}",src.getParent(),
+          dst.getParent(), src.getParent());
+      createDirectoryIfNecessary(hostName, src.getParent());
+    }
+    return true;
   }
 
   private void initTransferManager() {
@@ -1255,54 +1333,6 @@ public class COSAPIClient implements IStoreClient {
      */
     void writeSuccessful() {
       LOG.debug("successful write");
-    }
-
-    /**
-     * A helper method to delete a list of keys on a s3-backend.
-     *
-     * @param keysToDelete collection of keys to delete on the s3-backend
-     *        if empty, no request is made of the object store.
-     * @param clearKeys clears the keysToDelete-list after processing the list
-     *            when set to true
-     * @param deleteFakeDir indicates whether this is for deleting fake dirs
-     * @throws InvalidRequestException if the request was rejected due to
-     * a mistaken attempt to delete the root directory
-     */
-    private void removeKeys(List<DeleteObjectsRequest.KeyVersion> keysToDelete,
-        boolean clearKeys, boolean deleteFakeDir)
-        throws AmazonClientException, InvalidRequestException {
-      if (keysToDelete.isEmpty()) {
-        // exit fast if there are no keys to delete
-        return;
-      }
-      for (DeleteObjectsRequest.KeyVersion keyVersion : keysToDelete) {
-        blockRootDelete(keyVersion.getKey());
-      }
-      if (enableMultiObjectsDelete) {
-        mClient.deleteObjects(new DeleteObjectsRequest(mBucket).withKeys(keysToDelete));
-      } else {
-        for (DeleteObjectsRequest.KeyVersion keyVersion : keysToDelete) {
-          String key = keyVersion.getKey();
-          blockRootDelete(key);
-          mClient.deleteObject(mBucket, key);
-        }
-      }
-      if (clearKeys) {
-        keysToDelete.clear();
-      }
-    }
-
-    /**
-     * Reject any request to delete an object where the key is root.
-     * @param key key to validate
-     * @throws InvalidRequestException if the request was rejected due to
-     * a mistaken attempt to delete the root directory
-     */
-    private void blockRootDelete(String key) throws InvalidRequestException {
-      if (key.isEmpty() || "/".equals(key)) {
-        throw new InvalidRequestException("Bucket " + mBucket
-            + " cannot be deleted");
-      }
     }
 
     /**
@@ -1548,4 +1578,61 @@ public class COSAPIClient implements IStoreClient {
     }
     return stringToCorrect;
   }
+
+  /**
+   * Copy a single object in the bucket via a COPY operation.
+   * @param srcKey source object path
+   * @param dstKey destination object path
+   * @param size object size
+   * @throws AmazonClientException on failures inside the AWS SDK
+   * @throws InterruptedIOException the operation was interrupted
+   * @throws IOException Other IO problems
+   */
+  private void copyFile(String srcKey, String dstKey, long size)
+      throws IOException, InterruptedIOException, AmazonClientException {
+    LOG.debug("copyFile {} -> {} ", srcKey, dstKey);
+    CopyObjectRequest copyObjectRequest =
+        new CopyObjectRequest(mBucket, srcKey, mBucket, dstKey);
+    try {
+      ObjectMetadata srcmd = getObjectMetadata(srcKey);
+      if (srcmd != null) {
+        copyObjectRequest.setNewObjectMetadata(srcmd);
+      }
+      ProgressListener progressListener = new ProgressListener() {
+        public void progressChanged(ProgressEvent progressEvent) {
+          switch (progressEvent.getEventType()) {
+            case TRANSFER_PART_COMPLETED_EVENT:
+              break;
+            default:
+              break;
+          }
+        }
+      };
+
+      Copy copy = transfers.copy(copyObjectRequest);
+      copy.addProgressListener(progressListener);
+      try {
+        copy.waitForCopyResult();
+      } catch (InterruptedException e) {
+        throw new InterruptedIOException("Interrupted copying " + srcKey
+            + " to " + dstKey + ", cancelling");
+      }
+    } catch (AmazonClientException e) {
+      throw translateException("copyFile(" + srcKey + ", " + dstKey + ")",
+          srcKey, e);
+    }
+  }
+
+  private void createDirectoryIfNecessary(String hostName, Path f)
+      throws IOException, AmazonClientException {
+    String key = pathToKey(f);
+    if (!key.isEmpty() && !exists(hostName, f)) {
+      LOG.debug("Creating new fake directory at {}", f);
+      final Map<String, String> metadata = new HashMap<>();
+      FSDataOutputStream outStream =  createObject(key,
+          Constants.APPLICATION_DIRECTORY, metadata, statistics);
+      outStream.close();
+    }
+  }
+
 }
