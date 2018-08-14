@@ -20,7 +20,6 @@ package com.ibm.stocator.fs.cos.systemtests;
 
 import java.util.Hashtable;
 
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,8 +29,6 @@ import org.junit.Test;
  */
 public class TestCOSObjectStoreFS extends COSFileSystemBaseTest {
 
-  private static Path[] sTestData;
-  private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
   private static Hashtable<String, String> sConf = new Hashtable<String, String>();
 
@@ -43,10 +40,21 @@ public class TestCOSObjectStoreFS extends COSFileSystemBaseTest {
 
   @Test
   public void testMkdirs() throws Exception {
-    FileStatus[] paths;
     Path p = new Path(getBaseURI(), "a/_spark_metadata");
     sFileSystem.mkdirs(p);
-    FileStatus[] res = sFileSystem.listStatus(p);
+    boolean res = sFileSystem.exists(p);
+    assertEquals("_spark_metdata directory was not created", true, res);
+    Path tmpFilePath = new Path(getBaseURI(),
+        "a/_spark_metadata/.6109afea-c983-4748-bebb-d7e05d2f46f8.tmp");
+    createFile(tmpFilePath, sData);
+    res = sFileSystem.exists(tmpFilePath);
+    assertEquals(tmpFilePath + " failed to created", true, res);
+    Path dstFilePath = new Path(getBaseURI(), "a/_spark_metadata/3");
+    sFileSystem.rename(tmpFilePath, dstFilePath);
+    res = sFileSystem.exists(tmpFilePath);
+    assertEquals(tmpFilePath + " failed to delete after copy", false, res);
+    res = sFileSystem.exists(dstFilePath);
+    assertEquals(dstFilePath + " failed to copy into final name", true, res);
   }
 
 }
