@@ -1,8 +1,38 @@
 ## Release notes
 
+### Version 1.0.23
+
+1. [bug] fixing Spark streaming write into COS
+2. [swift] code cleanup
+3. update http libraries
+
+### Version 1.0.22
+
+1. [cos] data cleanup for failed parts
+2. [cos] adding tests for data cleanup
+3. [cos] more unitests
+4. [cos-ibm-sdk] support for token provided via url
+
+### Version 1.0.21
+
+1. [cos] improvements to fault tolerance algorithm
+2. fixes to glober with brackets
+3. [cos] array ouput stream. fixing package names
+
+### Version 1.0.20
+
+1. support for bracket globber mode
+2. [test] adding COS tests for globber
+3. [test] refactoring
+4. Upgrade JOSS version from 0.10.1 to 0.10.2
+5. [cos] list with UTF-8 to resolve + sign issues
+6. remove getFileStatus call within mkdirs
+7. update powermock dependency
+
 ### Version 1.0.19
 
 1. [bug] Additional globber fixes
+2. fixes to glober to bypass more patterns
 
 ### Version 1.0.18
 
