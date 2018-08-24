@@ -128,7 +128,7 @@ public class ObjectStoreFlatGlobFilter implements PathFilter{
       if (name != null && name.startsWith("part-")) {
         LOG.trace("accept on parent {}, path pattern {}",
             path.getParent().toString(), pathPattern);
-        match = FilenameUtils.wildcardMatch(path.getParent().toString(), pathPattern);
+        match = FilenameUtils.wildcardMatch(path.getParent().toString() + "/", pathPattern);
       } else {
         match = FilenameUtils.wildcardMatch(pathStr, pathPattern);
       }
