@@ -1332,8 +1332,8 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("rename: renaming file {} to {} failed. Source file is directory", src, dst);
     }
 
-    if (src.getParent() != dst.getParent()) {
-      LOG.debug("{} is not eguals to {}. Going to create directory {}",src.getParent(),
+    if (!(src.getParent().equals(dst.getParent()))) {
+      LOG.debug("{} is not equal to {}. Going to create directory {}",src.getParent(),
           dst.getParent(), src.getParent());
       createDirectoryIfNecessary(hostName, src.getParent());
     }
