@@ -57,4 +57,23 @@ public class TestCOSObjectStoreFS extends COSFileSystemBaseTest {
     assertEquals(dstFilePath + " failed to copy into final name", true, res);
   }
 
+  @Test
+  public void testObjectRename() throws Exception {
+    Path p = new Path(getBaseURI(), "a/newdir");
+    sFileSystem.mkdirs(p);
+    boolean res = sFileSystem.exists(p);
+    assertEquals("a/newdir directory was not created", true, res);
+    Path tmpFilePath = new Path(getBaseURI(),
+        "a/newdir/.6109afea-c983-4748-bebb-d7e05d2f46f8.tmp");
+    createFile(tmpFilePath, sData);
+    res = sFileSystem.exists(tmpFilePath);
+    assertEquals(tmpFilePath + " failed to created", true, res);
+    Path dstFilePath = new Path(getBaseURI(), "a/b/c/newdir/3");
+    sFileSystem.rename(tmpFilePath, dstFilePath);
+    res = sFileSystem.exists(tmpFilePath);
+    assertEquals(tmpFilePath + " failed to delete after copy", false, res);
+    res = sFileSystem.exists(dstFilePath);
+    assertEquals(dstFilePath + " failed to copy into final name", true, res);
+  }
+
 }
