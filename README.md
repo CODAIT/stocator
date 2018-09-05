@@ -36,15 +36,22 @@ Just follow [stocator](https://spark-packages.org/package/SparkTC/stocator)
 
 ### Using Stocator without compiling Apache Spark
 
-It is possible to execute Apache Spark with Stocator, without compiling Apache Spark. Just make sure that Stocator jars on the class path. Alternatively, build Stocator with 
+It is possible to execute Apache Spark with Stocator, without compiling Apache Spark. Just make sure that Stocator jars on the class path. Build Stocator with 
 
 		mvn clean package -Pall-in-one
 
 Directory `stocator/target` contains standalone jar `stocator-X.Y.Z-jar-with-dependencies.jar`.
- 
-Run Apache Spark with 
+
+The best is to extend Spark's class path to include Stocator jar. Edit `conf/spark-defaults.conf` and add Stocator to the class path. For example
+
+	spark.driver.extraClassPath=/<PATH>/stocator/target/stocator-X-Y-Z-jar-with-dependencies.jar
+	spark.executor.extraClassPath=/<PATH>/stocator/target/stocator-X-Y-Z-jar-with-dependencies.jar
+
+	 
+Another option is to run Apache Spark with 
 
 	./bin/spark-shell --jars stocator-X.Y.Z-jar-with-dependencies.jar
+However this is less adviced, as Spark will copy Stocator jar to the executors, which may consume time.
 
 ### Using Stocator with Apache Spark compilation
 
@@ -134,15 +141,17 @@ Configure Stocator in `conf/core-site.xml`
 Stocator COS connector expose "fs.cos." keys prefix. For backward compatibility Stocator also supports "fs.s3d" and "fs.s3a" prefix, where "fs.cos" has the highest priority and will overwrite other keys, if present.
 
 #### COS Connector configuration with IAM
-To work with IAM and provide `api key` please switch to the relevant `ibm-sdk` branch depends on the Stocator version you need. For example for Stocator 1.0.21 release, switch to `1.0.21-ibm-sdk`, for Stocator master `1.0.22-SNAPSHOT`, switch to `1.0.22-SNAPSHOT-IBM-SDK` and so on.
+To work with IAM and provide `api key` please switch to the relevant `ibm-sdk` branch depends on the Stocator version you need. For example for Stocator 1.0.24 release, switch to `1.0.24-ibm-sdk`, for Stocator master `1.0.25-SNAPSHOT`, switch to `1.0.25-SNAPSHOT-IBM-SDK` and so on.
 
-You will need to build Stocator manually, for example using 1.0.21-ibm-sdk branch:
+You will need to build Stocator manually, for example using 1.0.24-ibm-sdk branch:
 
 	git clone https://github.com/SparkTC/stocator
 	cd stocator
 	git fetch
-	git checkout -b 1.0.21-ibm-sdk origin/1.0.21-ibm-sdk
+	git checkout -b 1.0.24-ibm-sdk origin/1.0.24-ibm-sdk
 	mvn clean install –DskipTests
+
+You now need to include the `target/stocator-1.0.24-SNAPSHOT-IBM-SDK.jar` into class path of Spark. Follow section Using Stocator without compiling Apache Spark
 
 ##### Configure Stocator
 
