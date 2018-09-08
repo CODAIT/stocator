@@ -389,7 +389,6 @@ public class StocatorPath {
    * @return unified name
    */
   public String extractUnifiedName(String objectKey) {
-    Path p = new Path(objectKey);
     int index = objectKey.indexOf(HADOOP_PART);
     if (index > 0) {
       return objectKey.substring(0, index);
