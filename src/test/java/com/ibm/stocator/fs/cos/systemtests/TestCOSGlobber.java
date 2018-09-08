@@ -73,7 +73,11 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
         new Path(sBaseURI
             + "/tmp/data/part-00001-f1be90e3-39c9-4025-b0b1-7db2a76f30b3-c000.snappy.parquet"),
         new Path(sBaseURI
-            + "/tmp/data/part-00002-f1be90e3-39c9-4025-b0b1-7db2a76f30b3-c000.snappy.parquet")};
+            + "/tmp/data/part-00002-f1be90e3-39c9-4025-b0b1-7db2a76f30b3-c000.snappy.parquet"),
+
+        new Path(sBaseURI + "/abc/test_:1.csv"),
+        new Path(sBaseURI + "/abc/test_:2.csv"),
+        new Path(sBaseURI + "/abc/test_:3.csv")};
 
     sEmptyFiles = new Path[] {
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json"),
@@ -93,8 +97,8 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
   @Test
   public void testListGlobber() throws Exception {
     FileStatus[] paths;
-    paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/*"));
-    assertEquals(dumpStats("/test/*", paths), sTestData.length - 3, paths.length);
+    paths = sFileSystem.globStatus(new Path(getBaseURI(), "abc/test_*"));
+    assertEquals(dumpStats("abc/test_*", paths), 3, paths.length);
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2018/*"));
     assertEquals(dumpStats("/test/*", paths), 8, paths.length);
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2019/*"));
@@ -102,6 +106,9 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
 
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "tmp/data/*"));
     assertEquals(dumpStats("/tmp/data/*", paths), 3, paths.length);
+
+    paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/*"));
+    assertEquals(dumpStats("/test/*", paths), sTestData.length - 6, paths.length);
 
   }
 
