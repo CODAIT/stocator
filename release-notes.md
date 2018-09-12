@@ -3,7 +3,7 @@
 ### Version 1.0.24
 
 1. [cos] Fixing Spark streaming write flows, by adding support for object rename
-2. [bug[ Fixing globber. Filter accept method may skip slash of the parent, thus reject certain objects.
+2. [bug] Fixing globber. Filter accept method may skip slash of the parent, thus reject certain objects.
 
 ### Version 1.0.23
 
