@@ -295,6 +295,7 @@ public class COSAPIClient implements IStoreClient {
     if (token == null) {
       token = props.getProperty(IAM_TOKEN_PROPERTY);
     }
+    LOG.trace("No token provided for the init of {}", filesystemURI.getPath());
     if (apiKey == null && accessKey == null && token == null) {
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
     }
@@ -544,10 +545,13 @@ public class COSAPIClient implements IStoreClient {
     String token = COSUtils.extractToken(path.toString());
     path = updatePathAndToken(customToken, path);
     FileStatus res = null;
+    // path without token
     FileStatus cached = memoryCache.getFileStatus(path.toString());
     if (cached != null) {
-      LOG.trace("getFileStatus cached returned {}", cached.getPath().toString());
-      cached.setPath(new Path(COSUtils.addTokenToPath(path.toString(), token, hostName)));
+      LOG.trace("getFileStatus cached returned {}. Adding token if needed",
+          cached.getPath().toString());
+      cached.setPath(new Path(COSUtils.addTokenToPath(cached.getPath().toString(), token,
+          hostName)));
       LOG.trace("getFileStatus cached transofrmed to {}", cached.getPath().toString());
       return cached;
     }
@@ -562,6 +566,7 @@ public class COSAPIClient implements IStoreClient {
       LOG.trace("getFileStatus(completed) {}", path);
       res = new FileStatus(0L, true, 1, mBlockSize, 0L, path);
       memoryCache.putFileStatus(path.toString(), res);
+      res.setPath(new Path(COSUtils.addTokenToPath(res.getPath().toString(), token, hostName)));
       return res;
     }
     if (path.toString().contains(HADOOP_TEMPORARY)) {
@@ -584,6 +589,8 @@ public class COSAPIClient implements IStoreClient {
     if (fileStatus != null) {
       LOG.trace("getFileStatus(completed) {}", path);
       memoryCache.putFileStatus(path.toString(), fileStatus);
+      fileStatus.setPath(new Path(COSUtils.addTokenToPath(fileStatus.getPath().toString(),
+          token, hostName)));
       return fileStatus;
     }
     // means key returned not found. Trying to call get file status on key/
@@ -602,6 +609,8 @@ public class COSAPIClient implements IStoreClient {
       if (fileStatus != null) {
         LOG.trace("getFileStatus(completed) {}", path);
         memoryCache.putFileStatus(path.toString(), fileStatus);
+        fileStatus.setPath(new Path(COSUtils.addTokenToPath(fileStatus.getPath().toString(),
+            token, hostName)));
         return fileStatus;
       } else {
         // if here: both key and key/ returned not found.
@@ -622,12 +631,14 @@ public class COSAPIClient implements IStoreClient {
           LOG.debug("getFileStatus(completed) {}", path);
           res = new FileStatus(0, true, 1, 0, 0, path);
           memoryCache.putFileStatus(path.toString(), res);
+          res.setPath(new Path(COSUtils.addTokenToPath(res.getPath().toString(), token, hostName)));
           return res;
         } else if (key.isEmpty()) {
           LOG.trace("Found root directory");
           LOG.debug("getFileStatus(completed) {}", path);
           res = new FileStatus(0, true, 1, 0, 0, path);
           memoryCache.putFileStatus(path.toString(), res);
+          res.setPath(new Path(COSUtils.addTokenToPath(res.getPath().toString(), token, hostName)));
           return res;
         }
       }
@@ -636,7 +647,8 @@ public class COSAPIClient implements IStoreClient {
     throw new FileNotFoundException("Not found " + path.toString());
   }
 
-  private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception {
+  private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception,
+  IOException {
     LOG.trace("internal method - get file status by key {}, path {}", key, path);
     FileStatus cachedFS = memoryCache.getFileStatus(path.toString());
     if (cachedFS != null) {
@@ -654,7 +666,6 @@ public class COSAPIClient implements IStoreClient {
     mCachedSparkOriginated.put(key, Boolean.valueOf(stocatorCreated));
     FileStatus fs = createFileStatus(meta.getContentLength(), key, meta.getLastModified(), path);
     LOG.trace("getFileStatusKeyBased: key {} fs.path {}", key, fs.getPath());
-    memoryCache.putFileStatus(path.toString(), fs);
     return fs;
   }
 
@@ -663,7 +674,6 @@ public class COSAPIClient implements IStoreClient {
       throws IllegalArgumentException, IOException {
     String objKey = objSummary.getKey();
     String newMergedPath = getMergedPath(hostName, path, objKey);
-    newMergedPath = COSUtils.addTokenToPath(newMergedPath, token, hostName);
     return createFileStatus(objSummary.getSize(), objKey,
         objSummary.getLastModified(), new Path(newMergedPath));
   }
@@ -901,6 +911,14 @@ public class COSAPIClient implements IStoreClient {
     return workingDir;
   }
 
+  /**
+   * Get input path and return path without token if was provided in the URL
+   * Updates token manager with the path
+   *
+   * @param customTokenMgr token manager
+   * @param path with token
+   * @return path without token
+   */
   private Path updatePathAndToken(CustomTokenManager customTokenMgr, Path path) {
     if (customToken != null && COSUtils.isTokenInURL(path.toString())) {
       customToken.setToken(COSUtils.extractToken(path.toString()));
@@ -1014,6 +1032,7 @@ public class COSAPIClient implements IStoreClient {
         }
         FileStatus fs = createFileStatus(prevObj, hostName, path, token);
         if (fs.getLen() > 0 || fullListing) {
+          fs.setPath(new Path(COSUtils.addTokenToPath(fs.getPath().toString(), token, hostName)));
           LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
           if (filter == null) {
             tmpResult.add(fs);
@@ -1042,11 +1061,9 @@ public class COSAPIClient implements IStoreClient {
       LOG.trace("Adding the last object from the list {}", fs.getPath());
       if (fs.getLen() > 0 || fullListing) {
         LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
-        if (filter == null) {
+        if (filter == null ||  filter.accept(fs.getPath())) {
           memoryCache.putFileStatus(fs.getPath().toString(), fs);
-          tmpResult.add(fs);
-        } else if (filter != null && filter.accept(fs.getPath())) {
-          memoryCache.putFileStatus(fs.getPath().toString(), fs);
+          fs.setPath(new Path(COSUtils.addTokenToPath(fs.getPath().toString(), token, hostName)));
           tmpResult.add(fs);
         } else {
           LOG.trace("{} rejected by path filter during list. Filter {}",
@@ -1065,11 +1082,10 @@ public class COSAPIClient implements IStoreClient {
         FileStatus status = new COSFileStatus(true, false, keyToQualifiedPath(hostName,
             comPrefix));
         LOG.trace("Match between common prefix and empty object {}. Adding to result", comPrefix);
-        if (filter == null) {
+        if (filter == null || filter.accept(status.getPath()))   {
           memoryCache.putFileStatus(status.getPath().toString(), status);
-          tmpResult.add(status);
-        } else if (filter != null && filter.accept(status.getPath())) {
-          memoryCache.putFileStatus(status.getPath().toString(), status);
+          status.setPath(new Path(COSUtils.addTokenToPath(status.getPath().toString(), token,
+              hostName)));
           tmpResult.add(status);
         } else {
           LOG.trace("Common prefix {} rejected by path filter during list. Filter {}",

@@ -334,7 +334,7 @@ public final class COSUtils {
   }
 
   public static String addTokenToPath(String path, String token, String hostName) {
-    if (token != null) {
+    if (token != null && !path.contains("token=")) {
       String st1 = path.substring(hostName.length());
       return hostName + "token=" + token + "/" + st1;
     }

@@ -29,6 +29,8 @@ import org.apache.hadoop.fs.PathOperationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.ibm.stocator.fs.cos.COSUtils;
+
 public class ObjectStoreFlatGlobFilter implements PathFilter{
 
   public static final Logger LOG = LoggerFactory.getLogger(
@@ -125,12 +127,17 @@ public class ObjectStoreFlatGlobFilter implements PathFilter{
     boolean match = true;
     for (String pathPattern : parsedPatterns) {
       LOG.trace("accept on {}, path pattern {}, name {}", pathStr, pathPattern, name);
+      // path may contain token=. If it's true then token must be removed before Globber is used
+      String pathPatternString = COSUtils.removeToken(pathStr);
+      LOG.trace("Token removed. accept on {}, path pattern {}, name {}", pathPatternString,
+          pathPattern, name);
       if (name != null && name.startsWith("part-")) {
         LOG.trace("accept on parent {}, path pattern {}",
             path.getParent().toString(), pathPattern);
-        match = FilenameUtils.wildcardMatch(path.getParent().toString() + "/", pathPattern);
+        match = FilenameUtils.wildcardMatch(COSUtils.removeToken(path.getParent().toString())
+            + "/", pathPattern);
       } else {
-        match = FilenameUtils.wildcardMatch(pathStr, pathPattern);
+        match = FilenameUtils.wildcardMatch(pathPatternString, pathPattern);
       }
       if (match) {
         return match;
