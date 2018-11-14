@@ -889,7 +889,7 @@ public class COSAPIClient implements IStoreClient {
         }
         obj.setKey(correctPlusSign(key, obj.getKey()));
         String objKey = obj.getKey();
-        String unifiedObjectName = stocatorPath.extractUnifiedName(objKey);
+        String unifiedObjectName = stocatorPath.removePartOrSuccess(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
         stocatorOrigin = isSparkOrigin(unifiedObjectName);
         if (stocatorOrigin && !fullListing) {
