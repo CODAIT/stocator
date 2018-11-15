@@ -145,7 +145,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   public boolean isDirectory(final Path f) throws IOException {
-    if (stocatorPath.isTemporaryPathContain(f)) {
+    if (stocatorPath.isTemporaryPath(f)) {
       return false;
     }
     final Path path = storageClient.qualify(f);
@@ -163,7 +163,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
    */
   @Override
   public boolean isFile(Path f) throws IOException {
-    if (stocatorPath.isTemporaryPathContain(f)) {
+    if (stocatorPath.isTemporaryPath(f)) {
       return true;
     }
     final Path path = storageClient.qualify(f);
@@ -225,11 +225,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     // check if request is dataroot/objectname/_SUCCESS
     if (path.getName().equals(Constants.HADOOP_SUCCESS)) {
       // no need to add attempt id to the _SUCCESS
-      objNameModified =  stocatorPath.getObjectNameRoot(path, false,
+      objNameModified =  stocatorPath.extractFinalKeyFromTemporaryPath(path, false,
           storageClient.getDataRoot(), true);
     } else {
       // add attempt id to the final name
-      objNameModified = stocatorPath.getObjectNameRoot(path, true,
+      objNameModified = stocatorPath.extractFinalKeyFromTemporaryPath(path, true,
           storageClient.getDataRoot(), true);
     }
     return storageClient.createObject(objNameModified,
@@ -253,7 +253,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       LOG.debug("Source path and dest path can not be null");
       return false;
     }
-    if (stocatorPath.isTemporaryPathContain(src)) {
+    if (stocatorPath.isTemporaryPath(src)) {
       return true;
     }
     LOG.debug("Checking if source exists {}", src);
@@ -269,7 +269,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
     LOG.debug("About to delete {}", f.toString());
-    if (stocatorPath.isTemporaryPathContain(f.toString())) {
+    if (stocatorPath.isTemporaryPath(f)) {
       return true;
     }
     final Path path = storageClient.qualify(f);
@@ -280,7 +280,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.trace("Delete: qualify input path {} to {}", f, path);
     // this will strip temp structure if present and generate real
     // object name without hadoop_attempt, _temporary, etc.
-    String objNameModified = stocatorPath.getObjectNameRoot(path, true,
+    String objNameModified = stocatorPath.extractFinalKeyFromTemporaryPath(path, true,
         storageClient.getDataRoot(), false);
     // create new full path again, this time without hadoop_attempt, _temporary, etc.
     Path reducedPath = storageClient.qualify(new Path(hostNameScheme, objNameModified));
@@ -347,7 +347,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       Boolean isDirectory) throws FileNotFoundException, IOException {
     LOG.debug("listStatus: {},  prefix based {}. Globber is directory status {}",
         f.toString(), prefixBased, isDirectory);
-    if (stocatorPath.isTemporaryPathContain(f)) {
+    if (stocatorPath.isTemporaryPath(f)) {
       LOG.debug("{} temporary. Return empty result", f);
       return new FileStatus[]{};
     }
@@ -445,7 +445,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     validateBracketSupport(f.toString());
     if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
       final Path path = storageClient.qualify(f);
-      String objNameModified = stocatorPath.getObjectNameRoot(path,true,
+      String objNameModified = stocatorPath.extractFinalKeyFromTemporaryPath(path,true,
           storageClient.getDataRoot(), true);
       final Path pathToObj = new Path(objNameModified);
       LOG.trace("mkdirs {} modified name", objNameModified);
@@ -476,8 +476,8 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       outStream.close();
     } else {
       LOG.debug("mkdirs on non temp object. Create {}", f.toString());
-      String objName = stocatorPath.getObjectNameRoot(f, false, storageClient.getDataRoot(),
-          true);
+      String objName = stocatorPath.extractFinalKeyFromTemporaryPath(f, false,
+          storageClient.getDataRoot(), true);
       if (!objName.endsWith("/")) {
         objName = objName + "/";
       }
@@ -491,6 +491,25 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
 
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
+    /*
+     * Issues might happen with Dataframes of the recent Spark versions
+     * In some flows Spark aware of temporary files and request getFileStatus(tempFile)
+     * Spark uses this information to update BasicWriteTaskStats
+     * As example, Spark may call
+     * getFileStatus('scheme://bucket.service/a/data.parquet/_temporary/0/
+     *      _temporary/attempt_20181009100745_0001_m_000006_0/
+     *      part-00006-87428114-b6c6-49fc-9b4c-2415da470115-c000.snappy.parquet')
+     * As Stocator doesn't persists temporary files, internally this call should be mapped to
+     * getFileStatus('scheme://bucket.service/a/data.parquet/
+     *      part-00006-87428114-b6c6-49fc-9b4c-2415da470115-c000.snappy.parquet')
+     * Notice:!
+     * Object was written as
+     * part-00006-87428114-b6c6-49fc-9b4c-2415da470115-c00
+     *      -attempt_20181009100745_0001_m_000000_0.snappy.parquet
+     * while Spark accesses
+     * part-00006-87428114-b6c6-49fc-9b4c-2415da470115-c000.snappy.parquet
+     *
+     */
     LOG.debug("get file status: {}", f.toString());
     final Path path = storageClient.qualify(f);
     return storageClient.getFileStatus(hostNameScheme, path, "fileStatus");

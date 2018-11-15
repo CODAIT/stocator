@@ -541,9 +541,17 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public FileStatus getFileStatus(String hostName,
-      Path path, String msg) throws IOException, FileNotFoundException {
-    String token = COSUtils.extractToken(path.toString());
-    path = updatePathAndToken(customToken, path);
+      Path f, String msg) throws IOException, FileNotFoundException {
+    String token = COSUtils.extractToken(f.toString());
+    f = updatePathAndToken(customToken, f);
+    Path path = f;
+    boolean originalTempTarget = false;
+    if (path.toString().contains(HADOOP_TEMPORARY)) {
+      path = stocatorPath.modifyPathToFinalDestination(f);
+      LOG.debug("getFileStatus on temp object {}. Modify to final name {}", f.toString(),
+          path.toString());
+      originalTempTarget = true;
+    }
     FileStatus res = null;
     // path without token
     FileStatus cached = memoryCache.getFileStatus(path.toString());
@@ -569,10 +577,6 @@ public class COSAPIClient implements IStoreClient {
       res.setPath(new Path(COSUtils.addTokenToPath(res.getPath().toString(), token, hostName)));
       return res;
     }
-    if (path.toString().contains(HADOOP_TEMPORARY)) {
-      LOG.debug("getFileStatus on temp object {}. Return not found", path.toString());
-      throw new FileNotFoundException("Not found " + path.toString());
-    }
     String key = pathToKey(path);
     LOG.debug("getFileStatus: on original key {}", key);
     FileStatus fileStatus = null;
@@ -584,6 +588,8 @@ public class COSAPIClient implements IStoreClient {
       if (e.getStatusCode() != 404) {
         LOG.warn("Throw IOException for {}. Most likely authentication failed", key);
         throw new IOException(e);
+      } else if (originalTempTarget && e.getStatusCode() == 404) {
+        throw new FileNotFoundException("Not found " + f.toString());
       }
     }
     if (fileStatus != null) {
@@ -993,7 +999,7 @@ public class COSAPIClient implements IStoreClient {
         }
         obj.setKey(correctPlusSign(key, obj.getKey()));
         String objKey = obj.getKey();
-        String unifiedObjectName = stocatorPath.extractUnifiedName(objKey);
+        String unifiedObjectName = stocatorPath.removePartOrSuccess(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
         stocatorOrigin = isSparkOrigin(unifiedObjectName);
         if (stocatorOrigin && !fullListing) {

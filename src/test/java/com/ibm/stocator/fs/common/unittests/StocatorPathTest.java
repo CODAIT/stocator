@@ -51,17 +51,17 @@ public class StocatorPathTest {
   }
 
   @Test
-  public void isTempPathTest() throws Exception {
+  public void tempPathTest() throws Exception {
 
     String input = "swift2d://a.service/one3.txt/_temporary/0/_temporary/"
         + "attempt_201610052038_0001_m_000007_15";
     String expectedResult = "a/one3.txt";
-    String result = stocPath.getObjectNameRoot(new Path(input),
+    String result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
         Boolean.FALSE, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
-    boolean res = stocPath.isTemporaryPathContain(new Path(input));
-    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+    boolean res = stocPath.isTemporaryPath(new Path(input));
+    Assert.assertEquals("isTemporaryPath() shows incorrect name",
         true, res);
     res = stocPath.isTemporaryPathTarget(new Path(input));
     Assert.assertEquals("isTemporaryPathTaget() shows incorrect name",
@@ -69,9 +69,32 @@ public class StocatorPathTest {
 
     input = "swift2d://a.service/fruit";
     expectedResult = "a/fruit";
-    result = stocPath.getObjectNameRoot(new Path(input),
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
         Boolean.FALSE, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/fruit/d";
+    expectedResult = "fruit/d";
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
+        Boolean.FALSE, "a", false);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/one3.txt/_temporary/0/_temporary/"
+        + "attempt_201610052038_0001_m_000007_15/part-1";
+    expectedResult = "a/one3.txt/part-1-attempt_201610052038_0001_m_000007_15";
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
+        Boolean.TRUE, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/one3.txt/_temporary/0/_temporary/"
+        + "attempt_201610052038_0001_m_000007_15/part-1.csv";
+    expectedResult = "a/one3.txt/part-1-attempt_201610052038_0001_m_000007_15.csv";
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
+        Boolean.TRUE, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
 
   }
@@ -157,8 +180,8 @@ public class StocatorPathTest {
         + "-attempt_20171115113432_0017_m_000076_0"
         + ".snappy.parquet";
 
-    String result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    String result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input), true, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
 
     input = "swift2d://a.service/aa/abc.parquet/"
@@ -171,8 +194,8 @@ public class StocatorPathTest {
         + "-attempt_20171115113432_0017_m_000076_0"
         + ".snappy.parquet";
 
-    result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input), true, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
 
     input = "swift2d://a.service/aa/abc.parquet/"
@@ -185,8 +208,8 @@ public class StocatorPathTest {
         + "-attempt_20171115113432_0017_m_000076_0"
         + ".snappy.parquet";
 
-    result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input), true, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
 
     input = "swift2d://a.service/aa/abc.parquet/"
@@ -198,8 +221,8 @@ public class StocatorPathTest {
         + "part-00076-335c9928-ccbb-4830-b7e3-0348a7d7d8f8"
         + "-attempt_20171115113432_0017_m_000076_0";
 
-    result = stocPath.getObjectNameRoot(new Path(input), true, "a", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input), true, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
                         expectedResult, result);
 
   }
@@ -221,12 +244,36 @@ public class StocatorPathTest {
     String input =
         "gilv0505v3cos/a/data/part-00000-e5eede57-4d16-4cd6-bc51-c877e232ce81-"
         + "attempt_20180405072427_0001_m_000000_0.json";
-    String expected = "gilv0505v3cos/a/data";
-    String res = stocPath.extractUnifiedObjectName(input);
+    String expected = "gilv0505v3cos/a/data/part-00000-e5eede57-4d16-4cd6-bc51-c877e232ce81.json";
+    String res = stocPath.nameWithoutTaskID(input);
     Assert.assertEquals("Not match", expected, res);
+
+    input = "gilv0505v3cos/a/data/"
+        + "attempt_20180405072427_0001_m_000000_0.json";
+    expected = input;
+    res = stocPath.nameWithoutTaskID(input);
+    Assert.assertEquals("Not match", expected, res);
+
+    input =
+        "gilv0505v3cos/a/data/part-00000-e5eede57-4d16-4cd6-bc51-c877e232ce81-"
+        + "attempt_20180405072427_0001_m_000000_0";
     expected = "gilv0505v3cos/a/data/part-00000-e5eede57-4d16-4cd6-bc51-c877e232ce81";
     res = stocPath.nameWithoutTaskID(input);
     Assert.assertEquals("Not match", expected, res);
+
   }
 
+  @Test
+  public void tempPathToStocatorTest() throws Exception {
+    String input = "swift2d://a.service/test09102018v1/data.parquet/"
+        + "_temporary/0/_temporary/attempt_20181009100745_0001_m_000004_0/"
+        + "part-00004-87428114-b6c6-49fc-9b4c-2415da470115-c000.snappy.parquet";
+
+    String expected = "swift2d://a.service/test09102018v1/data.parquet/"
+        + "part-00004-87428114-b6c6-49fc-9b4c-2415da470115-c000-"
+        + "attempt_20181009100745_0001_m_000004_0.snappy.parquet";
+
+    Path res = stocPath.modifyPathToFinalDestination(new Path(input));
+    Assert.assertEquals("Not match", expected, res.toString());
+  }
 }

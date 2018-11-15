@@ -364,7 +364,7 @@ public class SwiftAPIClient implements IStoreClient {
     */
     boolean isDirectory = false;
     String objectName = getObjName(hostName, path);
-    if (stocatorPath.isTemporaryPathContain(objectName)) {
+    if (stocatorPath.isTemporaryPath(objectName)) {
       LOG.debug("getObjectMetadata on temp object {}. Return not found", objectName);
       throw new FileNotFoundException("Not found " + path.toString());
     }
@@ -419,7 +419,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (path.toString().startsWith(hostName)) {
       objName = getObjName(hostName, path);
     }
-    if (stocatorPath.isTemporaryPathContain(objName)) {
+    if (stocatorPath.isTemporaryPath(objName)) {
       LOG.debug("Exists on temp object {}. Return false", objName);
       return false;
     }
@@ -888,7 +888,7 @@ public class SwiftAPIClient implements IStoreClient {
     if (objNameDst.toString().startsWith(hostName)) {
       objNameDst = getObjName(hostName, dstPath);
     }
-    if (stocatorPath.isTemporaryPathContain(objNameSrc)) {
+    if (stocatorPath.isTemporaryPath(objNameSrc)) {
       LOG.debug("Rename on the temp object {}. Return true", objNameSrc);
       return true;
     }

@@ -80,12 +80,12 @@ public class StocatorPathQualifyTest {
     String input = pQualified.toString();
     System.out.println(input);
     String expectedResult = "bucket/one3.txt";
-    String result = stocPath.getObjectNameRoot(new Path(input),
+    String result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
         Boolean.FALSE, "bucket", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
-    boolean res = stocPath.isTemporaryPathContain(new Path(input));
-    Assert.assertEquals("isTemporaryPathContain() shows incorrect name",
+    boolean res = stocPath.isTemporaryPath(new Path(input));
+    Assert.assertEquals("isTemporaryPath() shows incorrect name",
         true, res);
     res = stocPath.isTemporaryPathTarget(new Path(input));
     Assert.assertEquals("isTemporaryPathTaget() shows incorrect name",
@@ -93,9 +93,9 @@ public class StocatorPathQualifyTest {
 
     input = "cos://bucket.service/fruit";
     expectedResult = "bucket/fruit";
-    result = stocPath.getObjectNameRoot(new Path(input),
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
         Boolean.FALSE, "bucket", true);
-    Assert.assertEquals("getObjectNameRoot() shows incorrect name",
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
 
   }

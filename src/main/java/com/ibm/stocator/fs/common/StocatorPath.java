@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +43,11 @@ public class StocatorPath {
   private String hostNameScheme;
 
   /**
+   * Main constructor
+   *
    * @param fileOriginator originator
    * @param conf Configuration
-   * @param hostName hostname
+   * @param hostName hostname of the form scheme://bucket.service
    */
   public StocatorPath(String fileOriginator, Configuration conf, String hostName) {
     LOG.debug("StocatorPath generated with hostname {} and file originator {}", hostName,
@@ -60,28 +63,46 @@ public class StocatorPath {
     }
   }
 
-  public boolean isTemporaryPathContain(Path path) {
+  /**
+   * Inspect the path and return true if path contains reserved "_temporary" or
+   * the first entry from "fs.stocator.temp.identifier" if provided
+   *
+   * @param path to inspect
+   * @return true if path contains temporary identifier
+   */
+  public boolean isTemporaryPath(Path path) {
+    if (path != null) {
+      return isTemporaryPath(path.toString());
+    }
+    return false;
+  }
+
+  /**
+   * Inspect the path and return true if path contains reserved "_temporary" or
+   * the first entry from "fs.stocator.temp.identifier" if provided
+   *
+   * @param path to inspect
+   * @return true if path contains temporary identifier
+   */
+  public boolean isTemporaryPath(String path) {
     for (String tempPath : tempIdentifiers) {
       String[] tempPathComponents = tempPath.split("/");
       if (tempPathComponents.length > 0
-          && path.toString().contains(tempPathComponents[0].replace("ID", ""))) {
+          && path != null && path.contains(tempPathComponents[0].replace("ID", ""))) {
         return true;
       }
     }
     return false;
   }
 
-  public boolean isTemporaryPathContain(String path) {
-    for (String tempPath : tempIdentifiers) {
-      String[] tempPathComponents = tempPath.split("/");
-      if (tempPathComponents.length > 0
-          && path.contains(tempPathComponents[0].replace("ID", ""))) {
-        return true;
-      }
-    }
-    return false;
-  }
-
+  /**
+   * This method identifies if path targets temporary object, for example
+   * scheme://a.service/one3.txt/_temporary
+   * We mainly need this method for mkdirs operation
+   *
+   * @param path the input path
+   * @return true if path targets temporary object
+   */
   public boolean isTemporaryPathTarget(Path path) {
     LOG.trace("isTemporaryPathTarget for {}", path);
     if (path.toString().equals(hostNameScheme) || path.getParent() == null) {
@@ -103,22 +124,47 @@ public class StocatorPath {
   }
 
   /**
-   * Get object name with data root
+   * Transform scheme://hostname/a/b/_temporary/0 into scheme://hostname/a/b/
+   * We mainly need this for mkdirs operations
    *
-   * @param fullPath the path
+   * @param path input directory with temporary prefix
+   * @return modified directory without temporary prefix
+   */
+  public String getBaseDirectory(String path) {
+    if (path != null) {
+      int finishIndex = path.indexOf(HADOOP_TEMPORARY);
+      if (finishIndex > 0) {
+        String newPath = path.substring(0, finishIndex);
+        if (newPath.endsWith("/")) {
+          return newPath.substring(0, newPath.length() - 1);
+        }
+        return newPath;
+      }
+    }
+    return path;
+  }
+
+  /**
+   * Transform temporary path to the final destination
+   * For example:
+   * scheme://a.service/data.txt/_temporary/0/_temporary/"
+   *     + "attempt_201610052038_0001_m_000007_15";
+   * transformed to  a/data.txt
+   *
+   * @param path the input path
    * @param addTaskId add task id composite
    * @param dataRoot the data root
-   * @param addRoot add or not the data root to the path
-   * @return composite of data root and object name
+   * @param addRoot add or not the data root to the path (bucket) as a prefix
+   * @return object name without temporary path
    * @throws IOException if object name is missing
    */
-  public String getObjectNameRoot(Path fullPath, boolean addTaskId,
+  public String extractFinalKeyFromTemporaryPath(Path path, boolean addTaskId,
       String dataRoot, boolean addRoot) throws IOException {
     String res;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
-      res = parseHadoopFOutputCommitterV1(fullPath, addTaskId, hostNameScheme);
+      res = parseHadoopOutputCommitter(path, addTaskId, hostNameScheme);
     } else {
-      res = extractNameFromTempPath(fullPath, addTaskId, hostNameScheme);
+      res = extractNameFromTempPath(path, addTaskId, hostNameScheme);
     }
     if (!res.equals("")) {
       if (addRoot) {
@@ -129,15 +175,174 @@ public class StocatorPath {
       }
       return res;
     }
-    return fullPath.toString();
+    return path.toString();
   }
 
   /**
+   * Accept temporary path and return a final destination path
+   *
+   * @param path path name to modify
+   * @return modified path name
+   * @throws IOException if error
+   */
+  public Path modifyPathToFinalDestination(Path path) throws IOException {
+    String res;
+    if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
+      res = parseHadoopOutputCommitter(path, true, hostNameScheme);
+    } else {
+      res = extractNameFromTempPath(path, true, hostNameScheme);
+    }
+    return new Path(hostNameScheme, res);
+
+  }
+
+  /**
+   * Accepts any object name. If object name is of the form
+   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
+   * .csv-attempt_20160317132wrong_0000_m_000000_1 Then
+   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is
+   * returned. Perform test that attempt_20160317132wrong_0000_m_000000_1 is
+   * valid task id identifier
+   *
+   * @param objectKey object key
+   * @return unified object name
+   */
+  public String nameWithoutTaskID(String objectKey) {
+    int index = objectKey.indexOf("-" + HADOOP_ATTEMPT);
+    if (index > 0) {
+      String attempt = objectKey.substring(index + 1);
+      try {
+        if (attempt.indexOf(".") > 0) {
+          attempt = attempt.substring(0, attempt.indexOf("."));
+        }
+        TaskAttemptID.forName(attempt);
+        String res = objectKey.replace("-" + attempt, "");
+        return res;
+      } catch (IllegalArgumentException e) {
+        return objectKey;
+      }
+    }
+    return objectKey;
+  }
+
+  /**
+   * Extracts from the object key an object name without part or _success
+   * For example
+   * data/a/d.parquet/part-00001-abb1f63385e9-attempt_20180503184805_0006_m_000007_0.snappy.parquet
+   *
+   * transformed into
+   *
+   * dataset/a/data.parquet/
+   *
+   * @param objectKey object key
+   * @return unified name
+   */
+  public String removePartOrSuccess(String objectKey) {
+    String res = objectKey;
+    int index = objectKey.indexOf(HADOOP_PART);
+    if (index > 0) {
+      res = objectKey.substring(0, index);
+    } else if (objectKey.indexOf(HADOOP_SUCCESS) > 0) {
+      res =  objectKey.substring(0, objectKey.indexOf(HADOOP_SUCCESS));
+    }
+    return res;
+  }
+
+  /**
+   * Main method to parse Hadoop OutputCommitter V1 or V2 as used by Hadoop M-R or Apache Spark
+   * Method transforms object name from the temporary path.
+   *
+   * The input of the form
+   *
+   * schema://mydata.service/a/b/c/data.parquet/_temporary/0/_temporary/
+   * attempt_201610052038_0001_m_000007_15/part-00001
+   *
+   * If addTaskIdCompositeName=true then input transformed into
+   * a/b/c/data.parquet/part-00001-attempt_201610052038_0001_m_000007_15.parquet
+   *
+   * If addTaskIdCompositeName=false then input transformed into
+   * a/b/c/data.parquet/part-00001.parquet
+   *
+   * @param fullPath path to extract from
+   * @param addTaskIdCompositeName if true will add task-id to the object name
+   * @param hostNameScheme the host name
+   * @return transformed name
+   * @throws IOException if object name is missing
+   */
+  private String parseHadoopOutputCommitter(Path fullPath,
+      boolean addTaskIdCompositeName, String hostNameScheme) throws IOException {
+    String path = fullPath.toString();
+    String noPrefix = path;
+    if (path.startsWith(hostNameScheme)) {
+      noPrefix = path.substring(hostNameScheme.length());
+    }
+    int npIdx = noPrefix.indexOf(HADOOP_TEMPORARY);
+    String objectName;
+    if (npIdx >= 0) {
+      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
+        //no object name present, for example
+        //schema://tone1.lvm/_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
+        //schema://tone1.lvm_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
+        throw new IOException("Object name is missing");
+      } else {
+        // Will give: schema://tone1.lvm/aa/bb/cc/one3.txt/
+        objectName = noPrefix.substring(0, npIdx - 1);
+        if (addTaskIdCompositeName) {
+          String objName = null;
+          String taskAttempt = Utils.extractTaskID(path, HADOOP_ATTEMPT);
+          if (taskAttempt != null) {
+            int fIndex = fullPath.toString().indexOf(taskAttempt + "/");
+            if (fIndex > 0) {
+              fIndex = fIndex + taskAttempt.length() + 1;
+            }
+            if (fIndex < fullPath.toString().length()) {
+              objName = fullPath.toString().substring(fIndex);
+            }
+          }
+          if (objName == null) {
+            objName = fullPath.getName();
+          }
+          if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
+            // We want to prepend the attempt before the extension
+            String extension = extractExtension(objName);
+            objName = objName.replace("." + extension, "") + "-" + taskAttempt;
+            if (!extension.equals("")) {
+              objName += "." + extension;
+            }
+          }
+          objectName = objectName + "/" + objName;
+        }
+      }
+      return objectName;
+    }
+    return noPrefix;
+  }
+
+  /**
+   * A filename, for example, one3-attempt-01.txt.gz will return txt.gz
+   *
+   * @param filename The path of filename to extract the extension from
+   * @return The extension of the filename
+   */
+  private String extractExtension(String filename) {
+    int startExtension = filename.indexOf('.');
+    if (startExtension > 0) {
+      return filename.substring(startExtension + 1);
+    }
+    return "";
+  }
+
+  /**
+   * This is to process temporary path generated by non standard output committers
+   * Code uses temporary path patterns
+   * Not in use for Hadoop OutputCommitter V1 or V2
+   *
    * @param p path
    * @param addTaskID add task id to the extracted name
    * @param hostName hostname used to register Stocator
    * @return
    */
+  @Experimental
   private String extractNameFromTempPath(Path p, boolean addTaskID, String hostName) {
     LOG.trace("Extract name from {}", p.toString());
     String path = p.toString();
@@ -224,178 +429,6 @@ public class StocatorPath {
       }
     }
     return path;
-  }
-
-  /**
-   * Extract object name from path. If addTaskIdCompositeName=true then
-   * schema://tone1.lvm/aa/bb/cc/one3.txt/_temporary/0/_temporary/
-   * attempt_201610052038_0001_m_000007_15/part-00007 will extract get
-   * aa/bb/cc/201610052038_0001_m_000007_15-one3.txt
-   * otherwise object name will be aa/bb/cc/one3.txt
-   *
-   * @param fullPath path to extract from
-   * @param addTaskIdCompositeName if true will add task-id to the object name
-   * @param hostNameScheme the host name
-   * @return new object name
-   * @throws IOException if object name is missing
-   */
-  private String parseHadoopFOutputCommitterV1(Path fullPath,
-      boolean addTaskIdCompositeName, String hostNameScheme) throws IOException {
-    String path = fullPath.toString();
-    String noPrefix = path;
-    if (path.startsWith(hostNameScheme)) {
-      noPrefix = path.substring(hostNameScheme.length());
-    }
-    int npIdx = noPrefix.indexOf(HADOOP_TEMPORARY);
-    String objectName;
-    if (npIdx >= 0) {
-      if (npIdx == 0 || npIdx == 1 && noPrefix.startsWith("/")) {
-        //no object name present
-        //schema://tone1.lvm/_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
-        //schema://tone1.lvm_temporary/0/_temporary/attempt_201610038_0001_m_000007_15/part-0007
-        throw new IOException("Object name is missing");
-      } else {
-        // Will give: schema://tone1.lvm/aa/bb/cc/one3.txt/
-        objectName = noPrefix.substring(0, npIdx - 1);
-        if (addTaskIdCompositeName) {
-          String objName = null;
-          String taskAttempt = Utils.extractTaskID(path, HADOOP_ATTEMPT);
-          if (taskAttempt != null) {
-            int fIndex = fullPath.toString().indexOf(taskAttempt + "/");
-            if (fIndex > 0) {
-              fIndex = fIndex + taskAttempt.length() + 1;
-            }
-            if (fIndex < fullPath.toString().length()) {
-              objName = fullPath.toString().substring(fIndex);
-            }
-          }
-          if (objName == null) {
-            objName = fullPath.getName();
-          }
-          if (taskAttempt != null && !objName.startsWith(HADOOP_ATTEMPT)) {
-            // We want to prepend the attempt before the extension
-            String extension = extractExtension(objName);
-            objName = objName.replace("." + extension, "") + "-" + taskAttempt;
-            if (!extension.equals("")) {
-              objName += "." + extension;
-            }
-          }
-          objectName = objectName + "/" + objName;
-        }
-      }
-      return objectName;
-    }
-    return noPrefix;
-  }
-
-  /**
-   * A filename, for example, one3-attempt-01.txt.gz will return txt.gz
-   *
-   * @param filename The path of filename to extract the extension from
-   * @return The extension of the filename
-   */
-  private String extractExtension(String filename) {
-    int startExtension = filename.indexOf('.');
-    if (startExtension > 0) {
-      return filename.substring(startExtension + 1);
-    }
-    return "";
-  }
-
-  /**
-   * Transform scheme://hostname/a/b/_temporary/0 into scheme://hostname/a/b/
-   *
-   * @param path input directory with temp prefix
-   * @return modified directory
-   */
-  public String getBaseDirectory(String path) {
-    if (path != null) {
-      int finishIndex = path.indexOf(HADOOP_TEMPORARY);
-      if (finishIndex > 0) {
-        String newPath = path.substring(0, finishIndex);
-        if (newPath.endsWith("/")) {
-          return newPath.substring(0, newPath.length() - 1);
-        }
-        return newPath;
-      }
-    }
-    return path;
-  }
-
-  /**
-   * Accepts any object name. If object name of the form
-   * a/b/c/gil.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   * .csv-attempt_20160317132wrong_0000_m_000000_1 Then a/b/c/gil.data is
-   * returned. Code testing that attempt_20160317132wrong_0000_m_000000_1 is
-   * valid task id identifier
-   *
-   * @param objectKey object key
-   * @return unified object name
-   */
-  public String extractUnifiedObjectName(String objectKey) {
-    return extractFromObjectKeyWithTaskID(objectKey, true);
-  }
-
-  /**
-   * Accepts any object name. If object name is of the form
-   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c
-   * .csv-attempt_20160317132wrong_0000_m_000000_1 Then
-   * a/b/c/m.data/part-r-00000-48ae3461-203f-4dd3-b141-a45426e2d26c.csv is
-   * returned. Perform test that attempt_20160317132wrong_0000_m_000000_1 is
-   * valid task id identifier
-   *
-   * @param objectKey object key
-   * @return unified object name
-   */
-  public String nameWithoutTaskID(String objectKey) {
-    return extractFromObjectKeyWithTaskID(objectKey, false);
-  }
-
-  /**
-   * Extracts from the object key an unified object name or name without task ID
-   *
-   * @param objectKey object key
-   * @param isUnifiedObjectKey
-   * @return unified name
-   */
-  private String extractFromObjectKeyWithTaskID(String objectKey, boolean isUnifiedObjectKey) {
-    Path p = new Path(objectKey);
-    int index = objectKey.indexOf("-" + HADOOP_ATTEMPT);
-    if (index > 0) {
-      String attempt = objectKey.substring(objectKey.lastIndexOf("-") + 1);
-      try {
-        if (attempt.indexOf(".") > 0) {
-          attempt = attempt.substring(0, attempt.indexOf("."));
-        }
-        TaskAttemptID.forName(attempt);
-        if (isUnifiedObjectKey) {
-          return p.getParent().toString();
-        } else {
-          return objectKey.substring(0, index);
-        }
-      } catch (IllegalArgumentException e) {
-        return objectKey;
-      }
-    } else if (isUnifiedObjectKey && objectKey.indexOf(HADOOP_SUCCESS) > 0) {
-      return p.getParent().toString();
-    }
-    return objectKey;
-  }
-
-  /**
-   * Extracts from the object key an unified object name or name without task ID
-   *
-   * @param objectKey object key
-   * @return unified name
-   */
-  public String extractUnifiedName(String objectKey) {
-    int index = objectKey.indexOf(HADOOP_PART);
-    if (index > 0) {
-      return objectKey.substring(0, index);
-    } else if (objectKey.indexOf(HADOOP_SUCCESS) > 0) {
-      return objectKey.substring(0, objectKey.indexOf(HADOOP_SUCCESS));
-    }
-    return objectKey;
   }
 
 }
