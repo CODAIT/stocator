@@ -476,7 +476,16 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public FileStatus getFileStatus(String hostName,
-      Path path, String msg) throws IOException, FileNotFoundException {
+      Path f, String msg) throws IOException, FileNotFoundException {
+    Path path = f;
+    boolean originalTempTarget = false;
+    if (path.toString().contains(HADOOP_TEMPORARY)) {
+      path = stocatorPath.modifyPathToFinalDestination(f);
+      LOG.debug("getFileStatus on temp object {}. Modify to final name {}", f.toString(),
+          path.toString());
+      originalTempTarget = true;
+    }
+
     FileStatus res = null;
     FileStatus cached = memoryCache.getFileStatus(path.toString());
     if (cached != null) {
@@ -495,10 +504,6 @@ public class COSAPIClient implements IStoreClient {
       memoryCache.putFileStatus(path.toString(), res);
       return res;
     }
-    if (path.toString().contains(HADOOP_TEMPORARY)) {
-      LOG.debug("getFileStatus on temp object {}. Return not found", path.toString());
-      throw new FileNotFoundException("Not found " + path.toString());
-    }
     String key = pathToKey(path);
     LOG.debug("getFileStatus: on original key {}", key);
     FileStatus fileStatus = null;
@@ -510,6 +515,8 @@ public class COSAPIClient implements IStoreClient {
       if (e.getStatusCode() != 404) {
         LOG.warn("Throw IOException for {}. Most likely authentication failed", key);
         throw new IOException(e);
+      } else if (originalTempTarget && e.getStatusCode() == 404) {
+        throw new FileNotFoundException("Not found " + f.toString());
       }
     }
     if (fileStatus != null) {

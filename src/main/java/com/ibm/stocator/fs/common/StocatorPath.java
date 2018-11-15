@@ -158,7 +158,7 @@ public class StocatorPath {
    * @return object name without temporary path
    * @throws IOException if object name is missing
    */
-  public String extractFinalPathFromTemporary(Path path, boolean addTaskId,
+  public String extractFinalKeyFromTemporaryPath(Path path, boolean addTaskId,
       String dataRoot, boolean addRoot) throws IOException {
     String res;
     if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
@@ -176,6 +176,24 @@ public class StocatorPath {
       return res;
     }
     return path.toString();
+  }
+
+  /**
+   * Accept temporary path and return a final destination path
+   *
+   * @param path path name to modify
+   * @return modified path name
+   * @throws IOException if error
+   */
+  public Path modifyPathToFinalDestination(Path path) throws IOException {
+    String res;
+    if (tempFileOriginator.equals(DEFAULT_FOUTPUTCOMMITTER_V1)) {
+      res = parseHadoopOutputCommitter(path, true, hostNameScheme);
+    } else {
+      res = extractNameFromTempPath(path, true, hostNameScheme);
+    }
+    return new Path(hostNameScheme, res);
+
   }
 
   /**

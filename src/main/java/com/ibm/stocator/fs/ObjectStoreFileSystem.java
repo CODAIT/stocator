@@ -225,11 +225,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     // check if request is dataroot/objectname/_SUCCESS
     if (path.getName().equals(Constants.HADOOP_SUCCESS)) {
       // no need to add attempt id to the _SUCCESS
-      objNameModified =  stocatorPath.extractFinalPathFromTemporary(path, false,
+      objNameModified =  stocatorPath.extractFinalKeyFromTemporaryPath(path, false,
           storageClient.getDataRoot(), true);
     } else {
       // add attempt id to the final name
-      objNameModified = stocatorPath.extractFinalPathFromTemporary(path, true,
+      objNameModified = stocatorPath.extractFinalKeyFromTemporaryPath(path, true,
           storageClient.getDataRoot(), true);
     }
     return storageClient.createObject(objNameModified,
@@ -280,7 +280,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     LOG.trace("Delete: qualify input path {} to {}", f, path);
     // this will strip temp structure if present and generate real
     // object name without hadoop_attempt, _temporary, etc.
-    String objNameModified = stocatorPath.extractFinalPathFromTemporary(path, true,
+    String objNameModified = stocatorPath.extractFinalKeyFromTemporaryPath(path, true,
         storageClient.getDataRoot(), false);
     // create new full path again, this time without hadoop_attempt, _temporary, etc.
     Path reducedPath = storageClient.qualify(new Path(hostNameScheme, objNameModified));
@@ -445,7 +445,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     validateBracketSupport(f.toString());
     if (stocatorPath.isTemporaryPathTarget(f.getParent())) {
       final Path path = storageClient.qualify(f);
-      String objNameModified = stocatorPath.extractFinalPathFromTemporary(path,true,
+      String objNameModified = stocatorPath.extractFinalKeyFromTemporaryPath(path,true,
           storageClient.getDataRoot(), true);
       final Path pathToObj = new Path(objNameModified);
       LOG.trace("mkdirs {} modified name", objNameModified);
@@ -476,7 +476,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       outStream.close();
     } else {
       LOG.debug("mkdirs on non temp object. Create {}", f.toString());
-      String objName = stocatorPath.extractFinalPathFromTemporary(f, false,
+      String objName = stocatorPath.extractFinalKeyFromTemporaryPath(f, false,
           storageClient.getDataRoot(), true);
       if (!objName.endsWith("/")) {
         objName = objName + "/";

@@ -20,6 +20,7 @@ package com.ibm.stocator.fs.cos.systemtests;
 
 import java.util.Hashtable;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -74,6 +75,25 @@ public class TestCOSObjectStoreFS extends COSFileSystemBaseTest {
     assertEquals(tmpFilePath + " failed to delete after copy", false, res);
     res = sFileSystem.exists(dstFilePath);
     assertEquals(dstFilePath + " failed to copy into final name", true, res);
+  }
+
+  @Test
+  public void testGetFileStatusOnTempName() throws Exception {
+    Path finalFile = new Path(getBaseURI(),
+        "data.parquet/"
+        + "part-00004-87428114-b6c6-49fc-9b4c-2415da470115-c000"
+        + "-attempt_20181009100745_0001_m_000004_0.snappy.parquet");
+
+    createFile(finalFile, sData);
+    boolean res = sFileSystem.exists(finalFile);
+    assertEquals(finalFile + " failed to created", true, res);
+
+    Path tempFile = new Path(getBaseURI(),
+        "data.parquet/_temporary/0/_temporary/attempt_20181009100745_0001_m_000004_0/"
+        + "part-00004-87428114-b6c6-49fc-9b4c-2415da470115-c000.snappy.parquet");
+    FileStatus fs = sFileSystem.getFileStatus(tempFile);
+    assertEquals(finalFile + " length doesn't match", sData.length, fs.getLen());
+
   }
 
 }
