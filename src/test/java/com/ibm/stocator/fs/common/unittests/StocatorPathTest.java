@@ -97,6 +97,20 @@ public class StocatorPathTest {
     Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
             expectedResult, result);
 
+    input = "swift2d://a.service/drivertest/test/y=2018/m=10/d=29/data2.json/_temporary/0";
+    expectedResult = "a/drivertest/test/y=2018/m=10/d=29/data2.json/0";
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
+        Boolean.TRUE, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
+            expectedResult, result);
+
+    input = "swift2d://a.service/drivertest/test/y=2018/m=10/d=29/data2.json/_temporary/0/";
+    expectedResult = "a/drivertest/test/y=2018/m=10/d=29/data2.json/0";
+    result = stocPath.extractFinalKeyFromTemporaryPath(new Path(input),
+        Boolean.TRUE, "a", true);
+    Assert.assertEquals("extractFinalKeyFromTemporaryPath() shows incorrect name",
+            expectedResult, result);
+
   }
 
   @Test
@@ -275,5 +289,14 @@ public class StocatorPathTest {
 
     Path res = stocPath.modifyPathToFinalDestination(new Path(input));
     Assert.assertEquals("Not match", expected, res.toString());
+    /*
+    input = "swift2d://a.service/folder/testReadWriteDelimitedStocator_"
+        + "CRAIGSMACBOO_1542672444016.csv/_temporary/0/_temporary/"
+        + "attempt_20181119190906_0045_r_000000_0";
+    expected = "swift2d://a.service/folder/testReadWriteDelimitedStocator_"
+        + "CRAIGSMACBOO_1542672444016.csv";
+    res = stocPath.modifyPathToFinalDestination(new Path(input));
+    Assert.assertEquals("Not match", expected, res.toString());
+    */
   }
 }
