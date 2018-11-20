@@ -94,6 +94,7 @@ import org.apache.hadoop.fs.PathFilter;
 
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
+import static com.ibm.stocator.fs.common.Constants.HADOOP_PART;
 import static com.ibm.stocator.fs.common.Constants.CACHE_SIZE;
 import static com.ibm.stocator.fs.common.Constants.GUAVA_CACHE_SIZE_DEFAULT;
 import static com.ibm.stocator.fs.cos.COSConstants.CLIENT_EXEC_TIMEOUT;
@@ -480,6 +481,10 @@ public class COSAPIClient implements IStoreClient {
     Path path = f;
     boolean originalTempTarget = false;
     if (path.toString().contains(HADOOP_TEMPORARY)) {
+      if (!path.toString().contains(HADOOP_PART)) {
+        LOG.debug("getFileStatus on temp object {}. Return not found", path.toString());
+        throw new FileNotFoundException("Not found " + path.toString());
+      }
       path = stocatorPath.modifyPathToFinalDestination(f);
       LOG.debug("getFileStatus on temp object {}. Modify to final name {}", f.toString(),
           path.toString());

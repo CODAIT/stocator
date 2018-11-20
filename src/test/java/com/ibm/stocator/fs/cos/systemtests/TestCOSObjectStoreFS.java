@@ -18,6 +18,7 @@
 
 package com.ibm.stocator.fs.cos.systemtests;
 
+import java.io.FileNotFoundException;
 import java.util.Hashtable;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -94,6 +95,13 @@ public class TestCOSObjectStoreFS extends COSFileSystemBaseTest {
     FileStatus fs = sFileSystem.getFileStatus(tempFile);
     assertEquals(finalFile + " length doesn't match", sData.length, fs.getLen());
 
+  }
+
+  @Test(expected = FileNotFoundException.class)
+  public void testGetFileStatusOnTempDir() throws Exception {
+    Path tempFile = new Path(getBaseURI(),
+        "data.parquet/_temporary/0/_temporary/attempt_20181009100745_0001_m_000004_0");
+    FileStatus fs = sFileSystem.getFileStatus(tempFile);
   }
 
 }
