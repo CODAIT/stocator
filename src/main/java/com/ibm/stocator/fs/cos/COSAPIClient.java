@@ -956,6 +956,7 @@ public class COSAPIClient implements IStoreClient {
       }
       boolean isTruncated = objectList.isTruncated();
       if (isTruncated) {
+        objectList.setEncodingType("UTF-8");
         objectList = mClient.listNextBatchOfObjects(objectList);
         objectSummaries = objectList.getObjectSummaries();
       } else {
