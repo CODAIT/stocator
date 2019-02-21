@@ -865,7 +865,7 @@ public class COSAPIClient implements IStoreClient {
     request.setBucketName(mBucket);
     request.setMaxKeys(5000);
     request.setPrefix(key);
-    request.withEncodingType("UTF-8");
+    request.withEncodingType("url");
     if (!flatListing) {
       LOG.trace("list:(mid) {}, set delimiter", path);
       request.setDelimiter("/");
@@ -956,7 +956,7 @@ public class COSAPIClient implements IStoreClient {
       }
       boolean isTruncated = objectList.isTruncated();
       if (isTruncated) {
-        objectList.setEncodingType("UTF-8");
+        objectList.setEncodingType("url");
         objectList = mClient.listNextBatchOfObjects(objectList);
         objectSummaries = objectList.getObjectSummaries();
       } else {
