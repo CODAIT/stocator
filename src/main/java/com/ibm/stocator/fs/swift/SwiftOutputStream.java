@@ -34,6 +34,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
+
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
@@ -43,9 +46,6 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
-import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
 /**
  * Wraps OutputStream

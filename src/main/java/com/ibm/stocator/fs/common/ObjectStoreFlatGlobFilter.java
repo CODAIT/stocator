@@ -31,8 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ibm.stocator.fs.cos.COSUtils;
 
-public class ObjectStoreFlatGlobFilter implements PathFilter{
-
+public class ObjectStoreFlatGlobFilter implements PathFilter {
   public static final Logger LOG = LoggerFactory.getLogger(
       ObjectStoreFlatGlobFilter.class.getName());
 

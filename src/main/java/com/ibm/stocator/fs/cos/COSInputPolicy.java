@@ -30,6 +30,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADVISE;
 /**
  * Filesystem input policy.
  */
+
 public enum COSInputPolicy {
 
   Normal(INPUT_FADV_NORMAL),
