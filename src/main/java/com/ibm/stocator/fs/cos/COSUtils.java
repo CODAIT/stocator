@@ -283,6 +283,7 @@ public final class COSUtils {
     builder.append("size=").append(summary.getSize());
     return builder.toString();
   }
+
   /**
    * Removes the ?token=abc from the path and returns the clean path
    * @param path with token for example: "cos://spark1.myCos/one6.txt/token=abc"

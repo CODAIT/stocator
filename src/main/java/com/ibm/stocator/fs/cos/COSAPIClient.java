@@ -659,7 +659,7 @@ public class COSAPIClient implements IStoreClient {
   }
 
   private FileStatus getFileStatusKeyBased(String key, Path path) throws AmazonS3Exception,
-  IOException {
+      IOException {
     LOG.trace("internal method - get file status by key {}, path {}", key, path);
     FileStatus cachedFS = memoryCache.getFileStatus(path.toString());
     if (cachedFS != null) {
