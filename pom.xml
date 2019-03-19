@@ -356,7 +356,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.13</version>
+                <version>3.0.0</version>
                 <configuration>
                     <configLocation>${checkstyle.path}code_checks.xml</configLocation>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -378,7 +378,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>5.9</version>
+                         <version>[8.18,)</version>
                     </dependency>
                 </dependencies>
             </plugin>
