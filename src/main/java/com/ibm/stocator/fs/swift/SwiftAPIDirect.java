@@ -156,7 +156,8 @@ public class SwiftAPIDirect {
         httpPut.addHeader("X-Object-Meta-" + entry.getKey(), entry.getValue());
       }
     }
-    final RequestConfig config = RequestConfig.custom().setExpectContinueEnabled(true).build();
+    final RequestConfig config = RequestConfig.custom().setExpectContinueEnabled(true)
+        .setNormalizeUri(false).build();
     httpPut.setConfig(config);
     final InputStreamEntity entity = new InputStreamEntity(inputStream, size);
     httpPut.setEntity(entity);

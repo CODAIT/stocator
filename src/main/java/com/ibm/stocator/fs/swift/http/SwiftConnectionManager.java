@@ -118,7 +118,7 @@ public class SwiftConnectionManager {
     connectionPool.setDefaultSocketConfig(socketConfig);
     rConfig = RequestConfig
                 .custom()
-                .setExpectContinueEnabled(true)
+                .setExpectContinueEnabled(true).setNormalizeUri(false)
                 .setConnectTimeout(connectionConfiguration.getReqConnectTimeout())
                 .setConnectionRequestTimeout(
                     connectionConfiguration.getReqConnectionRequestTimeout())
