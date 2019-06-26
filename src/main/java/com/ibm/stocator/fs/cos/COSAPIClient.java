@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
@@ -227,7 +228,7 @@ public class COSAPIClient implements IStoreClient {
    * Contains map of object names that were created. Used in container
    * listing
    */
-  private Map<String, Boolean> mCachedSparkOriginated;
+  private ConcurrentHashMap<String, Boolean> mCachedSparkOriginated;
 
   private URI filesystemURI;
   private Configuration conf;
@@ -267,7 +268,7 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public void initiate(String scheme) throws IOException, ConfigurationParseException {
-    mCachedSparkOriginated = new HashMap<String, Boolean>();
+    mCachedSparkOriginated = new ConcurrentHashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
     String token = null;

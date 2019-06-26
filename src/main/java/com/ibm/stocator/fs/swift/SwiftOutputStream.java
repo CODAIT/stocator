@@ -168,7 +168,8 @@ public class SwiftOutputStream extends OutputStream {
       futureTask = executor.submit(connectionTask);
       do {
         // Wait till the connection is open and the task isn't done
-      } while (!openConnection.get() && !futureTask.isDone());
+      }
+      while (!openConnection.get() && !futureTask.isDone());
     }
   }
 
