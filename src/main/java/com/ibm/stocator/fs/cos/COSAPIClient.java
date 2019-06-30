@@ -955,11 +955,33 @@ public class COSAPIClient implements IStoreClient {
         }
         prevObj = obj;
       }
+      // add common prefixes
+      for (String comPrefix : commonPrefixes) {
+        LOG.trace("Common prefix is {}", comPrefix);
+        if (emptyObjects.containsKey(keyToQualifiedPath(hostName,
+            comPrefix).toString()) || emptyObjects.isEmpty()) {
+          FileStatus status = new COSFileStatus(true, false, keyToQualifiedPath(hostName,
+              comPrefix));
+          LOG.trace("Match between common prefix and empty object {}. Adding to result", comPrefix);
+          if (filter == null) {
+            memoryCache.putFileStatus(status.getPath().toString(), status);
+            tmpResult.add(status);
+          } else if (filter != null && filter.accept(status.getPath())) {
+            memoryCache.putFileStatus(status.getPath().toString(), status);
+            tmpResult.add(status);
+          } else {
+            LOG.trace("Common prefix {} rejected by path filter during list. Filter {}",
+                status.getPath(), filter);
+          }
+        }
+      }
+
       boolean isTruncated = objectList.isTruncated();
       if (isTruncated) {
         objectList.setEncodingType("url");
         objectList = mClient.listNextBatchOfObjects(objectList);
         objectSummaries = objectList.getObjectSummaries();
+        commonPrefixes = objectList.getCommonPrefixes();
       } else {
         objectScanContinue = false;
       }
@@ -985,26 +1007,6 @@ public class COSAPIClient implements IStoreClient {
       }
     }
 
-    // get common prefixes
-    for (String comPrefix : commonPrefixes) {
-      LOG.trace("Common prefix is {}", comPrefix);
-      if (emptyObjects.containsKey(keyToQualifiedPath(hostName,
-          comPrefix).toString()) || emptyObjects.isEmpty()) {
-        FileStatus status = new COSFileStatus(true, false, keyToQualifiedPath(hostName,
-            comPrefix));
-        LOG.trace("Match between common prefix and empty object {}. Adding to result", comPrefix);
-        if (filter == null) {
-          memoryCache.putFileStatus(status.getPath().toString(), status);
-          tmpResult.add(status);
-        } else if (filter != null && filter.accept(status.getPath())) {
-          memoryCache.putFileStatus(status.getPath().toString(), status);
-          tmpResult.add(status);
-        } else {
-          LOG.trace("Common prefix {} rejected by path filter during list. Filter {}",
-              status.getPath(), filter);
-        }
-      }
-    }
     return tmpResult.toArray(new FileStatus[tmpResult.size()]);
   }
 
