@@ -634,7 +634,7 @@ public class COSAPIClient implements IStoreClient {
         ListObjectsRequest request = new ListObjectsRequest();
         request.setBucketName(mBucket);
         request.setPrefix(key);
-        request.withEncodingType("UTF-8");
+        request.withEncodingType("url");
         request.setDelimiter("/");
         request.setMaxKeys(1);
 
