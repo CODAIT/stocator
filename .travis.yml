@@ -15,10 +15,11 @@
 ##
 
 language: java
+dist: trusty
 
 jdk:
 #  - openjdk7
-  - oraclejdk11
+  - oraclejdk8
 
 script:
   - mvn -Pdistribution clean install
