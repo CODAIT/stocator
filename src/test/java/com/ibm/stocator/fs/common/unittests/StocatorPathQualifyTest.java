@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.reflect.Whitebox;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.apache.hadoop.conf.Configuration;
@@ -35,6 +36,8 @@ import com.ibm.stocator.fs.cos.COSAPIClient;
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 
 @RunWith(PowerMockRunner.class)
+@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "org.w3c.*",
+    "com.sun.org.apache.xalan.*"})
 public class StocatorPathQualifyTest {
 
   private StocatorPath mStocatorPath;
