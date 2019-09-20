@@ -310,8 +310,8 @@
                   </artifactSet>
                    <relocations>
                         <relocation>
-                            <pattern>com.google.guava</pattern>
-                            <shadedPattern>com.google.guava.shade</shadedPattern>
+                            <pattern>com.google</pattern>
+                            <shadedPattern>com.ibm.stocator.thirdparty.google</shadedPattern>
                         </relocation>
                    </relocations>
                </configuration>
