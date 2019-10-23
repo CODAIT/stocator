@@ -64,8 +64,8 @@
     <property name="fileExtensions" value=".java"/>
     <property name="message" value="Extra newline"/>
   </module>
-
   <module name="TreeWalker">
+    <property name="tabWidth" value="4"/>
     <module name="OuterTypeFilename"/>
     <module name="IllegalTokenText">
       <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
@@ -77,10 +77,6 @@
       <property name="allowEscapesForControlCharacters" value="true"/>
       <property name="allowByTailComment" value="true"/>
       <property name="allowNonPrintableEscapes" value="true"/>
-    </module>
-    <module name="LineLength">
-      <property name="max" value="100"/>
-      <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
     </module>
     <module name="AvoidStarImport"/>
     <module name="UnusedImports">
@@ -212,6 +208,12 @@
       <property name="message" value="keyword this is not needed"/>
     </module>
   </module>
+  <module name="FileLength"/>
+  <module name="LineLength">
+    <property name="max" value="100"/>
+    <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
+  </module>
+
 
   <!-- always use Unix-style line separators -->
   <module name="NewlineAtEndOfFile">
