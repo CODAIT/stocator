@@ -789,6 +789,15 @@ public class COSAPIClient implements IStoreClient {
       if (objName.startsWith(mBucket + "/")) {
         objNameWithoutBuket = objName.substring(mBucket.length() + 1);
       }
+      // if atomic write is enabled get the current tag if the object already exists
+      String mEtag = null;
+      if (atomicWriteEnabled) {
+        LOG.debug("Atomic write is enabled, getting current object etag");
+        ObjectMetadata meta = getObjectMetadata(objNameWithoutBuket);
+        if (meta != null) {
+          mEtag =  meta.getETag();
+        }
+      }
       if (blockUploadEnabled) {
         return new FSDataOutputStream(
             new COSBlockOutputStream(this,
@@ -799,24 +808,18 @@ public class COSAPIClient implements IStoreClient {
                 blockFactory,
                 contentType,
                 new WriteOperationHelper(objNameWithoutBuket),
-                metadata
+                metadata,
+                mEtag,
+                atomicWriteEnabled
             ),
             null);
       }
 
       if (!contentType.equals(Constants.APPLICATION_DIRECTORY)) {
-        String mEtag = null;
-        // if atomic write is enabled get the current tag if the object already exists
-        if (atomicWriteEnabled) {
-          LOG.debug("Atomic write is enabled, getting current object etag");
-          ObjectMetadata meta = getObjectMetadata(objNameWithoutBuket);
-          if (meta != null) {
-            mEtag =  meta.getETag();
-          }
-        }
         return new FSDataOutputStream(new COSOutputStream(mBucket, objName, mClient,
                 contentType, metadata, transfers, this, mEtag, atomicWriteEnabled), statistics);
       } else {
+        // Note - no need for atomic write in case of directory
         final InputStream im = new InputStream() {
           @Override
           public int read() throws IOException {
