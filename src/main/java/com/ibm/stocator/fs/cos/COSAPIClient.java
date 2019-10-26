@@ -180,6 +180,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_MAX_RETRY_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_TOKEN_REFRESH_OFFSET_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
+import static com.ibm.stocator.fs.cos.COSConstants.ATOMIC_WRITE;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_ATOMIC_WRITE;
 import static com.ibm.stocator.fs.common.Constants.FS_STOCATOR_FMODE_DATA_CLEANUP_DEFAULT;
 
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
@@ -242,6 +244,7 @@ public class COSAPIClient implements IStoreClient {
   private OnetimeInitialization singletoneInitTimeData;
   private boolean enableMultiObjectsDelete;
   private boolean blockUploadEnabled;
+  private boolean atomicWriteEnabled;
   private String blockOutputBuffer;
   private COSDataBlocks.BlockFactory blockFactory;
   private int blockOutputActiveBlocks;
@@ -512,6 +515,9 @@ public class COSAPIClient implements IStoreClient {
     } else {
       LOG.debug("Using COSOutputStream");
     }
+
+    atomicWriteEnabled = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS,
+            ATOMIC_WRITE, DEFAULT_ATOMIC_WRITE);
   }
 
   @Override
@@ -799,8 +805,17 @@ public class COSAPIClient implements IStoreClient {
       }
 
       if (!contentType.equals(Constants.APPLICATION_DIRECTORY)) {
-        return new FSDataOutputStream(new COSOutputStream(mBucket, objName,
-            mClient, contentType, metadata, transfers, this), statistics);
+        String mEtag = null;
+        // if atomic write is enabled get the current tag if the object already exists
+        if (atomicWriteEnabled) {
+          LOG.debug("Atomic write is enabled, getting current object etag");
+          ObjectMetadata meta = getObjectMetadata(objNameWithoutBuket);
+          if (meta != null) {
+            mEtag =  meta.getETag();
+          }
+        }
+        return new FSDataOutputStream(new COSOutputStream(mBucket, objName, mClient,
+                contentType, metadata, transfers, this, mEtag, atomicWriteEnabled), statistics);
       } else {
         final InputStream im = new InputStream() {
           @Override
