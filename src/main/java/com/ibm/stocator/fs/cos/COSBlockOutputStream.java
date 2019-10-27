@@ -141,7 +141,8 @@ class COSBlockOutputStream extends OutputStream {
    * @param writeOperationHelperT state of the write operation
    * @param metadata Map<String, String> metadata
    * @param etag the etag to be used in atomic write (null if no etag exists)
-   * @param atomicWriteEnabled if true the putObject
+   * @param atomicWriteEnabled if true the putObject for uploads with one block will be atomic
+   * Note that currently only put requests for one block will atomic since there is no atomic CompleteMultipartUploadRequest currently.
    * @throws IOException on any problem
    */
   COSBlockOutputStream(COSAPIClient fsT, String keyT, ExecutorService executorServiceT,
