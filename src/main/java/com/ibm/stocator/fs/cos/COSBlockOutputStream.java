@@ -123,6 +123,7 @@ class COSBlockOutputStream extends OutputStream {
 
   /**
    * Indicates whether the PutObjectRequest will be atomic or not
+   * Note that currently only put requests for one block will atomic since there is no atomic CompleteMultipartUploadRequest currently.
    */
   private Boolean mAtomicWriteEnabled;
 
