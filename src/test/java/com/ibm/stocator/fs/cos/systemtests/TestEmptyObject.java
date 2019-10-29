@@ -52,7 +52,12 @@ public class TestEmptyObject extends COSFileSystemBaseTest {
     sTestData = new Path[] {
         new Path(sBaseURI + "/test1/year=2012/month=1/data.csv"),
         new Path(sBaseURI + "/test1/year=2012/month=10/data.csv"),
-        new Path(sBaseURI + "/test1/year=2012/month=11/data.csv")};
+        new Path(sBaseURI + "/test1/year=2012/month=11/data.csv"),
+        new Path(sBaseURI + "/test2/_temporary/0/"
+            + "_temporary/attempt_20191028154709_0001_m_000157_0/"
+            + "COL2=myvalue1/COL1=my.org1/part-00157-ba0dc797-0230-"
+            + "4037-b7f4-592fd006da8a.c000.snappy.parquet")};
+
     sEmptyFiles = new Path[] {
         new Path(sBaseURI + "/test1/year=2012/month=10")};
 
@@ -73,7 +78,20 @@ public class TestEmptyObject extends COSFileSystemBaseTest {
     for (FileStatus fs: res) {
       System.out.println("Stocator" + fs.getPath() + " directory " + fs.isDirectory());
     }
-    assertEquals(dumpStats(lPath.toString(), res), sTestData.length, res.length);
+    assertEquals(dumpStats(lPath.toString(), res), sTestData.length - 1, res.length);
+  }
+
+  @Test
+  public void testFSWithDots() throws Exception {
+    Path lPath = new Path(sBaseURI + "/test2/_temporary/0/_temporary/"
+        + "attempt_20191028154709_0001_m_000157_0/COL2=myvalue1/"
+        + "COL1=my.org1/part-00157-ba0dc797-0230-4037-b7f4-592fd006da8a.c000.snappy.parquet");
+    FileStatus fs = sFileSystem.getFileStatus(lPath);
+    Path expectedPath = new Path(sBaseURI +  "/test2/COL2=myvalue1/COL1=my.org1/"
+        + "part-00157-ba0dc797-0230-4037-b7f4-592fd006da8a-attempt_20191028154709_"
+        + "0001_m_000157_0.c000.snappy.parquet");
+    assertEquals("Wrong get file status on the value with dot",
+        expectedPath.toString(), fs.getPath().toString());
   }
 
 }

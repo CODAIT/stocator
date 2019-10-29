@@ -320,11 +320,17 @@ public class StocatorPath {
 
   /**
    * A filename, for example, one3-attempt-01.txt.gz will return txt.gz
+   * Need to make sure we take extension and not middle dot
+   * COL2=myvalue1/COL1=my.org1/part-592fd006da8a.c000.snappy.parquet
    *
    * @param filename The path of filename to extract the extension from
    * @return The extension of the filename
    */
   private String extractExtension(String filename) {
+    int st = filename.lastIndexOf("/");
+    if ((st > 0) && (st < filename.length())) {
+      filename = filename.substring(st + 1);
+    }
     int startExtension = filename.indexOf('.');
     if (startExtension > 0) {
       return filename.substring(startExtension + 1);
