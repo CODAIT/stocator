@@ -168,7 +168,7 @@ public class COSConstants {
   public static final boolean DEFAULT_FAST_UPLOAD = false;
 
   public static final String ATOMIC_WRITE = ".atomic.write";
-  public static final boolean DEFAULT_ATOMIC_WRITE = true;
+  public static final boolean DEFAULT_ATOMIC_WRITE = false;
 
   public static final String FAST_UPLOAD_BUFFER =
       ".fast.upload.buffer";
