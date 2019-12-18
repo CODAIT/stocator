@@ -86,6 +86,16 @@ public class COSOutputStream extends OutputStream {
   private final COSAPIClient fs;
 
   /**
+   * Object's etag for atomic write
+   */
+  private final String mEtag;
+
+  /**
+   * Indicates whether the PutObjectRequest will be atomic or not
+   */
+  private Boolean mAtomicWriteEnabled;
+
+  /**
    * Constructor for an output stream of an object in COS
    *
    * @param bucketName the bucket the object resides in
@@ -94,14 +104,18 @@ public class COSOutputStream extends OutputStream {
    * @param contentType the content type written to the output stream
    * @param metadata the object`s metadata
    * @param transfersT TransferManager
+   * @param etag the etag to be used in atomic write (null if no etag exists)
+   * @param atomicWriteEnabled if true the putObject
    * @param fsT COSAPIClient
    *
    * @throws IOException if error
    */
   public COSOutputStream(String bucketName, String key, AmazonS3 client, String contentType,
       Map<String, String> metadata, TransferManager transfersT,
-      COSAPIClient fsT) throws IOException {
+      COSAPIClient fsT, String etag, Boolean atomicWriteEnabled) throws IOException {
     mBucketName = bucketName;
+    mEtag = etag;
+    mAtomicWriteEnabled = atomicWriteEnabled;
     transfers = transfersT;
     fs = fsT;
     // Remove the bucket name prefix from key path
@@ -159,6 +173,16 @@ public class COSOutputStream extends OutputStream {
       om.setContentLength(mBackupFile.length());
       om.setContentType(mContentType);
       om.setUserMetadata(mMetadata);
+      // if atomic write is enabled use the etag to ensure put request is atomic
+      if (mAtomicWriteEnabled) {
+        if (mEtag != null) {
+          LOG.debug("Atomic write - setting If-Match header");
+          om.setHeader("If-Match", mEtag);
+        } else {
+          LOG.debug("Atomic write - setting If-None-Match header");
+          om.setHeader("If-None-Match", "*");
+        }
+      }
 
       PutObjectRequest putObjectRequest = new PutObjectRequest(mBucketName, mKey, mBackupFile);
       putObjectRequest.setMetadata(om);
