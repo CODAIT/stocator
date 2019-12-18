@@ -117,6 +117,18 @@ class COSBlockOutputStream extends OutputStream {
   private String contentType;
 
   /**
+   * Object's etag for atomic write
+   */
+  private final String mEtag;
+
+  /**
+   * Indicates whether the PutObjectRequest will be atomic or not
+   * Note that currently only put requests for one block will atomic since
+   * there is no atomic CompleteMultipartUploadRequest currently.
+   */
+  private Boolean mAtomicWriteEnabled;
+
+  /**
    * An COS output stream which uploads partitions in a separate pool of
    * threads; different {@link COSDataBlocks.BlockFactory} instances can control
    * where data is buffered.
@@ -129,6 +141,10 @@ class COSBlockOutputStream extends OutputStream {
    * @param contentTypeT contentType
    * @param writeOperationHelperT state of the write operation
    * @param metadata Map<String, String> metadata
+   * @param etag the etag to be used in atomic write (null if no etag exists)
+   *     * @param atomicWriteEnabled if true the putObject for uploads with one block will be atomic
+   *     * Note that currently only put requests for one block will atomic since
+   *     *      there is no atomic CompleteMultipartUploadRequest currently.
    * @throws IOException on any problem
    */
   COSBlockOutputStream(COSAPIClient fsT, String keyT, ExecutorService executorServiceT,
@@ -136,7 +152,9 @@ class COSBlockOutputStream extends OutputStream {
       COSDataBlocks.BlockFactory blockFactoryT,
       String contentTypeT,
       COSAPIClient.WriteOperationHelper writeOperationHelperT,
-      Map<String, String> metadata)
+      Map<String, String> metadata,
+      String etag,
+      Boolean atomicWriteEnabled)
       throws IOException {
     fs = fsT;
     key = keyT;
@@ -144,6 +162,8 @@ class COSBlockOutputStream extends OutputStream {
     contentType = contentTypeT;
     blockSize = (int) blockSizeT;
     mMetadata = metadata;
+    mEtag = etag;
+    mAtomicWriteEnabled = atomicWriteEnabled;
     writeOperationHelper = writeOperationHelperT;
     if (blockSize < COSConstants.MULTIPART_MIN_SIZE) {
       throw new IllegalArgumentException("Block size is too small: " + blockSize);
@@ -384,6 +404,16 @@ class COSBlockOutputStream extends OutputStream {
       om.setContentType(contentType);
     } else {
       om.setContentType("application/octet-stream");
+    }
+    // if atomic write is enabled use the etag to ensure put request is atomic
+    if (mAtomicWriteEnabled) {
+      if (mEtag != null) {
+        LOG.debug("Atomic write - setting If-Match header");
+        om.setHeader("If-Match", mEtag);
+      } else {
+        LOG.debug("Atomic write - setting If-None-Match header");
+        om.setHeader("If-None-Match", "*");
+      }
     }
     putObjectRequest.setMetadata(om);
     ListenableFuture<PutObjectResult> putObjectResult =
