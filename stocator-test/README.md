@@ -8,14 +8,15 @@ The tests can be run against any object storage exposing Swift or S3 API.
 
 1. Any Apache Spark cluster, local or remote.
     
-2. Edit resources/config.properties and configure your object storage.
-	Use access and secret keys for HMAC authentication
+2. Edit resources/config.properties and configure your object storage
+
+		Use access and secret keys for HMAC authentication
 
 		endpoint=<ENDPOINT>
 		access.key=<ACCESS KEY>
 		secret.key=<SECRET KEY>
 		
-  If used with IAM then configure IAM api key and service instance ID.
+		If used with IAM then configure IAM api key and service instance ID.
 
 		iam.api.key=<API KEY>
 		iam.service.id=<SERVICE_ID>		
