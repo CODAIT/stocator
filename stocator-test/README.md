@@ -20,7 +20,7 @@ The tests can be run against any object storage exposing Swift or S3 API.
 		iam.api.key=<API KEY>
 		iam.service.id=<SERVICE_ID>		
 
-3. Make sure that stocator jar is on the class pathof the Spark cluster. See Spark documentation how to add additional jars to the executors and driver of Spark.
+3. Make sure that stocator jar is on the class path of the Apache Spark cluster. See Apache Spark documentation how to add additional jars to the executors and driver of Apache Spark.
 		
 4. Set `STOCATOR_HOME`
 	
@@ -47,7 +47,7 @@ The usage pattern is
 	# if true, test will sleep for 10min and verify that connectons can be recreated.
 
 
-Example with local Spark:
+Example with local Apache Spark cluster:
 
 	./bin/spark-submit  --driver-memory 4G --master local[4]  
 	--class com.ibm.stocator.test.Runner 
