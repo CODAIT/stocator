@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
 
 public class CollisionTest extends SwiftBaseTest {

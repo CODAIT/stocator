@@ -21,7 +21,6 @@ package com.ibm.stocator.fs.swift2d.systemtests;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.Test;
-
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
 import com.ibm.stocator.fs.common.TestConstants;
 

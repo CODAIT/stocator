@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 
 /**

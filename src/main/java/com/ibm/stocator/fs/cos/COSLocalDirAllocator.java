@@ -22,14 +22,12 @@ package com.ibm.stocator.fs.cos;
 
 import java.io.File;
 import java.io.IOException;
-
 import java.util.UUID;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.commons.codec.digest.DigestUtils;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

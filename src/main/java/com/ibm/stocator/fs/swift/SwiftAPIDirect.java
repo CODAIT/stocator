@@ -33,7 +33,6 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.Tuple;
 import com.ibm.stocator.fs.swift.auth.JossAccount;

@@ -21,11 +21,9 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import org.javaswift.joss.model.StoredObject;
-
 import org.javaswift.joss.client.mock.ContainerMock;
 import org.javaswift.joss.client.mock.StoredObjectMock;
 import org.javaswift.joss.client.mock.AccountMock;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +36,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FileStatus;
 import com.ibm.stocator.fs.swift.SwiftAPIClient;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
-
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Utils.lastModifiedAsLong;
 

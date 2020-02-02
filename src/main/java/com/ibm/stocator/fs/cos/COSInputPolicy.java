@@ -22,7 +22,6 @@ import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_NORMAL;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_SEQUENTIAL;
 import static com.ibm.stocator.fs.cos.COSConstants.INPUT_FADV_RANDOM;

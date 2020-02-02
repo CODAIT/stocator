@@ -33,10 +33,8 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.http.conn.util.InetAddressUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.common.exception.InvalidContainerNameException;
-
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 
 public class Utils {

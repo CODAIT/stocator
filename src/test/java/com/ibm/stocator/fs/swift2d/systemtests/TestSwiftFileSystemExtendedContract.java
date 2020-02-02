@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.TestConstants;
-
 import org.apache.hadoop.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;

@@ -33,14 +33,12 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.ibm.stocator.fs.cos.exception.COSClientIOException;
 import com.ibm.stocator.fs.cos.exception.COSIOException;
 import com.ibm.stocator.fs.cos.exception.COSServiceIOException;
-
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.ibm.stocator.fs.cos.COSConstants.MULTIPART_MIN_SIZE;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL;
 

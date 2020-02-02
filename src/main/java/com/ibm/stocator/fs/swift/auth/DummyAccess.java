@@ -19,7 +19,6 @@ package com.ibm.stocator.fs.swift.auth;
 
 import org.javaswift.joss.client.factory.TempUrlHashPrefixSource;
 import org.javaswift.joss.model.Access;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

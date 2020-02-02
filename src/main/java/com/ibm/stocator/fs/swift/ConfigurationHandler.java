@@ -23,9 +23,7 @@ import java.util.Properties;
 
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
-
 import org.apache.hadoop.conf.Configuration;
-
 import static com.ibm.stocator.fs.common.Constants.SWIFT2D_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.common.Constants.SWIFT_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;

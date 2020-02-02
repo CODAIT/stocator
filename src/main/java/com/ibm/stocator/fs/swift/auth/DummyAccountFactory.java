@@ -23,7 +23,6 @@ import org.javaswift.joss.client.factory.TempUrlHashPrefixSource;
 import org.javaswift.joss.client.mock.ClientMock;
 import org.javaswift.joss.model.Account;
 import org.javaswift.joss.model.Client;
-
 import org.apache.http.client.HttpClient;
 
 public class DummyAccountFactory {

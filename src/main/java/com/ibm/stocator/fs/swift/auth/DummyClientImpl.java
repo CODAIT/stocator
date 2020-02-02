@@ -24,9 +24,7 @@ import org.javaswift.joss.command.impl.factory.AuthenticationCommandFactoryImpl;
 import org.javaswift.joss.command.shared.factory.AuthenticationCommandFactory;
 import org.javaswift.joss.command.shared.identity.AuthenticationCommand;
 import org.javaswift.joss.model.Access;
-
 import org.apache.http.client.HttpClient;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

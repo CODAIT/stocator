@@ -27,7 +27,6 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.reflect.Whitebox;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.apache.hadoop.fs.Path;
-
 import com.ibm.stocator.fs.cos.COSAPIClient;
 
 @RunWith(PowerMockRunner.class)

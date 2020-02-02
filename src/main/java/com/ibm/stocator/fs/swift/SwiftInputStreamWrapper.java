@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpRequestBase;
-
 import com.ibm.stocator.fs.common.Utils;
 
 public class SwiftInputStreamWrapper extends BaseInputStream {

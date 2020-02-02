@@ -25,7 +25,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.http.annotation.Experimental;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.ibm.stocator.fs.common.Constants.HADOOP_ATTEMPT;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_PART;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;

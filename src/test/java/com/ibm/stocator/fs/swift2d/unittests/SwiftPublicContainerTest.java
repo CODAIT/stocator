@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Assume;
-
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
 
 public class SwiftPublicContainerTest {

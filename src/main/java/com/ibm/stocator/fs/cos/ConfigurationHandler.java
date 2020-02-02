@@ -23,11 +23,9 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import com.ibm.stocator.fs.common.Utils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.ibm.stocator.fs.cos.COSConstants.ACCESS_KEY;
 import static com.ibm.stocator.fs.cos.COSConstants.ACCESS_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY;

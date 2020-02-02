@@ -32,7 +32,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.reflect.Whitebox;
-
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.StocatorPath;

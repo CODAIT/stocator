@@ -25,7 +25,6 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.exception.ClientException;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
-
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.fs.CanSetReadahead;

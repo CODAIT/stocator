@@ -29,10 +29,8 @@ import org.powermock.reflect.Whitebox;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.cos.COSAPIClient;
-
 import static com.ibm.stocator.fs.common.Constants.DEFAULT_FOUTPUTCOMMITTER_V1;
 
 @RunWith(PowerMockRunner.class)

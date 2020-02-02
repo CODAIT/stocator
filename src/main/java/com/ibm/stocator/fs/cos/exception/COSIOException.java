@@ -21,7 +21,6 @@ package com.ibm.stocator.fs.cos.exception;
 import java.util.Map;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 

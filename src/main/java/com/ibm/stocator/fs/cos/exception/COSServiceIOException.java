@@ -19,7 +19,6 @@
 package com.ibm.stocator.fs.cos.exception;
 
 import com.amazonaws.AmazonServiceException;
-
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 

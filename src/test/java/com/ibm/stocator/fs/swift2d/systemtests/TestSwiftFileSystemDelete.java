@@ -23,7 +23,6 @@ import java.io.IOException;
 import org.apache.hadoop.fs.Path;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import com.ibm.stocator.fs.common.FileSystemTestUtils;
 import com.ibm.stocator.fs.common.TestConstants;
 

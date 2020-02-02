@@ -26,9 +26,7 @@ import org.apache.hadoop.fs.PathFilter;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import com.ibm.stocator.fs.common.TestConstants;
-
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.assertListStatusFinds;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.cleanup;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;

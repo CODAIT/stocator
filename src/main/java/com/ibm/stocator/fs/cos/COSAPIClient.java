@@ -80,10 +80,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -92,7 +90,6 @@ import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
-
 import static com.ibm.stocator.fs.common.Constants.HADOOP_SUCCESS;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_TEMPORARY;
 import static com.ibm.stocator.fs.common.Constants.HADOOP_PART;
@@ -170,7 +167,6 @@ import static com.ibm.stocator.fs.cos.COSConstants.BUFFER_DIR;
 import static com.ibm.stocator.fs.cos.COSConstants.ATOMIC_WRITE;
 import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_ATOMIC_WRITE;
 import static com.ibm.stocator.fs.common.Constants.FS_STOCATOR_FMODE_DATA_CLEANUP_DEFAULT;
-
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 
 public class COSAPIClient implements IStoreClient {
