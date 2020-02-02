@@ -49,7 +49,6 @@ import com.ibm.stocator.fs.cos.ConfigurationHandler;
 import com.ibm.stocator.fs.cos.OnetimeInitialization;
 import com.ibm.stocator.fs.cos.auth.CustomTokenManager;
 import com.ibm.stocator.fs.cos.COSInputStream;
-
 import com.ibm.cloud.objectstorage.services.s3.AmazonS3ClientBuilder;
 import com.ibm.cloud.objectstorage.AmazonClientException;
 import com.ibm.cloud.objectstorage.AmazonServiceException;

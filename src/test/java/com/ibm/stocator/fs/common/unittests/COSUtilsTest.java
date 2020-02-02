@@ -1,9 +1,7 @@
 package com.ibm.stocator.fs.common.unittests;
 
 import org.junit.Assert;
-
 import org.junit.Test;
-
 import com.ibm.stocator.fs.cos.COSUtils;
 
 public class COSUtilsTest {

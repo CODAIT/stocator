@@ -33,7 +33,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.ibm.stocator.fs.cos.COSUtils;
 
 public class ObjectStoreGlobber {
