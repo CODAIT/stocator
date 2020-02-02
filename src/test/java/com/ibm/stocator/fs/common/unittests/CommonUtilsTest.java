@@ -26,10 +26,8 @@ import org.junit.rules.ExpectedException;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Assert;
 import org.junit.Rule;
-
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.InvalidContainerNameException;
-
 import static com.ibm.stocator.fs.cos.COSConstants.FS_S3_A;
 import static com.ibm.stocator.fs.cos.COSConstants.FS_S3_D;
 import static com.ibm.stocator.fs.cos.COSConstants.FS_COS;

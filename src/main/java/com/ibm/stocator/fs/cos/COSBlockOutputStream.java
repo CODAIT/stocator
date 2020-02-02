@@ -42,12 +42,10 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.io.retry.RetryPolicies;
 import org.apache.hadoop.io.retry.RetryPolicy;
-
 import static com.ibm.stocator.fs.common.Utils.closeAll;
 import static com.ibm.stocator.fs.cos.COSUtils.translateException;
 import static com.ibm.stocator.fs.cos.COSUtils.extractException;

@@ -21,12 +21,9 @@ import org.javaswift.joss.client.factory.AccountConfig;
 import org.javaswift.joss.client.factory.AccountFactory;
 import org.javaswift.joss.model.Access;
 import org.javaswift.joss.model.Account;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
-
 import org.apache.http.impl.client.CloseableHttpClient;
 
 /**

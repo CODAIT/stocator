@@ -1,0 +1,115 @@
+	<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.ibm.stocator</groupId>
+    <artifactId>stocator-test</artifactId>
+    <version>2.0</version>
+    <packaging>jar</packaging>
+
+    <name>Functional tests of Stocator with Apache Spark</name>
+    <url>http://maven.apache.org</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spark.version>2.4.4</spark.version>
+        <hadoop.version>3.0.0</hadoop.version>
+        <snappy.version>1.1.2</snappy.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.11</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.11</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+    	<dependency>
+        	<groupId>org.apache.hadoop</groupId>
+        	<artifactId>hadoop-common</artifactId>
+        	<version>${hadoop.version}</version>
+        	<scope>provided</scope>
+        	<exclusions>
+        		<exclusion>
+            		<groupId>javax.servlet</groupId>
+            		<artifactId>*</artifactId>
+        		</exclusion>
+        		<exclusion>
+            		<groupId>javax.servlet.jsp</groupId>
+            		<artifactId>*</artifactId>
+        		</exclusion>
+        	</exclusions>
+    	</dependency>
+    	<dependency>
+	    	<groupId>org.xerial.snappy</groupId>
+	    	<artifactId>snappy-java</artifactId>
+	    	<version>${snappy.version}</version>
+	    	<type>jar</type>
+	    	<scope>provided</scope>
+		</dependency>
+    </dependencies>
+
+    <build>
+
+        <plugins>
+
+            <!-- assemble project to a tar ball -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <descriptorRefs>
+            			<descriptorRef>jar-with-dependencies</descriptorRef>
+        			</descriptorRefs>
+                    <descriptor>bin.xml</descriptor>
+                    <tarLongFileMode>posix</tarLongFileMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>create-archive</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Required for JUnit tests -->
+            <plugin>
+          		<groupId>org.apache.maven.plugins</groupId>
+          		<artifactId>maven-surefire-plugin</artifactId>
+          		<version>2.20.1</version>
+        	</plugin>
+
+            <!-- attach the built tar to artifacts -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>target/${project.artifactId}-${project.version}.tar.gz</file>
+                                    <type>tar.gz</type>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>

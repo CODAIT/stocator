@@ -28,9 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-
 import com.ibm.stocator.fs.ObjectStoreFileSystem;
-
 import static com.ibm.stocator.fs.common.Utils.getHost;
 
 public class StreamingSwiftTest {

@@ -261,11 +261,11 @@ Now you can use URI
 | fs.cos.user.agent.prefix| |User agent prefix |
 | fs.cos.flat.list | true | In flat listing the result will include all objects under specific path prefix, for example bucket/a/b/data.txt, bucket/a/d.data. If listed bucket/a*, then result will include both objects. If flat list is set to flase, then it contains the same list behaviour as community s3a connector. |
 | fs.stocator.cache.size | 2000 | The Guava cache size used by the COS connector |
-| fs.cos.multipart.size | 104857600 | Size in bytes. Define multipart size |
+| fs.cos.multipart.size | 8388608 | Size in bytes. Define multipart size |
 | fs.cos.multipart.threshold | Max Integer | minimum size in bytes before we start a multipart uploads, default is max integer |
 | fs.cos.fast.upload | false | enable or disable block upload |
 | fs.stocator.glob.bracket.support | false | if true supports Hadoop string patterns of the form {ab,c{de, fh}}. Due to possible collision with object names, this mode prevents from create an object whose name contains {} |
-| fs.cos.atomic.write | false | enable or disable atomic writes to COS using Etags. When the flag `fs.cos.fast.upload` is set `true` atomic writes will be available only for writes that require only one block. |
+| fs.cos.atomic.write | false | enable or disable atomic write to COS using Etags. Atomic write is available only when the write is done in one chunk. <br> When the flag`fs.cos.fast.upload` is set to `false` atomic write will be available only for write that is lower or equal to `fs.cos.multipart.threshold` size. <br> When the flag `fs.cos.fast.upload` is set to `true` atomic write will be available only for write that require only one block. |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 

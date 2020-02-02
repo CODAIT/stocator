@@ -30,10 +30,8 @@ import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.base.Preconditions;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.ibm.stocator.fs.cos.COSDataBlocks.DataBlock.DestState.Writing;
 import static com.ibm.stocator.fs.cos.COSDataBlocks.DataBlock.DestState.Upload;
 import static com.ibm.stocator.fs.cos.COSDataBlocks.DataBlock.DestState.Closed;

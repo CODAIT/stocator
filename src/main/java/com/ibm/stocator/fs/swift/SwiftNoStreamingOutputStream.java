@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.ibm.stocator.fs.swift.auth.JossAccount;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 
