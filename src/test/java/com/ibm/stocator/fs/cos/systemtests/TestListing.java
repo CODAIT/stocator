@@ -18,21 +18,18 @@
 
 package com.ibm.stocator.fs.cos.systemtests;
 
-import org.apache.hadoop.fs.FileStatus;
+import java.util.Hashtable;
+import java.io.IOException;
+
 import org.apache.hadoop.fs.Path;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Hashtable;
 
 /**
  * Test Globber operations on the data that was not created by Stocator
  */
 public class TestListing extends COSFileSystemBaseTest {
 
-  private static Path[] sTestData;
-  private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
   private static Hashtable<String, String> sConf = new Hashtable<String, String>();
 
@@ -62,15 +59,17 @@ public class TestListing extends COSFileSystemBaseTest {
     sFileSystem.listStatus(nonPartPath);
     long endTime = System.nanoTime();
     long listingTimeNoPart = endTime - startTime;
-    System.out.println("Stocator listing took for dataset not starting with part " + listingTimeNoPart + "ns");
+    System.out.println("Stocator listing took for dataset not starting with part "
+            + listingTimeNoPart + "ns");
 
     Path partPath = new Path(sBaseURI + "/testListingPart");
     startTime = System.nanoTime();
     sFileSystem.listStatus(partPath);
     endTime = System.nanoTime();
     long listingTimePart = endTime - startTime;
-    System.out.println("Stocator listing took for dataset starting with part " + listingTimePart + "ns");
+    System.out.println("Stocator listing took for dataset starting with part "
+            + listingTimePart + "ns");
 
-    assertTrue("Listing time without part is too long", listingTimeNoPart > 2*listingTimePart);
+    assertTrue("Listing time without part is too long", listingTimeNoPart > 2 * listingTimePart);
   }
 }
