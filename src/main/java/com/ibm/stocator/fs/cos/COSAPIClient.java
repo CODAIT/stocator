@@ -1018,7 +1018,14 @@ public class COSAPIClient implements IStoreClient {
         String objKey = obj.getKey();
         String unifiedObjectName = stocatorPath.removePartOrSuccess(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
-        stocatorOrigin = isStocatorOrigin(unifiedObjectName);
+        // if unified name is identical to the key returned by the list then
+        // data object was not created by Hadoop eco-system or it's a folder.
+        // In this case no need to apply Stocator's algorithm for fault tolerance
+        if (objKey.equals(unifiedObjectName)) {
+          stocatorOrigin = false;
+        } else {
+          stocatorOrigin = isStocatorOrigin(unifiedObjectName);
+        }
         if (stocatorOrigin && !fullListing) {
           if (!isJobSuccessful(unifiedObjectName)) {
             // a bit tricky. need to delete entire set
