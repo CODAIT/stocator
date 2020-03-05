@@ -231,7 +231,7 @@ public class StocatorPath {
    *
    * transformed into
    *
-   * dataset/a/data.parquet/
+   * dataset/a/d.parquet/
    *
    * @param objectKey object key
    * @return unified name
