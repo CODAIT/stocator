@@ -49,7 +49,9 @@ public class TestListingDeepHivePartition extends COSFileSystemBaseTest {
     // create files deep hive style partitioing
     for (int i = 0; i < 10; i++) {
       createFile(new Path(sBaseURI + "/testListingDeepHiveStyle/a=" + i
-              + "/b=" + i + "/c=" + i + "/d=" + i + "/e=" + i + "/f" + i), sData);
+              + "/b=" + i + "/c=" + i + "/d=" + i + "/e=" + i
+              + "/g=" + i + "/h=" + i + "/j=" + i + "/k=" + i
+              + "/f" + i), sData);
     }
   }
 
@@ -77,7 +79,7 @@ public class TestListingDeepHivePartition extends COSFileSystemBaseTest {
 
     assertTrue("lists not equal", nonFlatListingRes.length == flatListingRes.size());
     assertFalse("Listing deep hive style partitioning took too long",
-            listingTimeNonFlatListing > 2 * listingTimeFlatListing);
+            listingTimeNonFlatListing > 15 * listingTimeFlatListing);
   }
 
   static List<FileStatus> listRecursive(Path path) throws IOException {
