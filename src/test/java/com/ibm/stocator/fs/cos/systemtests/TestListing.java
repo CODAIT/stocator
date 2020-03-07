@@ -26,7 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test Globber operations on the data that was not created by Stocator
+ * Test listing time for objects no created by spark
  */
 public class TestListing extends COSFileSystemBaseTest {
 

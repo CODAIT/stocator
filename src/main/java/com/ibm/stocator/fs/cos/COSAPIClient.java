@@ -969,18 +969,18 @@ public class COSAPIClient implements IStoreClient {
     String token = COSUtils.extractToken(path.toString());
     path = updatePathAndToken(customToken, path);
     ArrayList<FileStatus> tmpResult = new ArrayList<FileStatus>();
-    String key = pathToKey(path);
-    if (isDirectory != null && isDirectory.booleanValue() && !key.endsWith("/")
+    String targetListKey = pathToKey(path);
+    if (isDirectory != null && isDirectory.booleanValue() && !targetListKey.endsWith("/")
         && !path.toString().equals(hostName)) {
-      key = key + "/";
-      LOG.debug("list:(mid) {}, modify key to {}", path, key);
+      targetListKey = targetListKey + "/";
+      LOG.debug("list:(mid) {}, modify key to {}", path, targetListKey);
     }
 
     Map<String, FileStatus> emptyObjects = new HashMap<String, FileStatus>();
     ListObjectsRequest request = new ListObjectsRequest();
     request.setBucketName(mBucket);
     request.setMaxKeys(5000);
-    request.setPrefix(key);
+    request.setPrefix(targetListKey);
     request.withEncodingType("url");
     if (!flatListing) {
       LOG.trace("list:(mid) {}, set delimiter", path);
@@ -994,39 +994,46 @@ public class COSAPIClient implements IStoreClient {
 
     boolean objectScanContinue = true;
     S3ObjectSummary prevObj = null;
-    // start FTA logic
-    boolean stocatorOrigin = isStocatorOrigin(key);
-    if (stocatorOrigin) {
-      if (!isJobSuccessful(key)) {
-        LOG.warn("{} created by failed Spark job. Skipped. Delete temporarily disabled ", key);
-        /*
-        if (cleanup) {
-          delete(hostName, new Path(key), true);
-        }
-        */
-        return new FileStatus[0];
-      }
-    }
+    Boolean stocatorListKeyOrigin = null;
+
     while (objectScanContinue) {
       for (S3ObjectSummary obj : objectSummaries) {
         if (prevObj == null) {
           prevObj = obj;
-          prevObj.setKey(correctPlusSign(key, prevObj.getKey()));
+          prevObj.setKey(correctPlusSign(targetListKey, prevObj.getKey()));
           continue;
         }
-        obj.setKey(correctPlusSign(key, obj.getKey()));
+        obj.setKey(correctPlusSign(targetListKey, obj.getKey()));
         String objKey = obj.getKey();
+        boolean stocatorObjKeyOrigin = false;
         String unifiedObjectName = stocatorPath.removePartOrSuccess(objKey);
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
         // if unified name is identical to the key returned by the list then
         // data object was not created by Hadoop eco-system or it's a folder.
         // In this case no need to apply Stocator's algorithm for fault tolerance
-        if (objKey.equals(unifiedObjectName)) {
-          stocatorOrigin = false;
-        } else {
-          stocatorOrigin = isStocatorOrigin(unifiedObjectName);
+        if (!objKey.equals(unifiedObjectName)) {
+          stocatorObjKeyOrigin = isStocatorOrigin(unifiedObjectName);
         }
-        if (stocatorOrigin && !fullListing) {
+        if (stocatorObjKeyOrigin) {
+          // start FTA logic
+          // check if list performed on the Stocator created object only if parts are returned
+          // otherwise no need to perform this test
+          // check only once, in worst case scenario a list will be performed
+          if (stocatorListKeyOrigin == null) {
+            stocatorListKeyOrigin = Boolean.valueOf(isStocatorOrigin(targetListKey));
+            if (stocatorListKeyOrigin.booleanValue() && !isJobSuccessful(targetListKey)) {
+              LOG.warn("{} created by failed Spark job. Skipped. Delete temporarily disabled ",
+                  targetListKey);
+              /*
+              if (cleanup) {
+                delete(hostName, new Path(key), true);
+              }
+              */
+              return new FileStatus[0];
+            }
+          }
+        }
+        if (stocatorObjKeyOrigin && !fullListing) {
           if (!isJobSuccessful(unifiedObjectName)) {
             // a bit tricky. need to delete entire set
             // having unified name as a prefix
@@ -1079,7 +1086,7 @@ public class COSAPIClient implements IStoreClient {
         prevObj = obj;
       }
       // add common prefixes
-      LOG.trace("Going to examine common prefixes for {}", key);
+      LOG.trace("Going to examine common prefixes for {}", targetListKey);
       if (prevObj != null) {
         LOG.trace("Previous object registered as {}", prevObj.getKey());
         FileStatus fs = createFileStatus(prevObj, hostName, path, token);
