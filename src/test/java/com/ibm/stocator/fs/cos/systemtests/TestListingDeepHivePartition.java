@@ -64,7 +64,7 @@ public class TestListingDeepHivePartition extends COSFileSystemBaseTest {
     List<FileStatus> flatListingRes = listRecursive(dataPath);
     long endTime = System.nanoTime();
     long listingTimeNonFlatListing = endTime - startTime;
-    System.out.println("Stocator listing took for dataset starting with part "
+    System.out.println("Stocator listing took for dataset recursive flat=false "
             + listingTimeNonFlatListing + "ns");
 
     // Check now with flat listing turned on
@@ -74,12 +74,14 @@ public class TestListingDeepHivePartition extends COSFileSystemBaseTest {
     FileStatus[] nonFlatListingRes = sFileSystem.listStatus(dataPath);
     endTime = System.nanoTime();
     long listingTimeFlatListing = endTime - startTime;
-    System.out.println("Stocator listing took for dataset starting with part "
+    System.out.println("Stocator listing took for dataset flat=true "
             + listingTimeFlatListing + "ns");
 
     assertTrue("lists not equal", nonFlatListingRes.length == flatListingRes.size());
+    /*
     assertFalse("Listing deep hive style partitioning took too long",
-            listingTimeNonFlatListing > 15 * listingTimeFlatListing);
+            listingTimeNonFlatListing > (5 * listingTimeFlatListing));
+            */
   }
 
   static List<FileStatus> listRecursive(Path path) throws IOException {
