@@ -949,6 +949,7 @@ public class COSAPIClient implements IStoreClient {
                 }
               }
             }
+            unifiedObjectName = unifiedCandidate;
           }
           LOG.trace("List candidate {} bypass Stocator check, "
               + " unifiedObjectName: {}, stocatorUnifiedObjectNameOrigin: {},"
