@@ -895,6 +895,11 @@ public class COSAPIClient implements IStoreClient {
     S3ObjectSummary prevObj = null;
     Boolean stocatorListKeyOrigin = null;
 
+    // make it global
+    boolean stocatorUnifiedObjectNameOrigin = false;
+    String unifiedObjectName = null;
+    boolean stocatorUnifiedObjectNameOriginSuccess = true;
+
     while (objectScanContinue) {
       for (S3ObjectSummary obj : objectSummaries) {
         if (prevObj == null) {
@@ -904,16 +909,85 @@ public class COSAPIClient implements IStoreClient {
         }
         obj.setKey(correctPlusSign(targetListKey, obj.getKey()));
         String objKey = obj.getKey();
-        boolean stocatorObjKeyOrigin = false;
-        String unifiedObjectName = stocatorPath.removePartOrSuccess(objKey);
+
+        LOG.trace("Proceeding key {} from the list ", objKey);
+        if (stocatorPath.isHadoopSuccessFormat(objKey)) {
+          // object name of the form /<URI>/<parent>/_SUCCESS
+          // in this case no need to check stocator origin
+          unifiedObjectName = stocatorPath.removePartOrSuccess(objKey);
+          stocatorUnifiedObjectNameOrigin = false;
+          stocatorUnifiedObjectNameOriginSuccess = updateSuccessfullJobStatus(unifiedObjectName);
+        } else if (stocatorPath.isHadoopStocatorDataFormat(objKey)) {
+          // object key has part- and attempt_ or _SUCCESS
+          // need to find unified name, as it was created with Stocator
+          stocatorUnifiedObjectNameOrigin = true;
+          if  (unifiedObjectName != null && objKey.startsWith(unifiedObjectName)) {
+            stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(unifiedObjectName);
+          } else {
+            String unifiedCandidate = stocatorPath.removePartOrSuccess(objKey);
+            LOG.trace("Key: {}, unified name: {}, unified candidate {}", objKey,
+                unifiedObjectName, unifiedCandidate);
+            if (unifiedCandidate.startsWith(targetListKey)) {
+              unifiedCandidate = unifiedCandidate.substring(targetListKey.length());
+              LOG.trace("Key: {}, unified name: {}, unified candidate without taget path list {}",
+                  objKey, unifiedObjectName, unifiedCandidate);
+            }
+            if (unifiedCandidate.isEmpty() || unifiedCandidate.equals("/")) {
+              LOG.trace("Checking unified candidate {}", unifiedCandidate);
+              unifiedObjectName = targetListKey + unifiedCandidate;
+              stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(unifiedObjectName);
+            } else {
+              int ind = 0;
+              System.out.println("Unified candidate " + unifiedCandidate);
+              while (ind >= 0) {
+                System.out.println("processing " + unifiedCandidate);
+                stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(targetListKey
+                    + unifiedCandidate);
+                if (stocatorUnifiedObjectNameOriginSuccess) {
+                  break;
+                }
+                int endIndex = unifiedCandidate.length();
+                if (unifiedCandidate.endsWith("/")) {
+                  endIndex =  unifiedCandidate.length() - 2;
+                }
+                ind = unifiedCandidate.lastIndexOf("/", endIndex);
+                if (ind >= 0) {
+                  unifiedCandidate = unifiedCandidate.substring(0, ind + 1);
+                }
+              }
+            }
+          }
+          LOG.trace("List candidate {} bypass Stocator check, "
+              + " unifiedObjectName: {}, stocatorUnifiedObjectNameOrigin: {},"
+              + " stocatorUnifiedObjectNameOriginSuccess {}", objKey,
+              unifiedObjectName, stocatorUnifiedObjectNameOrigin,
+              stocatorUnifiedObjectNameOriginSuccess);
+
+        } else {
+          LOG.trace("List candidate {} bypass Stocator check, "
+              + " unifiedObjectName: {}, stocatorUnifiedObjectNameOrigin: {},"
+              + " stocatorUnifiedObjectNameOriginSuccess {}", objKey,
+              unifiedObjectName, stocatorUnifiedObjectNameOrigin,
+              stocatorUnifiedObjectNameOriginSuccess);
+          stocatorUnifiedObjectNameOrigin = false;
+          stocatorUnifiedObjectNameOriginSuccess = true;
+        }
+        // at this point we know if object name is stocator originated and we suppose to know
+        // unified name at any level which was created by Stocator.
+        // we also know if job was succesfull
+
+        // object key created by Hadoop eco system and contains either part- or _SUCCESS
+        // we need to find unified object name
+        // most likely it's the parent name, although with Hive style it might be in
+        // different layers
+        // this need to be done only once per path pattern
+        // we start with
+
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
         // if unified name is identical to the key returned by the list then
         // data object was not created by Hadoop eco-system or it's a folder.
         // In this case no need to apply Stocator's algorithm for fault tolerance
-        if (!objKey.equals(unifiedObjectName)) {
-          stocatorObjKeyOrigin = isStocatorOrigin(unifiedObjectName);
-        }
-        if (stocatorObjKeyOrigin) {
+        if (stocatorUnifiedObjectNameOrigin && !stocatorUnifiedObjectNameOriginSuccess) {
           // start FTA logic
           // check if list performed on the Stocator created object only if parts are returned
           // otherwise no need to perform this test
@@ -932,8 +1006,8 @@ public class COSAPIClient implements IStoreClient {
             }
           }
         }
-        if (stocatorObjKeyOrigin && !fullListing) {
-          if (!isJobSuccessful(unifiedObjectName)) {
+        if (stocatorUnifiedObjectNameOrigin && !fullListing) {
+          if (!stocatorUnifiedObjectNameOriginSuccess) {
             // a bit tricky. need to delete entire set
             // having unified name as a prefix
             continue;
@@ -1097,7 +1171,6 @@ public class COSAPIClient implements IStoreClient {
     if (objectKey.endsWith("/")) {
       objectKey = objectKey.substring(0, objectKey.length() - 1);
     }
-
     if (mCachedSparkJobsStatus.containsKey(objectKey)) {
       boolean res = mCachedSparkJobsStatus.get(objectKey).booleanValue();
       LOG.trace("isJobSuccessful: {} found cached with value {}", objectKey, res);
@@ -1113,6 +1186,18 @@ public class COSAPIClient implements IStoreClient {
     LOG.debug("isJobSuccessful: not cached {}. Status is {}. Update cache", objectKey, isJobOK);
     mCachedSparkJobsStatus.put(objectKey, isJobOK);
     return isJobOK.booleanValue();
+  }
+
+  private boolean updateSuccessfullJobStatus(String objectKey) {
+    LOG.trace("Update successful job: for {}", objectKey);
+    if (objectKey.endsWith("/")) {
+      objectKey = objectKey.substring(0, objectKey.length() - 1);
+    }
+
+    if (!mCachedSparkJobsStatus.containsKey(objectKey)) {
+      mCachedSparkJobsStatus.put(objectKey, Boolean.TRUE);
+    }
+    return true;
   }
 
   /**
@@ -1150,6 +1235,18 @@ public class COSAPIClient implements IStoreClient {
     LOG.debug("isStocatorOrigin: stocator origin for {} is {} non cached. Update cache", key,
         sparkOriginated.booleanValue());
     return sparkOriginated.booleanValue();
+  }
+
+  /**
+   * Checks if container/object exists and verifies that it contains
+   * Data-Origin=stocator metadata If so, object was created by Spark.
+   *
+   * @param objectKey the key of the object
+   * @return boolean if object was created by Spark
+   */
+  private boolean isStocatorOriginPattern(String objectKey) {
+    LOG.debug("isStocatorOrigin based on pattern: for {}", objectKey);
+    return stocatorPath.isHadoopStocatorDataFormat(objectKey);
   }
 
   private String getRealKey(String objectKey) {

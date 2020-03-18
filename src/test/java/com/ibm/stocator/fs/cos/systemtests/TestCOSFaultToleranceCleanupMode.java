@@ -57,14 +57,18 @@ public class TestCOSFaultToleranceCleanupMode extends COSFileSystemBaseTest {
         new Path(sBaseURI + "/test/y=2018/m=12/d=28/data1.csv"),
 
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json/"
-            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c-"
+            + "attempt_20180503181319_0000_m_000000_0.json"),
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data2.json/"
-            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c-"
+            + "attempt_20180503181319_0000_m_000000_0.json"),
 
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
-            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c-"
+            + "attempt_20180503181319_0000_m_000000_0.json"),
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
-            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c-"
+            + "attempt_20180503181319_0000_m_000000_0.json"),
 
         new Path(sBaseURI + "/test/y=2018/m=10/d=28/data4.json/"
             + "part-00000-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"

@@ -248,6 +248,36 @@ public class StocatorPath {
   }
 
   /**
+   * @param objectKey object key
+   * @return boolean is key has part- or _SUCCESS
+   */
+  public boolean isHadoopDataFormat(String objectKey) {
+    if (objectKey.indexOf(HADOOP_PART) > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  public boolean isHadoopSuccessFormat(String objectKey) {
+    if (objectKey.indexOf(HADOOP_SUCCESS) > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @param objectKey object key
+   * @return boolean if key has both part- and attempt
+   */
+  public boolean isHadoopStocatorDataFormat(String objectKey) {
+    if (objectKey.indexOf(HADOOP_PART) > 0 && objectKey.indexOf(HADOOP_ATTEMPT) > 0) {
+      LOG.debug("key {} contains both part- and attempt-. Stocator pattern",objectKey);
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Main method to parse Hadoop OutputCommitter V1 or V2 as used by Hadoop M-R or Apache Spark
    * Method transforms object name from the temporary path.
    *

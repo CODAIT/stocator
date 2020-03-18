@@ -65,9 +65,11 @@ public class TestCOSGlobberBracketStocator extends COSFileSystemBaseTest {
         // data3.csv
         // 2 parts, no _SUCCESS
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
-            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+            + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c-"
+            + "attempt_20180503181319_0000_m_000000_0.json"),
         new Path(sBaseURI + "/test/y=2018/m=10/d=29/data3.json/"
-            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+            + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c-"
+            + "attempt_20180503181319_0000_m_000000_0.json"),
 
         // data4.csv
         // 2 parts, 3 attempts for part-0, _SUCCESS
