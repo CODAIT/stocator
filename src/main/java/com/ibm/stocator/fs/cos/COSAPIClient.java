@@ -927,22 +927,15 @@ public class COSAPIClient implements IStoreClient {
             String unifiedCandidate = stocatorPath.removePartOrSuccess(objKey);
             LOG.trace("Key: {}, unified name: {}, unified candidate {}", objKey,
                 unifiedObjectName, unifiedCandidate);
-            if (unifiedCandidate.startsWith(targetListKey)) {
-              unifiedCandidate = unifiedCandidate.substring(targetListKey.length());
-              LOG.trace("Key: {}, unified name: {}, unified candidate without taget path list {}",
-                  objKey, unifiedObjectName, unifiedCandidate);
-            }
             if (unifiedCandidate.isEmpty() || unifiedCandidate.equals("/")) {
               LOG.trace("Checking unified candidate {}", unifiedCandidate);
-              unifiedObjectName = targetListKey + unifiedCandidate;
-              stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(unifiedObjectName);
+              stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(unifiedCandidate);
             } else {
               int ind = 0;
               LOG.trace("Unified candidate {}", unifiedCandidate);
               while (ind >= 0) {
                 LOG.trace("processing {}", unifiedCandidate);
-                stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(targetListKey
-                    + unifiedCandidate);
+                stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(unifiedCandidate);
                 if (stocatorUnifiedObjectNameOriginSuccess) {
                   break;
                 }
