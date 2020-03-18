@@ -61,16 +61,15 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
 
         new Path(sBaseURI + "/test1/y=2018/m=10/d=29/data3.json/"
             + "part-00000-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
+
         new Path(sBaseURI + "/test1/y=2018/m=10/d=29/data3.json/"
             + "part-00001-9e959568-1cc5-4bc6-966d-9b366be2204c.json"),
 
         new Path(sBaseURI + "/test1/y=2018/m=10/d=28/data4.json/"
-            + "part-00000-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"
-            + "attempt_20180503181319_0000_m_000000_0.json"),
+            + "part-00000-86a4f6f6-d172-4cfa-8714-9259c743e5a9.json"),
 
         new Path(sBaseURI + "/test1/y=2018/m=10/d=28/data4.json/"
-            + "part-00001-86a4f6f6-d172-4cfa-8714-9259c743e5a9-"
-            + "attempt_20180503181319_0000_m_000001_0.json"),
+            + "part-00001-86a4f6f6-d172-4cfa-8714-9259c743e5a9.json"),
 
         // data5.csv
         // 2 parts, _SUCCESS
