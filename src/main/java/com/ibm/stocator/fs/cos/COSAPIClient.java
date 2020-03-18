@@ -938,9 +938,9 @@ public class COSAPIClient implements IStoreClient {
               stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(unifiedObjectName);
             } else {
               int ind = 0;
-              System.out.println("Unified candidate " + unifiedCandidate);
+              LOG.trace("Unified candidate {}", unifiedCandidate);
               while (ind >= 0) {
-                System.out.println("processing " + unifiedCandidate);
+                LOG.trace("processing {}", unifiedCandidate);
                 stocatorUnifiedObjectNameOriginSuccess = isJobSuccessful(targetListKey
                     + unifiedCandidate);
                 if (stocatorUnifiedObjectNameOriginSuccess) {
