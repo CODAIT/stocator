@@ -978,28 +978,6 @@ public class COSAPIClient implements IStoreClient {
         // we start with
 
         LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
-        // if unified name is identical to the key returned by the list then
-        // data object was not created by Hadoop eco-system or it's a folder.
-        // In this case no need to apply Stocator's algorithm for fault tolerance
-        if (stocatorUnifiedObjectNameOrigin && !stocatorUnifiedObjectNameOriginSuccess) {
-          // start FTA logic
-          // check if list performed on the Stocator created object only if parts are returned
-          // otherwise no need to perform this test
-          // check only once, in worst case scenario a list will be performed
-          if (stocatorListKeyOrigin == null) {
-            stocatorListKeyOrigin = Boolean.valueOf(isStocatorOrigin(targetListKey));
-            if (stocatorListKeyOrigin.booleanValue() && !isJobSuccessful(targetListKey)) {
-              LOG.warn("{} created by failed Spark job. Skipped. Delete temporarily disabled ",
-                  targetListKey);
-              /*
-              if (cleanup) {
-                delete(hostName, new Path(key), true);
-              }
-              */
-              return new FileStatus[0];
-            }
-          }
-        }
         if (stocatorUnifiedObjectNameOrigin && !fullListing) {
           if (!stocatorUnifiedObjectNameOriginSuccess) {
             // a bit tricky. need to delete entire set
