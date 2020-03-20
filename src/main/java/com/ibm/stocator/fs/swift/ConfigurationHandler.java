@@ -26,7 +26,9 @@ import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import org.apache.hadoop.conf.Configuration;
 import static com.ibm.stocator.fs.common.Constants.SWIFT2D_SERVICE_PREFIX;
 import static com.ibm.stocator.fs.common.Constants.SWIFT_SERVICE_PREFIX;
+import static com.ibm.stocator.fs.swift.SwiftConstants.AUTH_EXTERNAL_CLASS;
 import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_EXTERNAL_CLASS;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.AUTH_URL;
 import static com.ibm.stocator.fs.swift.SwiftConstants.AUTH_METHOD;
@@ -46,8 +48,6 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.REGION;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC;
 import static com.ibm.stocator.fs.swift.SwiftConstants.BLOCK_SIZE;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_DELETE_TEMP_DATA;
 import static com.ibm.stocator.fs.swift.SwiftConstants.PUBLIC_ACCESS;
@@ -95,18 +95,10 @@ public final class ConfigurationHandler {
       String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY, KEYSTONE_V3_AUTH);
       props.setProperty(SWIFT_AUTH_METHOD_PROPERTY, authMethod);
 
-      if (authMethod.equals(KEYSTONE_V3_AUTH)) {
-        Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, false);
-        Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, true);
-        props.setProperty(SWIFT_PROJECT_ID_PROPERTY, props.getProperty(SWIFT_TENANT_PROPERTY));
-        props.setProperty(SWIFT_USER_ID_PROPERTY, props.getProperty(SWIFT_USERNAME_PROPERTY));
-      } else if (authMethod.equals("basic")) {
-        Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
-        Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, false);
-      } else {
-        Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, false);
-        Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, true);
-      }
+      Utils.updateProperty(conf, prefix2D, prefix, TENANT, props, SWIFT_TENANT_PROPERTY, false);
+      Utils.updateProperty(conf, prefix2D, prefix, REGION, props, SWIFT_REGION_PROPERTY, true);
+      Utils.updateProperty(conf, prefix2D, prefix, AUTH_EXTERNAL_CLASS, props,
+          SWIFT_AUTH_EXTERNAL_CLASS, false);
     }
     return props;
   }
