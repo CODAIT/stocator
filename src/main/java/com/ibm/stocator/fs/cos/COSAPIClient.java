@@ -951,14 +951,14 @@ public class COSAPIClient implements IStoreClient {
             }
             unifiedObjectName = unifiedCandidate;
           }
-          LOG.trace("List candidate {} bypass Stocator check, "
+          LOG.trace("Candidate {} created by Stocator, "
               + " unifiedObjectName: {}, stocatorUnifiedObjectNameOrigin: {},"
               + " stocatorUnifiedObjectNameOriginSuccess {}", objKey,
               unifiedObjectName, stocatorUnifiedObjectNameOrigin,
               stocatorUnifiedObjectNameOriginSuccess);
 
         } else {
-          LOG.trace("List candidate {} bypass Stocator check, "
+          LOG.trace("Candidate {} bypass Stocator check, "
               + " unifiedObjectName: {}, stocatorUnifiedObjectNameOrigin: {},"
               + " stocatorUnifiedObjectNameOriginSuccess {}", objKey,
               unifiedObjectName, stocatorUnifiedObjectNameOrigin,
@@ -977,14 +977,13 @@ public class COSAPIClient implements IStoreClient {
         // this need to be done only once per path pattern
         // we start with
 
-        LOG.trace("list candidate {}, unified name {}", objKey, unifiedObjectName);
         if (stocatorUnifiedObjectNameOrigin && !fullListing) {
           if (!stocatorUnifiedObjectNameOriginSuccess) {
             // a bit tricky. need to delete entire set
             // having unified name as a prefix
             continue;
           }
-          LOG.trace("{} created by Spark", unifiedObjectName);
+          LOG.trace("{} created by Stocator", unifiedObjectName);
           // if we here - data created by spark and job completed
           // successfully
           // however there be might parts of failed tasks that
@@ -1014,8 +1013,8 @@ public class COSAPIClient implements IStoreClient {
         }
         FileStatus fs = createFileStatus(prevObj, hostName, path);
         if (fs.getLen() > 0 || fullListing) {
-          LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
           if (filter == null) {
+            LOG.trace("Adding {} size {} to response list",fs.getPath(), fs.getLen());
             tmpResult.add(fs);
           } else if (filter != null && filter.accept(fs.getPath())) {
             tmpResult.add(fs);
@@ -1024,7 +1023,7 @@ public class COSAPIClient implements IStoreClient {
                 fs.getPath(), filter);
           }
         } else {
-          LOG.trace("Adding {} to empty list", fs.getPath());
+          LOG.trace("Adding {} to the empty list", fs.getPath());
           emptyObjects.put(fs.getPath().toString(), fs);
         }
         prevObj = obj;
@@ -1066,12 +1065,12 @@ public class COSAPIClient implements IStoreClient {
     }
 
     if (prevObj != null) {
-      LOG.trace("Examine last object {}", prevObj.getKey());
+      LOG.trace("Examine the last object {}", prevObj.getKey());
       FileStatus fs = createFileStatus(prevObj, hostName, path);
       LOG.trace("Last object fs path transormed to {}", fs.getPath());
       if (fs.getLen() > 0 || fullListing) {
-        LOG.trace("Native direct list. Adding {} size {}",fs.getPath(), fs.getLen());
         if (filter == null) {
+          LOG.trace("Adding {} size {} to response list",fs.getPath(), fs.getLen());
           memoryCache.putFileStatus(fs.getPath().toString(), fs);
           tmpResult.add(fs);
         } else if (filter != null && filter.accept(fs.getPath())) {
@@ -1139,7 +1138,6 @@ public class COSAPIClient implements IStoreClient {
    * @return boolean if job is successful
    */
   private boolean isJobSuccessful(String objectKey) {
-    LOG.trace("isJobSuccessful: for {}", objectKey);
     if (objectKey.endsWith("/")) {
       objectKey = objectKey.substring(0, objectKey.length() - 1);
     }
