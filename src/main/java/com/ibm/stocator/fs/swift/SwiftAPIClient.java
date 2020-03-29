@@ -636,7 +636,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
-      Map<String, String> metadata, Statistics statistics) throws IOException {
+      Map<String, String> metadata, Statistics statistics, boolean overwrite) throws IOException {
     final URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
 

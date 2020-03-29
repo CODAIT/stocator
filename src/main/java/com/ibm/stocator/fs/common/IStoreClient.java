@@ -127,11 +127,12 @@ public interface IStoreClient {
    * @param contentType content type
    * @param metadata the metadata to create with an object
    * @param statistics the statistics for this file system
+   * @param overwrite if true, overwrite existing object
    * @return FSDataOutputStream
    * @throws IOException if connection error
    */
   public FSDataOutputStream createObject(String objName, String contentType,
-      Map<String, String> metadata, Statistics statistics) throws IOException;
+      Map<String, String> metadata, Statistics statistics, boolean overwrite) throws IOException;
 
   /**
    * Get driver schema

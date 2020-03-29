@@ -694,18 +694,19 @@ public class COSAPIClient implements IStoreClient {
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata,
-      Statistics statistics) throws IOException {
+      Statistics statistics, boolean overwrite) throws IOException {
     LOG.debug("Create object {}", objName);
     try {
-      String objNameWithoutBuket = objName;
+      String objNameWithoutBucket = objName;
       if (objName.startsWith(mBucket + "/")) {
-        objNameWithoutBuket = objName.substring(mBucket.length() + 1);
+        objNameWithoutBucket = objName.substring(mBucket.length() + 1);
       }
       // if atomic write is enabled get the current tag if the object already exists
       String mEtag = null;
-      if (atomicWriteEnabled) {
-        LOG.debug("Atomic write is enabled, getting current object etag");
-        ObjectMetadata meta = getObjectMetadata(objNameWithoutBuket);
+      if (atomicWriteEnabled && overwrite) {
+        LOG.debug("Atomic write is enabled and overwrite == false,"
+                + " getting current object etag");
+        ObjectMetadata meta = getObjectMetadata(objNameWithoutBucket);
         if (meta != null) {
           mEtag =  meta.getETag();
         }
@@ -713,13 +714,13 @@ public class COSAPIClient implements IStoreClient {
       if (blockUploadEnabled) {
         return new FSDataOutputStream(
             new COSBlockOutputStream(this,
-                objNameWithoutBuket,
+                objNameWithoutBucket,
                 new SemaphoredDelegatingExecutor(threadPoolExecutor,
                     blockOutputActiveBlocks, true),
                 partSize,
                 blockFactory,
                 contentType,
-                new WriteOperationHelper(objNameWithoutBuket),
+                new WriteOperationHelper(objNameWithoutBucket),
                 metadata,
                 mEtag,
                 atomicWriteEnabled
@@ -1751,7 +1752,7 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("Creating new fake directory at {}", f);
       final Map<String, String> metadata = new HashMap<>();
       FSDataOutputStream outStream =  createObject(key,
-          Constants.APPLICATION_DIRECTORY, metadata, statistics);
+          Constants.APPLICATION_DIRECTORY, metadata, statistics, false);
       outStream.close();
     }
   }
