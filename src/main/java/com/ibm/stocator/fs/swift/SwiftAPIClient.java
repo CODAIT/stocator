@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -53,14 +54,16 @@ import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.Utils;
-import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
 import com.ibm.stocator.fs.swift.auth.DummyAccessProvider;
 import com.ibm.stocator.fs.swift.auth.JossAccount;
-import com.ibm.stocator.fs.swift.auth.PasswordScopeAccessProvider;
 import com.ibm.stocator.fs.swift.http.ConnectionConfiguration;
 import com.ibm.stocator.fs.swift.http.SwiftConnectionManager;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import static com.ibm.stocator.fs.swift.SwiftConstants.BASIC_AUTH;
+import static com.ibm.stocator.fs.swift.SwiftConstants.EXTERNAL_AUTH;
+import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_AUTH;
+import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_EXTERNAL_CLASS;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PASSWORD_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.KEYSTONE_V3_AUTH;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_PROPERTY;
@@ -71,8 +74,6 @@ import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_AUTH_METHOD_PROPERT
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_CONTAINER_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PUBLIC_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_BLOCK_SIZE_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_PROJECT_ID_PROPERTY;
-import static com.ibm.stocator.fs.swift.SwiftConstants.SWIFT_USER_ID_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.FMODE_AUTOMATIC_DELETE_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR_PROPERTY;
 import static com.ibm.stocator.fs.swift.SwiftConstants.BUFFER_DIR;
@@ -193,7 +194,7 @@ public class SwiftAPIClient implements IStoreClient {
   }
 
   @Override
-  public void initiate(String scheme) throws IOException, ConfigurationParseException {
+  public void initiate(String scheme) throws IOException {
     cachedSparkOriginated = new HashMap<String, Boolean>();
     cachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
@@ -225,8 +226,8 @@ public class SwiftAPIClient implements IStoreClient {
     AccountConfig config = new AccountConfig();
     fModeAutomaticDelete = "true".equals(props.getProperty(FMODE_AUTOMATIC_DELETE_PROPERTY,
         "false"));
-    blockSize = Long.valueOf(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
-        "128")).longValue() * 1024 * 1024L;
+    blockSize = Long.parseLong(props.getProperty(SWIFT_BLOCK_SIZE_PROPERTY,
+        "128")) * 1024 * 1024L;
     String authMethod = props.getProperty(SWIFT_AUTH_METHOD_PROPERTY);
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
@@ -257,35 +258,56 @@ public class SwiftAPIClient implements IStoreClient {
       usePublicURL = "true".equals(isPubProp);
       LOG.trace("Use public key value is {}. Use public {}", isPubProp, usePublicURL);
       config.setPassword(props.getProperty(SWIFT_PASSWORD_PROPERTY));
+      config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
       config.setAuthUrl(Utils.getOption(props, SWIFT_AUTH_PROPERTY));
-
-      if (authMethod.equals("keystone")) {
-        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
-        if (preferredRegion != null) {
-          config.setPreferredRegion(preferredRegion);
-        }
-        config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
-        config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-        config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
-      } else if (authMethod.equals(KEYSTONE_V3_AUTH)) {
-        preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY, "dallas");
+      preferredRegion = props.getProperty(SWIFT_REGION_PROPERTY);
+      if (preferredRegion != null) {
         config.setPreferredRegion(preferredRegion);
-        config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
-        String userId = props.getProperty(SWIFT_USER_ID_PROPERTY);
-        String projectId = props.getProperty(SWIFT_PROJECT_ID_PROPERTY);
-        PasswordScopeAccessProvider psap = new PasswordScopeAccessProvider(userId,
-            config.getPassword(), projectId, config.getAuthUrl(), preferredRegion);
-        config.setAccessProvider(psap);
-      } else if (authMethod.equals("basic")) {
-        config.setAuthenticationMethod(AuthenticationMethod.BASIC);
-        config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-      } else {
-        config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
-        config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
-        config.setUsername(props.getProperty(SWIFT_TENANT_PROPERTY));
+      }
+
+      switch (authMethod) {
+        case KEYSTONE_AUTH:
+          config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE);
+          config.setTenantName(props.getProperty(SWIFT_TENANT_PROPERTY));
+          break;
+        case KEYSTONE_V3_AUTH:
+          config.setAuthenticationMethod(AuthenticationMethod.KEYSTONE_V3);
+          config.setUsername(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+          break;
+        case BASIC_AUTH:
+          config.setAuthenticationMethod(AuthenticationMethod.BASIC);
+          break;
+        case EXTERNAL_AUTH:
+          config.setAuthenticationMethod(AuthenticationMethod.EXTERNAL);
+          config.setTenantId(props.getProperty(SWIFT_TENANT_PROPERTY));
+
+          String externalClass = Utils.getOption(props, SWIFT_AUTH_EXTERNAL_CLASS);
+
+          try {
+            final ClassLoader classLoader = SwiftAPIClient.class.getClassLoader();
+
+            AuthenticationMethod.AccessProvider provider = (AuthenticationMethod.AccessProvider)
+                classLoader
+                    .loadClass(externalClass)
+                    .getConstructor(AccountConfig.class)
+                    .newInstance(config);
+
+            config.setAccessProvider(provider);
+          } catch (InstantiationException
+              | IllegalAccessException
+              | InvocationTargetException
+              | NoSuchMethodException
+              | ClassNotFoundException e) {
+            throw new RuntimeException("Error during Access Provider instanciation");
+          }
+          break;
+        default:
+          config.setAuthenticationMethod(AuthenticationMethod.TEMPAUTH);
+          config.setTenantName(Utils.getOption(props, SWIFT_USERNAME_PROPERTY));
+          break;
       }
       LOG.trace("{}", config.toString());
-      mJossAccount = new JossAccount(config,preferredRegion, usePublicURL, swiftConnectionManager);
+      mJossAccount = new JossAccount(config, preferredRegion, usePublicURL, swiftConnectionManager);
       try {
         mJossAccount.createAccount();
       } catch (Exception e) {
@@ -636,7 +658,7 @@ public class SwiftAPIClient implements IStoreClient {
    */
   @Override
   public FSDataOutputStream createObject(String objName, String contentType,
-      Map<String, String> metadata, Statistics statistics) throws IOException {
+      Map<String, String> metadata, Statistics statistics, boolean overwrite) throws IOException {
     final URL url = new URL(mJossAccount.getAccessURL() + "/" + getURLEncodedObjName(objName));
     LOG.debug("PUT {}. Content-Type : {}", url.toString(), contentType);
 

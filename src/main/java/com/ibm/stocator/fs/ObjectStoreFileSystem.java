@@ -231,7 +231,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
           storageClient.getDataRoot(), true);
     }
     return storageClient.createObject(objNameModified,
-        "application/octet-stream", null, statistics);
+        "application/octet-stream", null, statistics, overwrite);
   }
 
   public FSDataOutputStream append(Path f, int bufferSize,
@@ -470,7 +470,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       final Map<String, String> metadata = new HashMap<>();
       metadata.put("Data-Origin", "stocator");
       FSDataOutputStream outStream = storageClient.createObject(plainObjName,
-          Constants.APPLICATION_DIRECTORY, metadata, statistics);
+          Constants.APPLICATION_DIRECTORY, metadata, statistics, true);
       outStream.close();
     } else {
       LOG.debug("mkdirs on non temp object. Create {}", f.toString());
@@ -481,7 +481,7 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
       }
       LOG.trace("mkdirs to create directory {}", objName);
       FSDataOutputStream outStream = storageClient.createObject(objName,
-          Constants.APPLICATION_DIRECTORY, null, statistics);
+          Constants.APPLICATION_DIRECTORY, null, statistics, true);
       outStream.close();
     }
     return true;

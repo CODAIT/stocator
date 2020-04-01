@@ -23,6 +23,10 @@ import com.ibm.stocator.fs.common.Constants;
  * Constants used in the Swift REST protocol.
  */
 public class SwiftConstants {
+  public static final String KEYSTONE_AUTH = "keystone";
+  public static final String BASIC_AUTH = "basic";
+  public static final String EXTERNAL_AUTH = "external";
+
   public static final String SWIFT_CONTAINER_PROPERTY = Constants.FS_SWIFT2D + ".CONTAINER-NAME";
   public static final String KEYSTONE_V3_AUTH = "keystoneV3";
   public static final String PUBLIC_ACCESS = "publicAccess";
@@ -53,6 +57,9 @@ public class SwiftConstants {
 
   public static final String AUTH_METHOD = ".auth.method";
   public static final String SWIFT_AUTH_METHOD_PROPERTY = Constants.FS_SWIFT2D + AUTH_METHOD;
+
+  public static final String AUTH_EXTERNAL_CLASS = ".auth.external.class";
+  public static final String SWIFT_AUTH_EXTERNAL_CLASS = Constants.FS_SWIFT2D + AUTH_EXTERNAL_CLASS;
 
   public static final String BLOCK_SIZE = ".block.size";
   public static final String SWIFT_BLOCK_SIZE_PROPERTY = Constants.FS_SWIFT2D + BLOCK_SIZE;
