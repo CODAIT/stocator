@@ -603,4 +603,11 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
     }
     return hostNameScheme;
   }
+
+  @Override
+  public String getCanonicalServiceName() {
+    // https://issues.apache.org/jira/browse/HADOOP-13372
+    // Does not support Token
+    return null;
+  }
 }
