@@ -472,7 +472,7 @@ class COSBlockOutputStream extends OutputStream {
     private final List<ListenableFuture<PartETag>> partETagsFutures;
 
     MultiPartUpload() throws IOException {
-      uploadId = writeOperationHelper.initiateMultiPartUpload();
+      uploadId = writeOperationHelper.initiateMultiPartUpload(mAtomicWriteEnabled, mEtag);
       partETagsFutures = new ArrayList<>(2);
       LOG.debug("Initiated multi-part upload for {} with " + "id '{}'",
           writeOperationHelper, uploadId);
