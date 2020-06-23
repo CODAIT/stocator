@@ -1584,12 +1584,23 @@ public class COSAPIClient implements IStoreClient {
      * @return the upload result containing the ID
      * @throws IOException IO problem
      */
-    String initiateMultiPartUpload() throws IOException {
+    String initiateMultiPartUpload(Boolean atomicWrite, String etag) throws IOException {
       LOG.debug("Initiating Multipart upload");
+      ObjectMetadata om = newObjectMetadata(-1);
+      // if atomic write is enabled use the etag to ensure put request is atomic
+      if (atomicWrite) {
+        if (etag != null) {
+          LOG.debug("Atomic write - setting If-Match header");
+          om.setHeader("If-Match", etag);
+        } else {
+          LOG.debug("Atomic write - setting If-None-Match header");
+          om.setHeader("If-None-Match", "*");
+        }
+      }
       final InitiateMultipartUploadRequest initiateMPURequest =
           new InitiateMultipartUploadRequest(mBucket,
               key,
-              newObjectMetadata(-1));
+              om);
       try {
         return mClient.initiateMultipartUpload(initiateMPURequest)
             .getUploadId();
