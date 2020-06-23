@@ -68,7 +68,7 @@
         <jackson.version>1.9.13</jackson.version>
         <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
         <httpcomponents.httpclient.version>4.5.10</httpcomponents.httpclient.version>
-        <ibm.sdk.version>2.6.3</ibm.sdk.version>
+        <ibm.sdk.version>2.6.2</ibm.sdk.version>
         <google.guava.version>27.1-jre</google.guava.version>
         <powermock.version>2.0.2</powermock.version>
         <mockito.version>2.28.2</mockito.version>
