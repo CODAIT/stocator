@@ -1688,7 +1688,7 @@ public class COSAPIClient implements IStoreClient {
    * @return decoded path string
    */
   private String decodePath(String path, String encoding) {
-    if (encoding.equals("url")) {
+    if (encoding != null && encoding.equals("url")) {
       try {
         path = URLDecoder.decode(path, "UTF-8");
       } catch (UnsupportedEncodingException e) {
