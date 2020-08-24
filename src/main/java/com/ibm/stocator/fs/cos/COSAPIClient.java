@@ -35,10 +35,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
 
+import com.amazonaws.event.ProgressEventType;
 import com.ibm.stocator.fs.cache.MemoryCache;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -69,6 +71,9 @@ import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
 import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -1365,7 +1370,75 @@ public class COSAPIClient implements IStoreClient {
       }
       delete(hostName, src, false);
     } else {
-      LOG.debug("rename: renaming file {} to {} failed. Source file is directory", src, dst);
+      ObjectListing objects = mClient.listObjects(mBucket, srcKey);
+      List<S3ObjectSummary> summaries = objects.getObjectSummaries();
+      while (objects.isTruncated()) {
+        objects = mClient.listNextBatchOfObjects(objects);
+        summaries.addAll(objects.getObjectSummaries());
+      }
+
+      // Batch copy using TransferManager
+      // Build a list of copyRequests
+      List<CopyObjectRequest> copyRequests = new ArrayList<>();
+      List<KeyVersion> keysToDelete = new ArrayList<>();
+      for (S3ObjectSummary objectSummary : summaries) {
+        String newSrcKey = objectSummary.getKey();
+        keysToDelete.add(new KeyVersion(newSrcKey));
+
+        // Just in case there are still folders returned as objects
+        if (newSrcKey.endsWith("/")) {
+          LOG.debug("rename: {} is folder and will be ignored", newSrcKey);
+          continue;
+        }
+
+        long length = objectSummary.getSize();
+
+        if ((dstStatus != null && dstStatus.isDirectory()) || (dstStatus == null)) {
+          String newDstKey = dstKey;
+          if (!newDstKey.endsWith("/")) {
+            newDstKey = newDstKey + "/";
+          }
+
+          String filename = newSrcKey.substring(pathToKey(src).length() + 1);
+          newDstKey = newDstKey + filename;
+          CopyObjectRequest copyObjectRequest =
+                  new CopyObjectRequest(mBucket, newSrcKey, mBucket, newDstKey);
+          ObjectMetadata srcmd = getObjectMetadata(newSrcKey);
+          if (srcmd != null) {
+            copyObjectRequest.setNewObjectMetadata(srcmd);
+          }
+          copyRequests.add(copyObjectRequest);
+        } else {
+          throw new IOException("Unexpected dstStatus");
+        }
+      }
+
+      // Submit the copy jobs to transfermanager
+      CountDownLatch doneSignal = new CountDownLatch(copyRequests.size());
+      ArrayList copyJobs = new ArrayList();
+      for (CopyObjectRequest request: copyRequests) {
+        request.setGeneralProgressListener(new CopyCompleteListener(
+                request.getSourceBucketName() + "/" + request.getSourceKey(),
+                request.getDestinationBucketName() + "/" + request.getDestinationKey(),
+                doneSignal));
+        copyJobs.add(transfers.copy(request));
+      }
+      try {
+        doneSignal.await();
+      } catch (AmazonClientException e) {
+        throw new IOException("Couldn't wait for all copies to be finished");
+      } catch (InterruptedException e) {
+        throw new InterruptedIOException("Interrupted copying objects, cancelling");
+      }
+
+      // Delete source objects
+      DeleteObjectsRequest keysDeleteRequest = new DeleteObjectsRequest(mBucket)
+              .withKeys(keysToDelete)
+              .withQuiet(false);
+      // Verify that the object versions were successfully deleted.
+      DeleteObjectsResult deletedKeys = mClient.deleteObjects(keysDeleteRequest);
+      int successfulDeletes = deletedKeys.getDeletedObjects().size();
+      LOG.debug(successfulDeletes + " objects successfully deleted");
     }
 
     if (!(src.getParent().equals(dst.getParent()))) {
@@ -1604,6 +1677,37 @@ public class COSAPIClient implements IStoreClient {
         return result;
       } catch (AmazonClientException e) {
         throw translateException("put", putObjectRequest.getKey(), e);
+      }
+    }
+  }
+
+  final class CopyCompleteListener implements ProgressListener {
+
+    private CountDownLatch doneSignal;
+    private String src;
+    private String dst;
+
+    private CopyCompleteListener(String srcObject, String dstObject,
+                                 CountDownLatch doneSignalVar) {
+      src = srcObject;
+      dst = dstObject;
+      doneSignal = doneSignalVar;
+    }
+
+    public void progressChanged(ProgressEvent progressEvent) {
+      if (progressEvent.getEventType()
+              == ProgressEventType.TRANSFER_STARTED_EVENT) {
+        LOG.debug("Started to copy: " + src + " -> " + dst);
+      }
+      if (progressEvent.getEventType()
+              == ProgressEventType.TRANSFER_COMPLETED_EVENT) {
+        LOG.debug("Completed copy: " + src + " -> " + dst);
+        doneSignal.countDown();
+      }
+      if (progressEvent.getEventType()
+              == ProgressEventType.TRANSFER_FAILED_EVENT) {
+        LOG.debug("Failed upload: " + src + " -> " + dst);
+        doneSignal.countDown();
       }
     }
   }
