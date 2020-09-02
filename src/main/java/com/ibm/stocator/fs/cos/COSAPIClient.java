@@ -1699,16 +1699,16 @@ public class COSAPIClient implements IStoreClient {
       LOG.debug("ProgressEvent received: " + progressEvent.toString());
 
       if (progressEvent.getEventType()
-              == ProgressEventType.TRANSFER_STARTED_EVENT) {
+              == ProgressEventType.CLIENT_REQUEST_STARTED_EVENT) {
         LOG.debug("Started to copy: " + src + " -> " + dst);
       }
       if (progressEvent.getEventType()
-              == ProgressEventType.TRANSFER_COMPLETED_EVENT) {
+              == ProgressEventType.CLIENT_REQUEST_SUCCESS_EVENT) {
         LOG.debug("Completed copy: " + src + " -> " + dst);
         doneSignal.countDown();
       }
       if (progressEvent.getEventType()
-              == ProgressEventType.TRANSFER_FAILED_EVENT) {
+              == ProgressEventType.CLIENT_REQUEST_FAILED_EVENT) {
         LOG.debug("Failed upload: " + src + " -> " + dst);
         doneSignal.countDown();
       }
