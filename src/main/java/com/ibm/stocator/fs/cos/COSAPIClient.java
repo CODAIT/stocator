@@ -1695,6 +1695,9 @@ public class COSAPIClient implements IStoreClient {
     }
 
     public void progressChanged(ProgressEvent progressEvent) {
+
+      LOG.debug("ProgressEvent received: " + progressEvent.toString());
+
       if (progressEvent.getEventType()
               == ProgressEventType.TRANSFER_STARTED_EVENT) {
         LOG.debug("Started to copy: " + src + " -> " + dst);
