@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.Map;
 import java.util.List;
 import java.util.Properties;
@@ -893,6 +895,8 @@ public class COSAPIClient implements IStoreClient {
     }
 
     ObjectListing objectList = mClient.listObjects(request);
+    String encoding = objectList.getEncodingType();
+    LOG.debug("Encoding Type: {}", objectList.getEncodingType());
 
     List<S3ObjectSummary> objectSummaries = objectList.getObjectSummaries();
     List<String> commonPrefixes = objectList.getCommonPrefixes();
@@ -910,10 +914,10 @@ public class COSAPIClient implements IStoreClient {
       for (S3ObjectSummary obj : objectSummaries) {
         if (prevObj == null) {
           prevObj = obj;
-          prevObj.setKey(correctPlusSign(targetListKey, prevObj.getKey()));
+          prevObj.setKey(correctPlusSign(targetListKey, decodePath(prevObj.getKey(), encoding)));
           continue;
         }
-        obj.setKey(correctPlusSign(targetListKey, obj.getKey()));
+        obj.setKey(correctPlusSign(targetListKey, decodePath(obj.getKey(), encoding)));
         String objKey = obj.getKey();
 
         LOG.trace("Proceeding key {} from the list ", objKey);
@@ -998,7 +1002,7 @@ public class COSAPIClient implements IStoreClient {
           if (stocatorPath.nameWithoutTaskID(objKey)
               .equals(stocatorPath.nameWithoutTaskID(prevObj.getKey()))) {
             // found failed that was not aborted.
-            LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
+            LOG.trace("Collision found between {} and {}", prevObj.getKey(), objKey);
             if (prevObj.getSize() < obj.getSize()) {
               LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
               if (cleanup) {
@@ -1778,6 +1782,24 @@ public class COSAPIClient implements IStoreClient {
       return p;
     }
     return path.makeQualified(filesystemURI, workingDir);
+  }
+
+  /**
+   * This method decodes the path string if it is url encoded
+   *
+   * @param path of the file in object storage
+   * @param encoding of the path
+   * @return decoded path string
+   */
+  private String decodePath(String path, String encoding) {
+    if (encoding != null && encoding.equals("url")) {
+      try {
+        path = URLDecoder.decode(path, "UTF-8");
+      } catch (UnsupportedEncodingException e) {
+        LOG.debug("Exception when decoding path: {}", e.getMessage());
+      }
+    }
+    return path;
   }
 
   /**
