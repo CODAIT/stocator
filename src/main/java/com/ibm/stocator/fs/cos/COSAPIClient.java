@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.Map;
 import java.util.List;
 import java.util.Properties;
@@ -35,10 +37,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
 
+import com.amazonaws.event.ProgressEventType;
 import com.ibm.stocator.fs.cache.MemoryCache;
 import com.ibm.stocator.fs.common.Constants;
 import com.ibm.stocator.fs.common.IStoreClient;
@@ -69,6 +73,9 @@ import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.model.UploadPartResult;
 import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
@@ -888,6 +895,8 @@ public class COSAPIClient implements IStoreClient {
     }
 
     ObjectListing objectList = mClient.listObjects(request);
+    String encoding = objectList.getEncodingType();
+    LOG.debug("Encoding Type: {}", objectList.getEncodingType());
 
     List<S3ObjectSummary> objectSummaries = objectList.getObjectSummaries();
     List<String> commonPrefixes = objectList.getCommonPrefixes();
@@ -905,10 +914,10 @@ public class COSAPIClient implements IStoreClient {
       for (S3ObjectSummary obj : objectSummaries) {
         if (prevObj == null) {
           prevObj = obj;
-          prevObj.setKey(correctPlusSign(targetListKey, prevObj.getKey()));
+          prevObj.setKey(correctPlusSign(targetListKey, decodePath(prevObj.getKey(), encoding)));
           continue;
         }
-        obj.setKey(correctPlusSign(targetListKey, obj.getKey()));
+        obj.setKey(correctPlusSign(targetListKey, decodePath(obj.getKey(), encoding)));
         String objKey = obj.getKey();
 
         LOG.trace("Proceeding key {} from the list ", objKey);
@@ -993,7 +1002,7 @@ public class COSAPIClient implements IStoreClient {
           if (stocatorPath.nameWithoutTaskID(objKey)
               .equals(stocatorPath.nameWithoutTaskID(prevObj.getKey()))) {
             // found failed that was not aborted.
-            LOG.trace("Colisiion found between {} and {}", prevObj.getKey(), objKey);
+            LOG.trace("Collision found between {} and {}", prevObj.getKey(), objKey);
             if (prevObj.getSize() < obj.getSize()) {
               LOG.trace("New candidate is {}. Removed {}", obj.getKey(), prevObj.getKey());
               if (cleanup) {
@@ -1365,7 +1374,75 @@ public class COSAPIClient implements IStoreClient {
       }
       delete(hostName, src, false);
     } else {
-      LOG.debug("rename: renaming file {} to {} failed. Source file is directory", src, dst);
+      ObjectListing objects = mClient.listObjects(mBucket, srcKey);
+      List<S3ObjectSummary> summaries = objects.getObjectSummaries();
+      while (objects.isTruncated()) {
+        objects = mClient.listNextBatchOfObjects(objects);
+        summaries.addAll(objects.getObjectSummaries());
+      }
+
+      // Batch copy using TransferManager
+      // Build a list of copyRequests
+      List<CopyObjectRequest> copyRequests = new ArrayList<>();
+      List<KeyVersion> keysToDelete = new ArrayList<>();
+      for (S3ObjectSummary objectSummary : summaries) {
+        String newSrcKey = objectSummary.getKey();
+        keysToDelete.add(new KeyVersion(newSrcKey));
+
+        // Just in case there are still folders returned as objects
+        if (newSrcKey.endsWith("/")) {
+          LOG.debug("rename: {} is folder and will be ignored", newSrcKey);
+          continue;
+        }
+
+        long length = objectSummary.getSize();
+
+        if ((dstStatus != null && dstStatus.isDirectory()) || (dstStatus == null)) {
+          String newDstKey = dstKey;
+          if (!newDstKey.endsWith("/")) {
+            newDstKey = newDstKey + "/";
+          }
+
+          String filename = newSrcKey.substring(pathToKey(src).length() + 1);
+          newDstKey = newDstKey + filename;
+          CopyObjectRequest copyObjectRequest =
+                  new CopyObjectRequest(mBucket, newSrcKey, mBucket, newDstKey);
+          ObjectMetadata srcmd = getObjectMetadata(newSrcKey);
+          if (srcmd != null) {
+            copyObjectRequest.setNewObjectMetadata(srcmd);
+          }
+          copyRequests.add(copyObjectRequest);
+        } else {
+          throw new IOException("Unexpected dstStatus");
+        }
+      }
+
+      // Submit the copy jobs to transfermanager
+      CountDownLatch doneSignal = new CountDownLatch(copyRequests.size());
+      ArrayList copyJobs = new ArrayList();
+      for (CopyObjectRequest request: copyRequests) {
+        request.setGeneralProgressListener(new CopyCompleteListener(
+                request.getSourceBucketName() + "/" + request.getSourceKey(),
+                request.getDestinationBucketName() + "/" + request.getDestinationKey(),
+                doneSignal));
+        copyJobs.add(transfers.copy(request));
+      }
+      try {
+        doneSignal.await();
+      } catch (AmazonClientException e) {
+        throw new IOException("Couldn't wait for all copies to be finished");
+      } catch (InterruptedException e) {
+        throw new InterruptedIOException("Interrupted copying objects, cancelling");
+      }
+
+      // Delete source objects
+      DeleteObjectsRequest keysDeleteRequest = new DeleteObjectsRequest(mBucket)
+              .withKeys(keysToDelete)
+              .withQuiet(false);
+      // Verify that the object versions were successfully deleted.
+      DeleteObjectsResult deletedKeys = mClient.deleteObjects(keysDeleteRequest);
+      int successfulDeletes = deletedKeys.getDeletedObjects().size();
+      LOG.debug(successfulDeletes + " objects successfully deleted");
     }
 
     if (!(src.getParent().equals(dst.getParent()))) {
@@ -1485,12 +1562,23 @@ public class COSAPIClient implements IStoreClient {
      * @return the upload result containing the ID
      * @throws IOException IO problem
      */
-    String initiateMultiPartUpload() throws IOException {
+    String initiateMultiPartUpload(Boolean atomicWrite, String etag) throws IOException {
       LOG.debug("Initiating Multipart upload");
+      ObjectMetadata om = newObjectMetadata(-1);
+      // if atomic write is enabled use the etag to ensure put request is atomic
+      if (atomicWrite) {
+        if (etag != null) {
+          LOG.debug("Atomic write - setting If-Match header");
+          om.setHeader("If-Match", etag);
+        } else {
+          LOG.debug("Atomic write - setting If-None-Match header");
+          om.setHeader("If-None-Match", "*");
+        }
+      }
       final InitiateMultipartUploadRequest initiateMPURequest =
           new InitiateMultipartUploadRequest(mBucket,
               key,
-              newObjectMetadata(-1));
+              om);
       try {
         return mClient.initiateMultipartUpload(initiateMPURequest)
             .getUploadId();
@@ -1597,6 +1685,40 @@ public class COSAPIClient implements IStoreClient {
     }
   }
 
+  final class CopyCompleteListener implements ProgressListener {
+
+    private CountDownLatch doneSignal;
+    private String src;
+    private String dst;
+
+    private CopyCompleteListener(String srcObject, String dstObject,
+                                 CountDownLatch doneSignalVar) {
+      src = srcObject;
+      dst = dstObject;
+      doneSignal = doneSignalVar;
+    }
+
+    public void progressChanged(ProgressEvent progressEvent) {
+
+      LOG.debug("ProgressEvent received: " + progressEvent.toString());
+
+      if (progressEvent.getEventType()
+              == ProgressEventType.CLIENT_REQUEST_STARTED_EVENT) {
+        LOG.debug("Started to copy: " + src + " -> " + dst);
+      }
+      if (progressEvent.getEventType()
+              == ProgressEventType.CLIENT_REQUEST_SUCCESS_EVENT) {
+        LOG.debug("Completed copy: " + src + " -> " + dst);
+        doneSignal.countDown();
+      }
+      if (progressEvent.getEventType()
+              == ProgressEventType.CLIENT_REQUEST_FAILED_EVENT) {
+        LOG.debug("Failed upload: " + src + " -> " + dst);
+        doneSignal.countDown();
+      }
+    }
+  }
+
   /**
    * Initiate a {@code listObjects} operation, incrementing metrics
    * in the process.
@@ -1663,6 +1785,24 @@ public class COSAPIClient implements IStoreClient {
       return p;
     }
     return path.makeQualified(filesystemURI, workingDir);
+  }
+
+  /**
+   * This method decodes the path string if it is url encoded
+   *
+   * @param path of the file in object storage
+   * @param encoding of the path
+   * @return decoded path string
+   */
+  private String decodePath(String path, String encoding) {
+    if (encoding != null && encoding.equals("url")) {
+      try {
+        path = URLDecoder.decode(path, "UTF-8");
+      } catch (UnsupportedEncodingException e) {
+        LOG.debug("Exception when decoding path: {}", e.getMessage());
+      }
+    }
+    return path;
   }
 
   /**
