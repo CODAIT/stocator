@@ -19,25 +19,40 @@
 package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Hashtable;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 
-/**
- * Test the FileSystem#listStatus() operations
- */
+@RunWith(Parameterized.class)
 public class TestCOSGlobber extends COSFileSystemBaseTest {
+
+  public TestCOSGlobber(Boolean isFlatListing) {
+    flatListing = isFlatListing;
+  }
+
+  private boolean flatListing;
 
   private static Path[] sTestData;
   private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
+  private static Hashtable<String, String> sConf = new Hashtable<String, String>();
 
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    createCOSFileSystem();
+  @Parameterized.Parameters(name = "flat listing = {0}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(new Object[][] { { true }, { false } });
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    sConf.put("fs.cos.flat.list", String.valueOf(flatListing));
+    createCOSFileSystem(sConf);
     if (sFileSystem != null) {
       createTestData();
     }
@@ -99,7 +114,11 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "abc/test_*"));
     assertEquals(dumpStats("abc/test_*", paths), 3, paths.length);
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2018/*"));
-    assertEquals(dumpStats("/test/*", paths), 8, paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("/test/*", paths), 8, paths.length);
+    } else {
+      assertEquals(dumpStats("/test/*", paths), 2, paths.length);
+    }
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2019/*"));
     assertEquals(dumpStats("/test/*", paths), 0, paths.length);
 
@@ -107,8 +126,22 @@ public class TestCOSGlobber extends COSFileSystemBaseTest {
     assertEquals(dumpStats("/tmp/data/*", paths), 3, paths.length);
 
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/*"));
-    assertEquals(dumpStats("/test/*", paths), sTestData.length - 6, paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("/test/*", paths), sTestData.length - 6, paths.length);
+    } else {
+      assertEquals(dumpStats("/test/*", paths), 3, paths.length);
+    }
 
+    paths = sFileSystem.globStatus(new Path(getBaseURI(), "test/y=2018/m=10/d=29/*.json"));
+    if (flatListing) {
+      assertEquals(dumpStats("/test/y=2018/m=10/d=29/*.json", paths), 4, paths.length);
+    } else {
+      assertEquals(dumpStats("/test/y=2018/m=10/d=29/*.json", paths), 2, paths.length);
+    }
+
+    paths = sFileSystem.globStatus(new Path(getBaseURI(),
+            "test/y=2018/m=10/d=29/data2.json/*.json"));
+    assertEquals(dumpStats("/test/y=2018/m=10/d=29/*.json", paths), 2, paths.length);
   }
 
   @Test

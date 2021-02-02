@@ -19,26 +19,42 @@
 package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Hashtable;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 
 /**
  * Test Globber operations on the data that was not created by Stocator
  */
+@RunWith(Parameterized.class)
 public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
+
+  public TestCOSGlobberBracket(Boolean isFlatListing) {
+    flatListing = isFlatListing;
+  }
+
+  private boolean flatListing;
 
   private static Path[] sTestData;
   private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
   private static Hashtable<String, String> sConf = new Hashtable<String, String>();
 
-  @BeforeClass
-  public static void setUpClass() throws Exception {
+  @Parameterized.Parameters(name = "flat listing = {0}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(new Object[][] { { true }, { false } });
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    sConf.put("fs.cos.flat.list", String.valueOf(flatListing));
     sConf.put("fs.stocator.glob.bracket.support", "true");
     createCOSFileSystem(sConf);
     if (sFileSystem != null) {
@@ -94,9 +110,18 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
   public void testListGlobber() throws Exception {
     FileStatus[] paths;
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/*"));
-    assertEquals(dumpStats("/test1/*", paths), sTestData.length, paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("/test1/*", paths), sTestData.length, paths.length);
+    } else {
+      assertEquals(dumpStats("/test1/*", paths), 3, paths.length);
+    }
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/y=2018/*"));
-    assertEquals(dumpStats("test1/y=2018/*", paths), 12, paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("test1/y=2018/*", paths), 12, paths.length);
+    } else {
+      assertEquals(dumpStats("test1/y=2018/*", paths), 2, paths.length);
+    }
+
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/y=2019/*"));
     assertEquals(dumpStats("test1/y=2019/**", paths), 0, paths.length);
   }
@@ -105,7 +130,12 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
   public void testAdvancedGlobber() throws Exception {
     FileStatus[] paths;
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/y=2018/m=10/{d=29,d=28}*"));
-    assertEquals(dumpStats("test1/y=2018/m=10/{d=29,d=28}*", paths), 6, paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("test1/y=2018/m=10/{d=29,d=28}*", paths), 6, paths.length);
+    } else {
+      assertEquals(dumpStats("test1/y=2018/m=10/{d=29,d=28}*", paths), 2, paths.length);
+
+    }
   }
 
   @Test(expected = IOException.class)
@@ -118,7 +148,11 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
   public void testBracketSupport2() throws Exception {
     FileStatus[] paths;
     paths = sFileSystem.globStatus(new Path(getBaseURI(), "test1/y=2018/m=10/d={29,28}*"));
-    assertEquals(dumpStats("test1/y=2018/m=10/d={29,28}*", paths), 6, paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("test1/y=2018/m=10/d={29,28}*", paths), 6, paths.length);
+    } else {
+      assertEquals(dumpStats("test1/y=2018/m=10/d={29,28}*", paths), 2, paths.length);
+    }
   }
 
   @Test
@@ -126,8 +160,13 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
     FileStatus[] paths;
     paths = sFileSystem.globStatus(new Path(getBaseURI(),
         "test1/y=2018/m=10/datestr={2017-01-01,2017-01-02}*"));
-    assertEquals(dumpStats("test1/y=2018/m=10/datestr={2017-01-01,2017-01-02}*", paths), 4,
-        paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("test1/y=2018/m=10/datestr={2017-01-01, 2017-01-02}*", paths), 4,
+              paths.length);
+    } else {
+      assertEquals(dumpStats("test1/y=2018/m=10/datestr={2017-01-01, 2017-01-02}*", paths), 2,
+              paths.length);
+    }
   }
 
   @Test
@@ -135,8 +174,13 @@ public class TestCOSGlobberBracket extends COSFileSystemBaseTest {
     FileStatus[] paths;
     paths = sFileSystem.globStatus(new Path(getBaseURI(),
         "test1/y=2018/m=10/datestr=2017-01-{01,02}*"));
-    assertEquals(dumpStats("test1/y=2018/m=10/datestr=2017-01-{01,02}*", paths), 4,
-        paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("test1/y=2018/m=10/datestr=2017-01-{01,02}*", paths), 4,
+              paths.length);
+    } else {
+      assertEquals(dumpStats("test1/y=2018/m=10/datestr=2017-01-{01,02}*", paths), 2,
+              paths.length);
+    }
   }
 
 }

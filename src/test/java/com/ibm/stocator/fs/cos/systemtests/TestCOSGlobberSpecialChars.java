@@ -19,25 +19,43 @@
 package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Hashtable;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import static com.ibm.stocator.fs.common.FileSystemTestUtils.dumpStats;
 
 /**
  * Test the FileSystem#listStatus() operations
  */
+@RunWith(Parameterized.class)
 public class TestCOSGlobberSpecialChars extends COSFileSystemBaseTest {
+
+  public TestCOSGlobberSpecialChars(Boolean isFlatListing) {
+    flatListing = isFlatListing;
+  }
+
+  private boolean flatListing;
 
   private static Path[] sTestData;
   private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
+  private static Hashtable<String, String> sConf = new Hashtable<String, String>();
 
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    createCOSFileSystem();
+  @Parameterized.Parameters(name = "flat listing = {0}")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(new Object[][] { { true }, { false } });
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    sConf.put("fs.cos.flat.list", String.valueOf(flatListing));
+    createCOSFileSystem(sConf);
     if (sFileSystem != null) {
       createTestData();
     }
@@ -70,7 +88,11 @@ public class TestCOSGlobberSpecialChars extends COSFileSystemBaseTest {
     for (FileStatus path: paths) {
       System.out.println(path.getPath());
     }
-    assertEquals(dumpStats("/test/*", paths), 2, paths.length);
+    if (flatListing) {
+      assertEquals(dumpStats("/test/*", paths), 2, paths.length);
+    } else {
+      assertEquals(dumpStats("/test/*", paths), 1, paths.length);
+    }
   }
 
 }
