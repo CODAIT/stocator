@@ -22,6 +22,8 @@ import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.file.AccessDeniedException;
 import java.util.Date;
 import java.util.concurrent.ExecutionException;
@@ -280,6 +282,22 @@ public final class COSUtils {
     builder.append(summary.getKey()).append(' ');
     builder.append("size=").append(summary.getSize());
     return builder.toString();
+  }
+
+  public static Path decodePath(Path encodedPath, String encoding)
+      throws UnsupportedEncodingException {
+    if (encoding != null && encoding.equals("url")) {
+      try {
+        LOG.trace(String.format("Encoded path: %s",encodedPath.toString()));
+        String decodedPath = URLDecoder.decode(encodedPath.toString(),"UTF-8");
+        LOG.trace(String.format("Decoded path: %s",decodedPath.toString()));
+        return new Path(decodedPath);
+      } catch (UnsupportedEncodingException e) {
+        LOG.debug("Exception when decoding path: {}",e.getMessage());
+        throw e;
+      }
+    }
+    return encodedPath;
   }
 
 }
