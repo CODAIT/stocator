@@ -42,6 +42,7 @@ public class TestCOSFaultToleranceCleanupMode extends COSFileSystemBaseTest {
   public static void setUpClass() throws Exception {
     sConf.put("fs.stocator.glob.bracket.support", "true");
     sConf.put("fs.stocator.failure.data.cleanup", "true");
+    sConf.put("fs.cos.flat.list", "true");
     createCOSFileSystem(sConf);
     if (sFileSystem != null) {
       createTestData();

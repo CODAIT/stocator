@@ -41,6 +41,7 @@ public class TestCOSGlobberBracketStocator extends COSFileSystemBaseTest {
   @BeforeClass
   public static void setUpClass() throws Exception {
     sConf.put("fs.stocator.glob.bracket.support", "true");
+    sConf.put("fs.cos.flat.list", "true");
     createCOSFileSystem(sConf);
     if (sFileSystem != null) {
       createTestData();
