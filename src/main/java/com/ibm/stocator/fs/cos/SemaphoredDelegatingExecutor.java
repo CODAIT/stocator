@@ -91,7 +91,7 @@ class SemaphoredDelegatingExecutor extends ForwardingListeningExecutorService {
       queueingPermits.acquire();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      return Futures.immediateFailedCheckedFuture(e);
+      return Futures.immediateFailedFuture(e);
     }
     return super.submit(new CallableWithPermitRelease<>(task));
   }
@@ -102,7 +102,7 @@ class SemaphoredDelegatingExecutor extends ForwardingListeningExecutorService {
       queueingPermits.acquire();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      return Futures.immediateFailedCheckedFuture(e);
+      return Futures.immediateFailedFuture(e);
     }
     return super.submit(new RunnableWithPermitRelease(task), result);
   }
@@ -113,7 +113,7 @@ class SemaphoredDelegatingExecutor extends ForwardingListeningExecutorService {
       queueingPermits.acquire();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      return Futures.immediateFailedCheckedFuture(e);
+      return Futures.immediateFailedFuture(e);
     }
     return super.submit(new RunnableWithPermitRelease(task));
   }
