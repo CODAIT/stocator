@@ -19,6 +19,7 @@
 package com.ibm.stocator.fs.cos.systemtests;
 
 import java.io.IOException;
+import java.util.Hashtable;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -34,10 +35,12 @@ public class TestCOSGlobberSpecialChars extends COSFileSystemBaseTest {
   private static Path[] sTestData;
   private static Path[] sEmptyFiles;
   private static byte[] sData = "This is file".getBytes();
+  private static Hashtable<String, String> sConf = new Hashtable<String, String>();
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    createCOSFileSystem();
+    sConf.put("fs.cos.flat.list", "true");
+    createCOSFileSystem(sConf);
     if (sFileSystem != null) {
       createTestData();
     }

@@ -794,7 +794,7 @@ public class COSAPIClient implements IStoreClient {
       // if atomic write is enabled get the current tag if the object already exists
       String mEtag = null;
       if (atomicWriteEnabled && overwrite) {
-        LOG.debug("Atomic write is enabled and overwrite == false,"
+        LOG.debug("Atomic write is enabled and overwrite == true,"
                 + " getting current object etag");
         ObjectMetadata meta = getObjectMetadata(objNameWithoutBucket);
         if (meta != null) {
