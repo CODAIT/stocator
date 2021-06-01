@@ -149,7 +149,8 @@ You will need to build Stocator manually, for example using 1.0.24-ibm-sdk branc
 	cd stocator
 	git fetch
 	git checkout -b 1.0.24-ibm-sdk origin/1.0.24-ibm-sdk
-	mvn clean install –DskipTests
+	mvn clean install -Dmaven.test.skip=true
+
 
 You now need to include the `target/stocator-1.0.24-SNAPSHOT-IBM-SDK.jar` into class path of Spark. Follow section Using Stocator without compiling Apache Spark
 
