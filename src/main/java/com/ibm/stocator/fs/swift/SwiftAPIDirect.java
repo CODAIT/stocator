@@ -156,7 +156,7 @@ public class SwiftAPIDirect {
       }
     }
     final RequestConfig config = RequestConfig.custom().setExpectContinueEnabled(true)
-        .setNormalizeUri(false).build();
+        .build();
     httpPut.setConfig(config);
     final InputStreamEntity entity = new InputStreamEntity(inputStream, size);
     httpPut.setEntity(entity);
