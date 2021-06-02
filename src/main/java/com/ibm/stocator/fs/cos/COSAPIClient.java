@@ -233,7 +233,6 @@ public class COSAPIClient implements IStoreClient {
    * listing
    */
   private Map<String, Boolean> mCachedSparkOriginated;
-
   private URI filesystemURI;
   private Configuration conf;
   private TransferManager transfers;
@@ -1154,6 +1153,7 @@ public class COSAPIClient implements IStoreClient {
       for (String comPrefix : commonPrefixes) {
         LOG.trace("Common prefix is {}", comPrefix);
         Path qualifiedPath = keyToQualifiedPath(hostName, comPrefix);
+        qualifiedPath = COSUtils.decodePath(qualifiedPath, encoding);
         FileStatus status = new COSFileStatus(true, false, qualifiedPath);
         if (filter == null || filter.accept(status.getPath()))   {
           memoryCache.putFileStatus(status.getPath().toString(), status);
