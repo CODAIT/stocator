@@ -263,7 +263,7 @@ Now you can use URI
 | fs.cos.multipart.threshold | Max Integer | minimum size in bytes before we start a multipart uploads, default is max integer |
 | fs.cos.fast.upload | false | enable or disable block upload |
 | fs.stocator.glob.bracket.support | false | if true supports Hadoop string patterns of the form {ab,c{de, fh}}. Due to possible collision with object names, this mode prevents from create an object whose name contains {} |
-| fs.cos.atomic.write | false | enable or disable atomic write to COS using Etags. Atomic write is available only when the write is done in one chunk. <br> When the flag`fs.cos.fast.upload` is set to `false` atomic write will be available only for write that is lower or equal to `fs.cos.multipart.threshold` size. <br> When the flag `fs.cos.fast.upload` is set to `true` atomic write will be available only for write that require only one block. |
+| fs.cos.atomic.write | false | enable or disable atomic write to COS using conditional requests. <br> When the flag is set to true and the operation is create with `overwrite == false` <br> a conditional header will be used to handle race conditions for mutliple writers. <br> If the path gets created between `fs.create` and `stream.close` by an external writer <br> the close operation will fail and the object will not be written |
 
 ## Stocator and Object Storage based on OpenStack Swift API
 
