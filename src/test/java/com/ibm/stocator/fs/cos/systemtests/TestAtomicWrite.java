@@ -23,9 +23,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Hashtable;
 
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -34,6 +35,9 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class TestAtomicWrite extends COSFileSystemBaseTest {
+  @Rule
+  public ExpectedException exceptionRule = ExpectedException.none();
+
   private Hashtable<String, String> sConf = new Hashtable<String, String>();
   private Boolean fastUpload;
   private Boolean multiPart;
@@ -91,102 +95,9 @@ public class TestAtomicWrite extends COSFileSystemBaseTest {
       secondFile += createDataSize(1024 * 8);
     }
 
-    try {
-      createFile(p, secondFile.getBytes(), false);
-    } catch (IOException e) {
-      assert (e.getMessage().contains(
-              "At least one of the preconditions you specified did not hold"));
-    }
-  }
-
-  /**
-   * Checks writing an object with overwrite == true when the destination object doesn't exist
-   * at the time of the request.
-   * If in between another writing succeeded the write operation should fail as it
-   * assumed that the object doesn't exist.
-   * The If-None-Match should be set to * preventing the first write operation from succeeding
-   * @throws Exception
-   */
-  @Test
-  public void testIfNonMatchObjectNotExists() throws Exception {
-    Path p = new Path(sBaseURI + "/atomicwrite_fastupload_"
-            + fastUpload + "_multipart_" + multiPart + "/b.txt");
-    // create a request that will try to overwrite this object
-    // the object doesn't exist yet so If-None-Match: * should be used
-    // the write doesn't finish at this stage as close on the stream was not called yet
-    FSDataOutputStream out = sFileSystem.create(p, true);
-    String firstFile = "Some text";
-    if (multiPart) {
-      // create large enough file to trigger multipart upload
-      firstFile += createDataSize(1024 * 8);
-    }
-    out.write(firstFile.getBytes(), 0, firstFile.length());
-
-    // create an object in between that is being written to storage
-    String secondFile = "Some new text";
-    if (multiPart) {
-      // create large enough file to trigger multipart upload
-      secondFile += createDataSize(1024 * 8);
-    }
-    createFile(p, secondFile.getBytes());
-
-    // close the request for the first write
-    // this should fail because a new object was written in between
-    try {
-      out.close();
-    } catch (IOException e) {
-      assert (e.getMessage().contains(
-              "At least one of the preconditions you specified did not hold"));
-    }
-  }
-
-  /**
-   * Checks writing an object with overwrite == true when the destination object already exists at
-   * the time of writing.
-   * If in between another writing succeeded in overwriting the destination object the
-   * write operation should fail as it assumed it is overwriting the original destination object.
-   * The If-Match should be set to the original destination object Etag preventing the first write
-   * operation from succeeding
-   * @throws Exception
-   */
-  @Test
-  public void testIfMatchObjectExists() throws Exception {
-    Path p = new Path(sBaseURI + "/atomicwrite_fastupload_"
-            + fastUpload + "_multipart_" + multiPart + "/c.txt");
-    // create an object
-    String firstFile = "Some text";
-    if (multiPart) {
-      // create large enough file to trigger multipart upload
-      firstFile += createDataSize(1024 * 8);
-    }
-    createFile(p, firstFile.getBytes());
-
-    // create a request that will try to overwrite this object
-    // the destination object exists so an If-Match header with the object Etag should be used
-    // the write doesn't finish at this stage as close on the stream was not called yet
-    FSDataOutputStream out = sFileSystem.create(p, true);
-    String secondFile = "Some between text";
-    if (multiPart) {
-      // create large enough file to trigger multipart upload
-      secondFile += createDataSize(1024 * 8);
-    }
-    out.write(secondFile.getBytes(), 0, secondFile.length());
-
-    // overwrite the original object in between so its Etag changes
-    String thirdFile = "Some new text";
-    if (multiPart) {
-      // create large enough file to trigger multipart upload
-      thirdFile += createDataSize(1024 * 8);
-    }
-    createFile(p, thirdFile.getBytes());
-
-    // close the request for the overwrite object
-    try {
-      out.close();
-    } catch (IOException e) {
-      assert (e.getMessage().contains(
-              "At least one of the preconditions you specified did not hold"));
-    }
+    exceptionRule.expect(IOException.class);
+    exceptionRule.expectMessage("At least one of the preconditions you specified did not hold");
+    createFile(p, secondFile.getBytes(), false);
   }
 
   /**
