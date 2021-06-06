@@ -709,11 +709,11 @@ public class COSAPIClient implements IStoreClient {
         objNameWithoutBucket = objName.substring(mBucket.length() + 1);
       }
       // Avoid overwrite is enabled when atomic write is set to true and this is not an overwrite
-      // request. in this case an `If-None-Match` header will be used with `*` to make sure the write
-      // will fail in case of a concurrent write operation
+      // request. in this case an `If-None-Match` header will be used with `*` to make sure the
+      // write will fail in case of a concurrent write operation
       if (overwrite == false && !atomicWriteEnabled) {
-        LOG.warn("ovewrite == false and atomic write mode is not enabled " +
-                "the object will be overwritten if already exists");
+        LOG.warn("overwrite == false and atomic write mode is not enabled "
+                + "the object will be overwritten if already exists");
       }
       Boolean avoidOverwrite = atomicWriteEnabled && !overwrite;
       if (blockUploadEnabled) {
