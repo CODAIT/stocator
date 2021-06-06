@@ -1568,7 +1568,7 @@ public class COSAPIClient implements IStoreClient {
       // if atomic write is enabled use If-None-Match header
       // to ensure the write is atomic
       if (avoidOverwrite) {
-        LOG.debug("Atomic write - setting If-None-Match header");
+        LOG.debug("Avoid overwrite - setting If-None-Match header");
         om.setHeader("If-None-Match", "*");
       }
       final InitiateMultipartUploadRequest initiateMPURequest =
