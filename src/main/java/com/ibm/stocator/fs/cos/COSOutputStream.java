@@ -90,7 +90,7 @@ public class COSOutputStream extends OutputStream {
    * in this case an `If-None-Match` header will be used with `*` to make sure the write
    * will fail in case of a concurrent write operation
    */
-  private Boolean matomicWrite;
+  private Boolean mAtomicWrite;
 
   /**
    * Constructor for an output stream of an object in COS
@@ -110,7 +110,7 @@ public class COSOutputStream extends OutputStream {
       Map<String, String> metadata, TransferManager transfersT,
       COSAPIClient fsT, Boolean atomicWrite) throws IOException {
     mBucketName = bucketName;
-    matomicWrite = atomicWrite;
+    mAtomicWrite = atomicWrite;
     transfers = transfersT;
     fs = fsT;
     // Remove the bucket name prefix from key path
@@ -170,7 +170,7 @@ public class COSOutputStream extends OutputStream {
       om.setUserMetadata(mMetadata);
       // if atomic write is enabled use If-None-Match header
       // to ensure the write is atomic
-      if (matomicWrite) {
+      if (mAtomicWrite) {
         LOG.debug("Atomic write - setting If-None-Match header");
         om.setHeader("If-None-Match", "*");
       }
