@@ -136,17 +136,29 @@ public class COSBaseTest extends Assert {
   }
 
   /**
-   * Create a file with the given data.
+   * Create a file with the given data (using overwrite)
    *
    * @param path path to write
    * @param sourceData source dataset
    * @throws IOException on any problem
    */
-
   protected static void createFile(Path path, byte[] sourceData) throws IOException {
+    createFile(path, sourceData, true);
+  }
+
+  /**
+   * Create a file with the given data (using overwrite)
+   *
+   * @param path path to write
+   * @param sourceData source dataset
+   * @param overwrite whether to use overwrite
+   * @throws IOException on any problem
+   */
+  protected static void createFile(Path path, byte[] sourceData,
+                                   boolean overwrite) throws IOException {
     if (sFileSystem != null) {
       System.out.println("Create file " + path.toString());
-      FSDataOutputStream out = sFileSystem.create(path);
+      FSDataOutputStream out = sFileSystem.create(path, overwrite);
       out.write(sourceData, 0, sourceData.length);
       out.close();
     }
