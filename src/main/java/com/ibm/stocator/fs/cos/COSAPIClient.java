@@ -708,16 +708,10 @@ public class COSAPIClient implements IStoreClient {
       if (objName.startsWith(mBucket + "/")) {
         objNameWithoutBucket = objName.substring(mBucket.length() + 1);
       }
-      // if atomic write is enabled get the current tag if the object already exists
-      String mEtag = null;
-      if (atomicWriteEnabled && overwrite) {
-        LOG.debug("Atomic write is enabled and overwrite == true,"
-                + " getting current object etag");
-        ObjectMetadata meta = getObjectMetadata(objNameWithoutBucket);
-        if (meta != null) {
-          mEtag =  meta.getETag();
-        }
-      }
+      // atomic write is set when the flag is enabled and this is not an overwrite request
+      // in this case an `If-None-Match` header will be used with `*` to make sure the write
+      // will fail in case of a concurrent write operation
+      Boolean atomicWrite = atomicWriteEnabled && !overwrite;
       if (blockUploadEnabled) {
         return new FSDataOutputStream(
             new COSBlockOutputStream(this,
@@ -729,15 +723,14 @@ public class COSAPIClient implements IStoreClient {
                 contentType,
                 new WriteOperationHelper(objNameWithoutBucket),
                 metadata,
-                mEtag,
-                atomicWriteEnabled
+                atomicWrite
             ),
             null);
       }
 
       if (!contentType.equals(Constants.APPLICATION_DIRECTORY)) {
         return new FSDataOutputStream(new COSOutputStream(mBucket, objName,
-            mClient, contentType, metadata, transfers,this, mEtag, atomicWriteEnabled), statistics);
+            mClient, contentType, metadata, transfers,this, atomicWrite), statistics);
       } else {
         // Note - no need for atomic write in case of directory
         final InputStream im = new InputStream() {
@@ -1563,18 +1556,14 @@ public class COSAPIClient implements IStoreClient {
      * @return the upload result containing the ID
      * @throws IOException IO problem
      */
-    String initiateMultiPartUpload(Boolean atomicWrite, String etag) throws IOException {
+    String initiateMultiPartUpload(Boolean atomicWrite) throws IOException {
       LOG.debug("Initiating Multipart upload");
       ObjectMetadata om = newObjectMetadata(-1);
-      // if atomic write is enabled use the etag to ensure put request is atomic
+      // if atomic write is enabled use If-None-Match header
+      // to ensure the write is atomic
       if (atomicWrite) {
-        if (etag != null) {
-          LOG.debug("Atomic write - setting If-Match header");
-          om.setHeader("If-Match", etag);
-        } else {
-          LOG.debug("Atomic write - setting If-None-Match header");
-          om.setHeader("If-None-Match", "*");
-        }
+        LOG.debug("Atomic write - setting If-None-Match header");
+        om.setHeader("If-None-Match", "*");
       }
       final InitiateMultipartUploadRequest initiateMPURequest =
           new InitiateMultipartUploadRequest(mBucket,
