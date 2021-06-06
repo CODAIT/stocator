@@ -85,12 +85,11 @@ public class COSOutputStream extends OutputStream {
   private final COSAPIClient fs;
 
   /**
-   * Indicates whether the PutObjectRequest will be atomic or not
-   * atomic write is set when the flag is enabled and this is not an overwrite request
+   * Indicates whether the PutObjectRequest will avoid overwriting an existing object
    * in this case an `If-None-Match` header will be used with `*` to make sure the write
    * will fail in case of a concurrent write operation
    */
-  private Boolean mAtomicWrite;
+  private Boolean mAvoidOverwrite;
 
   /**
    * Constructor for an output stream of an object in COS
@@ -101,16 +100,17 @@ public class COSOutputStream extends OutputStream {
    * @param contentType the content type written to the output stream
    * @param metadata the object`s metadata
    * @param transfersT TransferManager
-   * @param atomicWrite if true the putObject will be atomic mea
+   * @param avoidOverwrite if true will avoid overwriting an existing object by using
+   *                       an `If-None-Match` set to `*`
    * @param fsT COSAPIClient
    *
    * @throws IOException if error
    */
   public COSOutputStream(String bucketName, String key, AmazonS3 client, String contentType,
       Map<String, String> metadata, TransferManager transfersT,
-      COSAPIClient fsT, Boolean atomicWrite) throws IOException {
+      COSAPIClient fsT, Boolean avoidOverwrite) throws IOException {
     mBucketName = bucketName;
-    mAtomicWrite = atomicWrite;
+    mAvoidOverwrite = avoidOverwrite;
     transfers = transfersT;
     fs = fsT;
     // Remove the bucket name prefix from key path
@@ -168,10 +168,10 @@ public class COSOutputStream extends OutputStream {
       om.setContentLength(mBackupFile.length());
       om.setContentType(mContentType);
       om.setUserMetadata(mMetadata);
-      // if atomic write is enabled use If-None-Match header
+      // if avoid overwrite is enabled use If-None-Match header
       // to ensure the write is atomic
-      if (mAtomicWrite) {
-        LOG.debug("Atomic write - setting If-None-Match header");
+      if (mAvoidOverwrite) {
+        LOG.debug("Avoid Overwrite - setting If-None-Match header");
         om.setHeader("If-None-Match", "*");
       }
 

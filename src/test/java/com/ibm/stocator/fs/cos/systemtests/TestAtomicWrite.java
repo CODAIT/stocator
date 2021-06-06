@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Hashtable;
 
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.junit.Rule;
 import org.junit.Test;
@@ -76,9 +77,43 @@ public class TestAtomicWrite extends COSFileSystemBaseTest {
    * @throws Exception
    */
   @Test
-  public void testIfNoneMatchObjectExists() throws Exception {
+  public void testIfNoneMatchObjectCreatedInBetween() throws Exception {
     Path p = new Path(sBaseURI + "/atomicwrite_fastupload_"
             + fastUpload + "_multipart_" + multiPart + "/a.txt");
+    // create the object without overwrite but don't finish write yet
+    FSDataOutputStream out = sFileSystem.create(p, false);
+    String firstFile = "Some text";
+    if (multiPart) {
+      // create large enough file to trigger multipart upload
+      firstFile += createDataSize(1024 * 8);
+    }
+    out.write(firstFile.getBytes(), 0, firstFile.length());
+
+    // Now try to create the same file with different content again without overwrite
+    // and finish write
+    String secondFile = "Some new text";
+    if (multiPart) {
+      // create large enough file to trigger multipart upload
+      secondFile += createDataSize(1024 * 8);
+    }
+    createFile(p, secondFile.getBytes(), false);
+
+    // close the write for the first object
+    exceptionRule.expect(IOException.class);
+    exceptionRule.expectMessage("At least one of the preconditions you specified did not hold");
+    out.close();
+  }
+
+  /**
+   * Checks writing an object when overwrite == false
+   * In this case the write should fail if an object already exists at the destination
+   * The If-None-Match should be set to * preventing the write from succeeding
+   * @throws Exception
+   */
+  @Test
+  public void testIfNoneMatchObjectExists() throws Exception {
+    Path p = new Path(sBaseURI + "/atomicwrite_fastupload_"
+            + fastUpload + "_multipart_" + multiPart + "/b.txt");
     // create the object without overwrite
     String firstFile = "Some text";
     if (multiPart) {
