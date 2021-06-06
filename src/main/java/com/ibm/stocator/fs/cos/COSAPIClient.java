@@ -708,10 +708,14 @@ public class COSAPIClient implements IStoreClient {
       if (objName.startsWith(mBucket + "/")) {
         objNameWithoutBucket = objName.substring(mBucket.length() + 1);
       }
-      // atomic write is set when the flag is enabled and this is not an overwrite request
-      // in this case an `If-None-Match` header will be used with `*` to make sure the write
+      // Avoid overwrite is enabled when atomic write is set to true and this is not an overwrite
+      // request. in this case an `If-None-Match` header will be used with `*` to make sure the write
       // will fail in case of a concurrent write operation
-      Boolean atomicWrite = atomicWriteEnabled && !overwrite;
+      if (overwrite == false && !atomicWriteEnabled) {
+        LOG.warn("ovewrite == false and atomic write mode is not enabled " +
+                "the object will be overwritten");
+      }
+      Boolean avoidOverwrite = atomicWriteEnabled && !overwrite;
       if (blockUploadEnabled) {
         return new FSDataOutputStream(
             new COSBlockOutputStream(this,
@@ -723,14 +727,14 @@ public class COSAPIClient implements IStoreClient {
                 contentType,
                 new WriteOperationHelper(objNameWithoutBucket),
                 metadata,
-                atomicWrite
+                avoidOverwrite
             ),
             null);
       }
 
       if (!contentType.equals(Constants.APPLICATION_DIRECTORY)) {
         return new FSDataOutputStream(new COSOutputStream(mBucket, objName,
-            mClient, contentType, metadata, transfers,this, atomicWrite), statistics);
+            mClient, contentType, metadata, transfers,this, avoidOverwrite), statistics);
       } else {
         // Note - no need for atomic write in case of directory
         final InputStream im = new InputStream() {
