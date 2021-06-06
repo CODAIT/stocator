@@ -713,7 +713,7 @@ public class COSAPIClient implements IStoreClient {
       // will fail in case of a concurrent write operation
       if (overwrite == false && !atomicWriteEnabled) {
         LOG.warn("ovewrite == false and atomic write mode is not enabled " +
-                "the object will be overwritten");
+                "the object will be overwritten if already exists");
       }
       Boolean avoidOverwrite = atomicWriteEnabled && !overwrite;
       if (blockUploadEnabled) {
@@ -1557,15 +1557,17 @@ public class COSAPIClient implements IStoreClient {
 
     /**
      * Start the multipart upload process.
+     * @param avoidOverwrite if true will avoid overwriting an existing object by using
+     *                       an `If-None-Match` set to `*`
      * @return the upload result containing the ID
      * @throws IOException IO problem
      */
-    String initiateMultiPartUpload(Boolean atomicWrite) throws IOException {
+    String initiateMultiPartUpload(Boolean avoidOverwrite) throws IOException {
       LOG.debug("Initiating Multipart upload");
       ObjectMetadata om = newObjectMetadata(-1);
       // if atomic write is enabled use If-None-Match header
       // to ensure the write is atomic
-      if (atomicWrite) {
+      if (avoidOverwrite) {
         LOG.debug("Atomic write - setting If-None-Match header");
         om.setHeader("If-None-Match", "*");
       }
