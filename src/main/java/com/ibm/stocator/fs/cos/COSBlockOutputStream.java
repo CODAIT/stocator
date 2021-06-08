@@ -115,16 +115,11 @@ class COSBlockOutputStream extends OutputStream {
   private String contentType;
 
   /**
-   * Object's etag for atomic write
+   * Indicates whether the PutObjectRequest will avoid overwriting an existing object
+   * in this case an `If-None-Match` header will be used with `*` to make sure the write
+   * will fail in case of a concurrent write operation
    */
-  private final String mEtag;
-
-  /**
-   * Indicates whether the PutObjectRequest will be atomic or not
-   * Note that currently only put requests for one block will atomic since
-   * there is no atomic CompleteMultipartUploadRequest currently.
-   */
-  private Boolean mAtomicWriteEnabled;
+  private Boolean mAvoidOverwrite;
 
   /**
    * An COS output stream which uploads partitions in a separate pool of
@@ -139,10 +134,7 @@ class COSBlockOutputStream extends OutputStream {
    * @param contentTypeT contentType
    * @param writeOperationHelperT state of the write operation
    * @param metadata Map<String, String> metadata
-   * @param etag the etag to be used in atomic write (null if no etag exists)
-   * @param atomicWriteEnabled if true the putObject for uploads with one block will be atomic
-   * Note that currently only put requests for one block will atomic since
-   *      there is no atomic CompleteMultipartUploadRequest currently.
+   * @param avoidOverwrite if true the putObject for uploads with one block will be atomic
    * @throws IOException on any problem
    */
   COSBlockOutputStream(COSAPIClient fsT, String keyT, ExecutorService executorServiceT,
@@ -151,8 +143,7 @@ class COSBlockOutputStream extends OutputStream {
       String contentTypeT,
       COSAPIClient.WriteOperationHelper writeOperationHelperT,
       Map<String, String> metadata,
-      String etag,
-      Boolean atomicWriteEnabled)
+      Boolean avoidOverwrite)
       throws IOException {
     fs = fsT;
     key = keyT;
@@ -160,8 +151,7 @@ class COSBlockOutputStream extends OutputStream {
     contentType = contentTypeT;
     blockSize = (int) blockSizeT;
     mMetadata = metadata;
-    mEtag = etag;
-    mAtomicWriteEnabled = atomicWriteEnabled;
+    mAvoidOverwrite = avoidOverwrite;
     writeOperationHelper = writeOperationHelperT;
     if (blockSize < COSConstants.MULTIPART_MIN_SIZE) {
       throw new IllegalArgumentException("Block size is too small: " + blockSize);
@@ -403,15 +393,11 @@ class COSBlockOutputStream extends OutputStream {
     } else {
       om.setContentType("application/octet-stream");
     }
-    // if atomic write is enabled use the etag to ensure put request is atomic
-    if (mAtomicWriteEnabled) {
-      if (mEtag != null) {
-        LOG.debug("Atomic write - setting If-Match header");
-        om.setHeader("If-Match", mEtag);
-      } else {
-        LOG.debug("Atomic write - setting If-None-Match header");
-        om.setHeader("If-None-Match", "*");
-      }
+    // if avoid overwrite is enabled use If-None-Match header
+    // to ensure the write is atomic
+    if (mAvoidOverwrite) {
+      LOG.debug("Avoid Overwrite - setting If-None-Match header");
+      om.setHeader("If-None-Match", "*");
     }
     putObjectRequest.setMetadata(om);
     ListenableFuture<PutObjectResult> putObjectResult =
@@ -472,7 +458,7 @@ class COSBlockOutputStream extends OutputStream {
     private final List<ListenableFuture<PartETag>> partETagsFutures;
 
     MultiPartUpload() throws IOException {
-      uploadId = writeOperationHelper.initiateMultiPartUpload(mAtomicWriteEnabled, mEtag);
+      uploadId = writeOperationHelper.initiateMultiPartUpload(mAvoidOverwrite);
       partETagsFutures = new ArrayList<>(2);
       LOG.debug("Initiated multi-part upload for {} with " + "id '{}'",
           writeOperationHelper, uploadId);

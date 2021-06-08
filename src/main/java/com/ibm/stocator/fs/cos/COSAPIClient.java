@@ -790,16 +790,14 @@ public class COSAPIClient implements IStoreClient {
       if (objName.startsWith(mBucket + "/")) {
         objNameWithoutBucket = objName.substring(mBucket.length() + 1);
       }
-      // if atomic write is enabled get the current tag if the object already exists
-      String mEtag = null;
-      if (atomicWriteEnabled && overwrite) {
-        LOG.debug("Atomic write is enabled and overwrite == true,"
-                + " getting current object etag");
-        ObjectMetadata meta = getObjectMetadata(objNameWithoutBucket);
-        if (meta != null) {
-          mEtag =  meta.getETag();
-        }
+      // Avoid overwrite is enabled when atomic write is set to true and this is not an overwrite
+      // request. in this case an `If-None-Match` header will be used with `*` to make sure the
+      // write will fail in case of a concurrent write operation
+      if (overwrite == false && !atomicWriteEnabled) {
+        LOG.warn("overwrite == false and atomic write mode is not enabled "
+                + "the object will be overwritten if already exists");
       }
+      Boolean avoidOverwrite = atomicWriteEnabled && !overwrite;
       if (blockUploadEnabled) {
         return new FSDataOutputStream(
             new COSBlockOutputStream(this,
@@ -811,15 +809,14 @@ public class COSAPIClient implements IStoreClient {
                 contentType,
                 new WriteOperationHelper(objNameWithoutBucket),
                 metadata,
-                mEtag,
-                atomicWriteEnabled
+                avoidOverwrite
             ),
             null);
       }
 
       if (!contentType.equals(Constants.APPLICATION_DIRECTORY)) {
         return new FSDataOutputStream(new COSOutputStream(mBucket, objName, mClient,
-                contentType, metadata, transfers, this, mEtag, atomicWriteEnabled), statistics);
+                contentType, metadata, transfers, this, avoidOverwrite), statistics);
       } else {
         // Note - no need for atomic write in case of directory
         final InputStream im = new InputStream() {
@@ -1659,21 +1656,19 @@ public class COSAPIClient implements IStoreClient {
 
     /**
      * Start the multipart upload process.
+     * @param avoidOverwrite if true will avoid overwriting an existing object by using
+     *                       an `If-None-Match` set to `*`
      * @return the upload result containing the ID
      * @throws IOException IO problem
      */
-    String initiateMultiPartUpload(Boolean atomicWrite, String etag) throws IOException {
+    String initiateMultiPartUpload(Boolean avoidOverwrite) throws IOException {
       LOG.debug("Initiating Multipart upload");
       ObjectMetadata om = newObjectMetadata(-1);
-      // if atomic write is enabled use the etag to ensure put request is atomic
-      if (atomicWrite) {
-        if (etag != null) {
-          LOG.debug("Atomic write - setting If-Match header");
-          om.setHeader("If-Match", etag);
-        } else {
-          LOG.debug("Atomic write - setting If-None-Match header");
-          om.setHeader("If-None-Match", "*");
-        }
+      // if atomic write is enabled use If-None-Match header
+      // to ensure the write is atomic
+      if (avoidOverwrite) {
+        LOG.debug("Avoid overwrite - setting If-None-Match header");
+        om.setHeader("If-None-Match", "*");
       }
       final InitiateMultipartUploadRequest initiateMPURequest =
           new InitiateMultipartUploadRequest(mBucket,
