@@ -85,14 +85,11 @@ public class COSOutputStream extends OutputStream {
   private final COSAPIClient fs;
 
   /**
-   * Object's etag for atomic write
+   * Indicates whether the PutObjectRequest will avoid overwriting an existing object
+   * in this case an `If-None-Match` header will be used with `*` to make sure the write
+   * will fail in case of a concurrent write operation
    */
-  private final String mEtag;
-
-  /**
-   * Indicates whether the PutObjectRequest will be atomic or not
-   */
-  private Boolean mAtomicWriteEnabled;
+  private Boolean mAvoidOverwrite;
 
   /**
    * Constructor for an output stream of an object in COS
@@ -103,18 +100,17 @@ public class COSOutputStream extends OutputStream {
    * @param contentType the content type written to the output stream
    * @param metadata the object`s metadata
    * @param transfersT TransferManager
-   * @param etag the etag to be used in atomic write (null if no etag exists)
-   * @param atomicWriteEnabled if true the putObject
+   * @param avoidOverwrite if true will avoid overwriting an existing object by using
+   *                       an `If-None-Match` set to `*`
    * @param fsT COSAPIClient
    *
    * @throws IOException if error
    */
   public COSOutputStream(String bucketName, String key, AmazonS3 client, String contentType,
       Map<String, String> metadata, TransferManager transfersT,
-      COSAPIClient fsT, String etag, Boolean atomicWriteEnabled) throws IOException {
+      COSAPIClient fsT, Boolean avoidOverwrite) throws IOException {
     mBucketName = bucketName;
-    mEtag = etag;
-    mAtomicWriteEnabled = atomicWriteEnabled;
+    mAvoidOverwrite = avoidOverwrite;
     transfers = transfersT;
     fs = fsT;
     // Remove the bucket name prefix from key path
@@ -172,15 +168,11 @@ public class COSOutputStream extends OutputStream {
       om.setContentLength(mBackupFile.length());
       om.setContentType(mContentType);
       om.setUserMetadata(mMetadata);
-      // if atomic write is enabled use the etag to ensure put request is atomic
-      if (mAtomicWriteEnabled) {
-        if (mEtag != null) {
-          LOG.debug("Atomic write - setting If-Match header");
-          om.setHeader("If-Match", mEtag);
-        } else {
-          LOG.debug("Atomic write - setting If-None-Match header");
-          om.setHeader("If-None-Match", "*");
-        }
+      // if avoid overwrite is enabled use If-None-Match header
+      // to ensure the write is atomic
+      if (mAvoidOverwrite) {
+        LOG.debug("Avoid Overwrite - setting If-None-Match header");
+        om.setHeader("If-None-Match", "*");
       }
 
       PutObjectRequest putObjectRequest = new PutObjectRequest(mBucketName, mKey, mBackupFile);
