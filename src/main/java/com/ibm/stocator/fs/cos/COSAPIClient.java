@@ -55,7 +55,9 @@ import com.ibm.stocator.fs.cos.COSInputStream;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.event.ProgressEvent;
 import com.amazonaws.event.ProgressListener;
 import com.amazonaws.services.s3.S3ClientOptions;
@@ -138,6 +140,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.REQUEST_TIMEOUT;
 import static com.ibm.stocator.fs.cos.COSConstants.AUTO_BUCKET_CREATE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ACCESS_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.SESSION_TOKEN_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL_COS_PROPERTY;
@@ -278,6 +281,7 @@ public class COSAPIClient implements IStoreClient {
     // Define COS client
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
     String secretKey = props.getProperty(SECRET_KEY_COS_PROPERTY);
+    String sessionToken = props.getProperty(SESSION_TOKEN_COS_PROPERTY);
 
     if (accessKey == null) {
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
@@ -285,9 +289,13 @@ public class COSAPIClient implements IStoreClient {
     if (secretKey == null) {
       throw new ConfigurationParseException("Secret KEY is empty. Please provide valid secret key");
     }
+    AWSCredentials creds;
+    if (sessionToken == null) {
+      creds = new BasicAWSCredentials(accessKey, secretKey);
+    } else {
+      creds = new BasicSessionCredentials(accessKey, secretKey, sessionToken);
+    }
 
-    BasicAWSCredentials creds =
-        new BasicAWSCredentials(accessKey, secretKey);
     ClientConfiguration clientConf = new ClientConfiguration();
 
     int maxThreads = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_THREADS,
