@@ -52,6 +52,9 @@ public class COSConstants {
   public static final String SECRET_KEY = ".secret.key";
   public static final String SECRET_KEY_COS_PROPERTY = FS_COS + SECRET_KEY;
 
+  public static final String SESSION_TOKEN = ".session.token";
+  public static final String SESSION_TOKEN_COS_PROPERTY = FS_COS + SESSION_TOKEN;
+
   public static final String ENDPOINT_URL = ".endpoint";
   public static final String ENDPOINT_URL_COS_PROPERTY = FS_COS + ENDPOINT_URL;
 

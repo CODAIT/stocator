@@ -207,6 +207,7 @@ The following is the list of the configuration keys. `<service>` can be any valu
 | --- | ------------ | ------------- |
 |fs.cos.`<service>`.access.key | Access key  | mandatory
 |fs.cos.`<service>`.secret.key  | Secret key | mandatory
+|fs.cos.`<service>`.session.token  | Session token | optional
 |fs.cos.`<service>`.endpoint | COS endpoint | mandatory
 |fs.cos.`<service>`.v2.signer.type |  Signer type  | optional
 
@@ -223,6 +224,10 @@ Example, configure `<service>` as `myCOS`:
 	<property>
 		<name>fs.cos.myCos.secret.key</name>
 		<value>SECRET KEY</value>
+	</property>
+	<property>
+		<name>fs.cos.myCos.session.token</name>
+		<value>SESSION TOKEN</value>
 	</property>
 	<property>
 		<name>fs.cos.myCos.v2.signer.type</name>
