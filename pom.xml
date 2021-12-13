@@ -59,7 +59,7 @@
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
         <findbugs.path>build/findbugs</findbugs.path>
-        <slf4j.version>1.7.25</slf4j.version>
+        <slf4j.version>1.7.32</slf4j.version>
         <java.version>1.8</java.version>
         <joss.version>0.10.3</joss.version>
         <hadoop.version>2.7.3</hadoop.version>
