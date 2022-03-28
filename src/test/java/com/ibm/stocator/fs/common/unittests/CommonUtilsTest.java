@@ -150,5 +150,4 @@ public class CommonUtilsTest {
     Assert.assertEquals(6, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key6i", -1));
     Assert.assertEquals(-1, Utils.getLong(conf, FS_COS, FS_ALT_KEYS, ".key67i", -1));
   }
-
 }

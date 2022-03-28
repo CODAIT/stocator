@@ -541,13 +541,15 @@ public class ObjectStoreFileSystem extends ExtendedFileSystem {
   @Override
   public FileStatus[] globStatus(Path pathPattern) throws IOException {
     LOG.debug("Glob status: {}", pathPattern.toString());
-    return new ObjectStoreGlobber(this, pathPattern, DEFAULT_FILTER, bracketGlobSupport).glob();
+    return new ObjectStoreGlobber(this, pathPattern, DEFAULT_FILTER, bracketGlobSupport,
+        hostNameScheme).glob();
   }
 
   @Override
   public FileStatus[] globStatus(Path pathPattern, PathFilter filter) throws IOException {
     LOG.debug("Glob status {} with path filter {}",pathPattern.toString(), filter.toString());
-    return new ObjectStoreGlobber(this, pathPattern, filter, bracketGlobSupport).glob();
+    return new ObjectStoreGlobber(this, pathPattern, filter, bracketGlobSupport,
+        hostNameScheme).glob();
   }
 
   @Override

@@ -33,6 +33,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.ibm.stocator.fs.cos.COSUtils;
 
 public class ObjectStoreGlobber {
   public static final Logger LOG = LoggerFactory.getLogger(ObjectStoreGlobber.class.getName());
@@ -42,23 +43,26 @@ public class ObjectStoreGlobber {
   private final Path pathPattern;
   private final PathFilter filter;
   private final boolean bracketSupport;
+  private final String hostName;
 
   public ObjectStoreGlobber(ExtendedFileSystem fsT, Path pathPatternT, PathFilter filterT,
-      boolean bracketSupportT) {
+      boolean bracketSupportT, String hostNameT) {
     fs = fsT;
     fc = null;
     pathPattern = pathPatternT;
     filter = filterT;
     bracketSupport = bracketSupportT;
+    hostName = hostNameT;
   }
 
   public ObjectStoreGlobber(FileContext fcT, Path pathPatternT, PathFilter filterT,
-      boolean bracketSupportT) {
+      boolean bracketSupportT, String hostNameT) {
+    pathPattern = pathPatternT;
     fs = null;
     fc = fcT;
-    pathPattern = pathPatternT;
     filter = filterT;
     bracketSupport = bracketSupportT;
+    hostName = hostNameT;
   }
 
   private FileStatus getFileStatus(Path path) throws IOException {
@@ -137,13 +141,16 @@ public class ObjectStoreGlobber {
     String authority = authorityFromPath(pathPattern);
 
     String pathPatternString = pathPattern.toUri().getPath();
+    String token = COSUtils.extractToken(pathPatternString);
+    pathPatternString = COSUtils.removeToken(pathPatternString);
     String unescapePathString = unescapePathComponent(pathPatternString);
     int firstSpecialChar = getSpecialCharacter(unescapePathString);
     String noWildCardPathPrefix = unescapePathString.substring(0, firstSpecialChar);
 
     ArrayList<FileStatus> results = new ArrayList<>(1);
     ArrayList<FileStatus> candidates;
-    ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(pathPattern.toString(),
+    ObjectStoreFlatGlobFilter globFilter = new ObjectStoreFlatGlobFilter(
+        COSUtils.removeToken(pathPattern.toString()),
         firstSpecialChar, bracketSupport);
 
     if (pathPatternString.contains("?temp_url")) {
@@ -156,13 +163,25 @@ public class ObjectStoreGlobber {
       LOG.trace("Glob filter {} no wildcard prefix {}", pathPatternString, noWildCardPathPrefix);
       FileStatus rootPlaceholder = new FileStatus(0, true, 0, 0, 0,
               new Path(scheme, authority, Path.SEPARATOR + noWildCardPathPrefix));
-      LOG.trace("Glob filter {} pattern {}", rootPlaceholder.getPath(),
+      String pathToList = rootPlaceholder.getPath().toString();
+      if (token != null && !COSUtils.isTokenInURL(pathToList)) {
+        pathToList = COSUtils.addTokenToPath(pathToList, token, hostName);
+      }
+      LOG.trace("Glob filter {} pattern {}", pathToList,
           pathPatternString.toString());
-      candidates = new ArrayList<>(Arrays.asList(listStatus(rootPlaceholder.getPath(),
+      candidates = new ArrayList<>(Arrays.asList(listStatus(new Path(pathToList),
           noWildCardPathPrefix.endsWith("/"))));
       for (FileStatus candidate : candidates) {
         if (globFilter.accept(candidate.getPath())) {
           LOG.trace("Candidate accepted: {}", candidate.getPath().toString());
+          if (token != null) {
+            String pathWithToken = candidate.getPath().toString();
+            if (!COSUtils.isTokenInURL(pathWithToken)) {
+              pathWithToken = COSUtils.addTokenToPath(pathWithToken, token, hostName);
+              LOG.trace("Glob : extend return path with token {}", pathWithToken);
+              candidate.setPath(new Path(pathWithToken));
+            }
+          }
           results.add(candidate);
         } else {
           LOG.trace("Candidate rejected: {} Pattern {}", candidate.getPath().toString(),
@@ -172,14 +191,33 @@ public class ObjectStoreGlobber {
     } else {
       LOG.debug("No globber pattern. Get a single FileStatus based on path given {}",
           pathPattern.toString());
-      candidates = new ArrayList<>(Arrays.asList(getFileStatus(new Path(pathPattern.toString()))));
-      if (candidates.isEmpty()) {
+      String pathToList = pathPattern.toString();
+      if (token != null && !COSUtils.isTokenInURL(pathToList)) {
+        pathToList = COSUtils.addTokenToPath(pathToList, token, hostName);
+      }
+
+      candidates = new ArrayList<>(Arrays.asList(getFileStatus(new Path(pathToList))));
+      if (candidates == null || candidates.isEmpty()) {
         return new FileStatus[0];
       }
+      LOG.trace("About to loop over candidates");
       for (FileStatus candidate : candidates) {
+        if (candidate == null) {
+          throw new FileNotFoundException("Not found " + pathPatternString);
+        }
+        LOG.trace("Loop over {}", candidate);
+        // if ?token exists then compare to pattern without the ?token=
         if (filter.accept(candidate.getPath())
-            && (candidate.getPath().toString().startsWith(pathPattern.toString() + "/")
-                || (candidate.getPath().toString().equals(pathPattern.toString())))) {
+            && (candidate.getPath().toString().startsWith(
+                COSUtils.removeToken(pathPattern.toString()) + "/")
+                || (candidate.getPath().toString().equals(
+                    COSUtils.removeToken(pathPattern.toString()))))) {
+          String pathWithToken = candidate.getPath().toString();
+          if (!COSUtils.isTokenInURL(pathWithToken)) {
+            pathWithToken = COSUtils.addTokenToPath(pathWithToken, token, hostName);
+            LOG.debug("Glob : extend return path with token {}", pathWithToken);
+            candidate.setPath(new Path(pathWithToken));
+          }
           results.add(candidate);
         }
       }

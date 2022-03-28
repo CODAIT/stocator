@@ -31,12 +31,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.transfer.Upload;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.AmazonClientException;
+import com.ibm.cloud.objectstorage.services.s3.AmazonS3;
+import com.ibm.cloud.objectstorage.services.s3.transfer.Upload;
+import com.ibm.cloud.objectstorage.services.s3.model.PutObjectRequest;
+import com.ibm.cloud.objectstorage.services.s3.model.ObjectMetadata;
+import com.ibm.cloud.objectstorage.services.s3.transfer.TransferManager;
+import com.ibm.cloud.objectstorage.AmazonClientException;
 
 public class COSOutputStream extends OutputStream {
   /*

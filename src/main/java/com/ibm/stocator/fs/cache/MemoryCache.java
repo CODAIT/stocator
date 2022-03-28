@@ -17,6 +17,7 @@
 
 package com.ibm.stocator.fs.cache;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -29,6 +30,8 @@ import com.google.common.cache.CacheBuilder;
 /**
  * Wrapper class adding an internal cache layer for objects metadata,
  * This cache is populated by the list function and on-the-fly requests for objects.
+ *
+ * Cache always keeps key and the cached fs without token if was provided as an input
  */
 public class MemoryCache {
   private final Cache<String, FileStatus> fsCache;
@@ -53,9 +56,9 @@ public class MemoryCache {
         .expireAfterWrite(30, TimeUnit.SECONDS).build();
   }
 
-  public void putFileStatus(String path, FileStatus fs) {
+  public void putFileStatus(String path, FileStatus fs) throws IOException {
     LOG.trace("Guava - add to cache {}", path);
-    fsCache.put(path, fs);
+    fsCache.put(path, new FileStatus(fs));
   }
 
   public void removeFileStatus(String path) {
@@ -66,13 +69,14 @@ public class MemoryCache {
   public FileStatus getFileStatus(final String path) {
     LOG.debug("Guava - get from cache {}", path);
     try {
-      return fsCache.get(path, new Callable<FileStatus>() {
+      FileStatus cached =  fsCache.get(path, new Callable<FileStatus>() {
         @Override
         public FileStatus call() throws Exception {
           LOG.debug("Guava cache {} return null", path);
           return null;
         }
       });
+      return new FileStatus(cached);
     } catch (Exception e) {
       LOG.debug("Guava - " + e.getMessage());
     }

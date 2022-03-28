@@ -175,6 +175,9 @@ The following is the list of the Stocator configuration keys. `<service>` can be
 |fs.cos.`<service>`.iam.api.key | API key  | mandatory | value of `apiKey`
 |fs.cos.`<service>`.iam.service.id  | Service ID | mandatory | Value of `iam_serviceid_crn`. In certain cases you need only value after `:serviceid:`
 |fs.cos.`<service>`.endpoint | COS endpoint | mandatory | Open link from `endpoints` and choose relevant endpoint. This endpoint should go here
+|fs.cos.`<service>`.iam.token.max.retry | IAM token retrieval max retry  | Optional |
+|fs.cos.`<service>`.iam.token.refresh | IAM token refresh time offset in seconds  | Optional |
+
 
 Example, configure `<service>` as `myCOS`:
 
@@ -197,7 +200,7 @@ Now you can use URI
 
 
 An optional, it is possible to provide existing token instead of using API key.
-Instead of providing `fs.cos.myCos.iam.api.key`, Stocator supports `fs.cos.myCos.iam.api.token` that may contain value of the existing token. When token is expired, Stocator will throw `403` exception. It's the user responsibility to provide long activation token or re-create token outside of Stocator.
+Instead of providing `fs.cos.myCos.iam.api.key`, Stocator supports `fs.cos.myCos.iam.token` that may contain value of the existing token. When token is expired, Stocator will throw `403` exception. It's the user responsibility to provide long activation token or re-create token outside of Stocator.
 
 #### COS Connector configuration without IAM
 
