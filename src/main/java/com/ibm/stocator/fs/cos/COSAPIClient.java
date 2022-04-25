@@ -41,7 +41,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Date;
-import java.util.concurrent.CountDownLatch;
 
 import com.ibm.stocator.fs.cache.MemoryCache;
 import com.ibm.stocator.fs.common.Constants;
@@ -49,10 +48,7 @@ import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
-import com.ibm.stocator.fs.cos.ConfigurationHandler;
-import com.ibm.stocator.fs.cos.OnetimeInitialization;
 import com.ibm.stocator.fs.cos.auth.CustomTokenManager;
-import com.ibm.stocator.fs.cos.COSInputStream;
 import com.ibm.cloud.objectstorage.services.s3.AmazonS3ClientBuilder;
 import com.ibm.cloud.objectstorage.AmazonClientException;
 import com.ibm.cloud.objectstorage.AmazonServiceException;
@@ -150,6 +146,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.PATH_STYLE_ACCESS;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_PATH_STYLE_ACCESS;
 import static com.ibm.stocator.fs.common.Constants.FS_STOCATOR_FMODE_DATA_CLEANUP;
 import static com.ibm.stocator.fs.cos.COSConstants.REGION_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.V2_SIGNER_TYPE_COS_PROPERTY;
@@ -422,9 +420,13 @@ public class COSAPIClient implements IStoreClient {
     }
     final String serviceUrl = props.getProperty(ENDPOINT_URL_COS_PROPERTY);
 
+    final boolean pathStyleAccessEnabled = Utils.getBoolean(conf, FS_COS, FS_ALT_KEYS,
+            PATH_STYLE_ACCESS, DEFAULT_PATH_STYLE_ACCESS);
+    LOG.debug("Setting path style access to {}", pathStyleAccessEnabled);
+
     AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard()
         .withClientConfiguration(clientConf)
-        .withPathStyleAccessEnabled(true)
+        .withPathStyleAccessEnabled(pathStyleAccessEnabled)
         .withCredentials(credProvider);
 
     if (serviceUrl != null && !serviceUrl.equals(amazonDefaultEndpoint)) {
