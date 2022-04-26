@@ -38,6 +38,8 @@ import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.PATH_STYLE_ACCESS;
+import static com.ibm.stocator.fs.cos.COSConstants.DEFAULT_PATH_STYLE_ACCESS;
 import static com.ibm.stocator.fs.cos.COSConstants.AUTO_BUCKET_CREATE;
 import static com.ibm.stocator.fs.cos.COSConstants.AUTO_BUCKET_CREATE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE;
@@ -106,6 +108,8 @@ public final class ConfigurationHandler {
         SECRET_KEY_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, ENDPOINT_URL, props,
         ENDPOINT_URL_COS_PROPERTY, false);
+    Utils.updateProperty(conf, prefix, altPrefix, PATH_STYLE_ACCESS, props,
+            String.valueOf(DEFAULT_PATH_STYLE_ACCESS), false);
     Utils.updateProperty(conf, prefix, altPrefix, AUTO_BUCKET_CREATE, props,
         AUTO_BUCKET_CREATE_COS_PROPERTY, false);
     Utils.updateProperty(conf, prefix, altPrefix, V2_SIGNER_TYPE, props,
