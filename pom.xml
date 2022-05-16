@@ -59,23 +59,40 @@
 
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
+        <commons-io.version>2.7</commons-io.version>
+        <commons-lang.version>2.6</commons-lang.version>
         <findbugs.path>build/findbugs</findbugs.path>
-        <slf4j.version>1.7.30</slf4j.version>
+        <slf4j.version>1.7.25</slf4j.version>
         <java.version>1.8</java.version>
         <joss.version>0.10.3</joss.version>
         <hadoop.version>2.7.3</hadoop.version>
         <junit.version>4.13.1</junit.version>
         <jackson.version>1.9.13</jackson.version>
-        <httpcomponents.httpcore.version>4.4.12</httpcomponents.httpcore.version>
+        <jackson-databind.version>2.13.2.1</jackson-databind.version>
+        <jackson-dataformat-cbor.version>2.13.1</jackson-dataformat-cbor.version>
+        <json-simple.version>1.1.1</json-simple.version>
+        <httpclient.version>4.5.13</httpclient.version>
+        <httpcomponents.httpcore.version>4.4.15</httpcomponents.httpcore.version>
+        <httpcomponents.client5.version>5.0.4</httpcomponents.client5.version>
         <ibm.sdk.version>2.10.0</ibm.sdk.version>
-        <httpcomponents.client5.version>5.0.3</httpcomponents.client5.version>
         <powermock.version>2.0.2</powermock.version>
         <mockito.version>2.28.2</mockito.version>
-        <amazon.sdk.version>1.11.596</amazon.sdk.version>
-        <google.guava.version>30.0-jre</google.guava.version>
+        <amazon.sdk.version>1.11.1034</amazon.sdk.version>
+        <google.guava.version>31.1-jre</google.guava.version>
     </properties>
 
     <dependencies>
+        <!-- override transitive dependency versions for security fixes -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson-databind.version}</version>
+        </dependency>
+         <dependency>
+             <groupId>com.fasterxml.jackson.dataformat</groupId>
+             <artifactId>jackson-dataformat-cbor</artifactId>
+             <version>${jackson-dataformat-cbor.version}</version>
+         </dependency>
         <dependency>
            <groupId>com.ibm.cos</groupId>
            <artifactId>ibm-cos-java-sdk-bundle</artifactId>
@@ -87,6 +104,10 @@
             <version>${hadoop.version}</version>
             <scope>provided</scope>
             <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                 </exclusion>
                <exclusion>
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
@@ -114,9 +135,9 @@
           <version>${google.guava.version}</version>
         </dependency>
         <dependency>
-	        <groupId>com.googlecode.json-simple</groupId>
-	        <artifactId>json-simple</artifactId>
-	        <version>1.1.1</version>
+          <groupId>com.googlecode.json-simple</groupId>
+          <artifactId>json-simple</artifactId>
+          <version>${json-simple.version}</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.jackson</groupId>
@@ -147,6 +168,10 @@
             <type>test-jar</type>
             <version>${hadoop.version}</version>
             <exclusions>
+                <exclusion>
+                    <groupId>commons-codec</groupId>
+                    <artifactId>commons-codec</artifactId>
+                 </exclusion>
                <exclusion>
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
@@ -169,14 +194,14 @@
             <version>${slf4j.version}</version>
             <scope>provided</scope>
         </dependency>
-		<dependency>
-		    <groupId>commons-lang</groupId>
-		    <artifactId>commons-lang</artifactId>
-		    <version>2.6</version>
-		</dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>${commons-lang.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
-        	<artifactId>httpclient5</artifactId>
+            <artifactId>httpclient5</artifactId>
             <version>${httpcomponents.client5.version}</version>
             <exclusions>
                 <exclusion>
@@ -192,13 +217,18 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.7</version>
+            <version>${commons-io.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
             <version>${httpcomponents.httpcore.version}</version>
         </dependency>
+         <dependency>
+             <groupId>org.apache.httpcomponents</groupId>
+             <artifactId>httpclient</artifactId>
+             <version>${httpclient.version}</version>
+         </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
