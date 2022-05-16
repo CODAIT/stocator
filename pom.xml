@@ -166,8 +166,7 @@
                <exclusion>
                   <groupId>com.fasterxml.jackson.core</groupId>
                   <artifactId>jackson-databind</artifactId>
-               </exclusion>
-               <exclusion>	    
+               </exclusion>	    
                <exclusion>
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
