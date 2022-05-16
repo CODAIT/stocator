@@ -94,7 +94,7 @@
                <exclusion>
                   <groupId>com.fasterxml.jackson.core</groupId>
                   <artifactId>jackson-databind</artifactId>
-               </exclusion>	    
+               </exclusion>
                <exclusion>
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
@@ -149,7 +149,7 @@
 	       <exclusion>
                   <groupId>com.fasterxml.jackson.core</groupId>
                   <artifactId>jackson-databind</artifactId>
-               </exclusion>	    
+               </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -166,7 +166,7 @@
                <exclusion>
                   <groupId>com.fasterxml.jackson.core</groupId>
                   <artifactId>jackson-databind</artifactId>
-               </exclusion>	    
+               </exclusion>
                <exclusion>
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
@@ -229,7 +229,7 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>4.5.13</version>
-        </dependency>	
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>junit</groupId>
