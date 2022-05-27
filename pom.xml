@@ -59,6 +59,7 @@
 
     <properties>
         <checkstyle.path>build/checkstyle/</checkstyle.path>
+        <commons-codec.version>1.13</commons-codec.version>
         <commons-io.version>2.7</commons-io.version>
         <commons-lang.version>2.6</commons-lang.version>
         <findbugs.path>build/findbugs</findbugs.path>
@@ -83,6 +84,11 @@
 
     <dependencies>
         <!-- override transitive dependency versions for security fixes -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons-codec.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
