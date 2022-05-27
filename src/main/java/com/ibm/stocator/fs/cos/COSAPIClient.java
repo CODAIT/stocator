@@ -48,42 +48,42 @@ import com.ibm.stocator.fs.common.IStoreClient;
 import com.ibm.stocator.fs.common.StocatorPath;
 import com.ibm.stocator.fs.common.Utils;
 import com.ibm.stocator.fs.common.exception.ConfigurationParseException;
-import com.ibm.stocator.fs.cos.auth.CustomTokenManager;
-import com.ibm.cloud.objectstorage.services.s3.AmazonS3ClientBuilder;
-import com.ibm.cloud.objectstorage.AmazonClientException;
-import com.ibm.cloud.objectstorage.AmazonServiceException;
-import com.ibm.cloud.objectstorage.auth.AWSStaticCredentialsProvider;
-import com.ibm.cloud.objectstorage.auth.BasicAWSCredentials;
-import com.ibm.cloud.objectstorage.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.ibm.cloud.objectstorage.regions.Regions;
-import com.ibm.cloud.objectstorage.services.s3.AmazonS3;
-import com.ibm.cloud.objectstorage.services.s3.model.ObjectMetadata;
-import com.ibm.cloud.objectstorage.services.s3.model.PutObjectRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.PutObjectResult;
-import com.ibm.cloud.objectstorage.services.s3.model.AbortMultipartUploadRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.AmazonS3Exception;
-import com.ibm.cloud.objectstorage.services.s3.model.CompleteMultipartUploadRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.CompleteMultipartUploadResult;
-import com.ibm.cloud.objectstorage.services.s3.model.InitiateMultipartUploadRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.UploadPartRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.UploadPartResult;
-import com.ibm.cloud.objectstorage.services.s3.model.PartETag;
-import com.ibm.cloud.objectstorage.services.s3.model.DeleteObjectRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.ListObjectsRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.ObjectListing;
-import com.ibm.cloud.objectstorage.services.s3.model.S3ObjectSummary;
-import com.ibm.cloud.objectstorage.services.s3.transfer.TransferManager;
-import com.ibm.cloud.objectstorage.services.s3.transfer.TransferManagerConfiguration;
-import com.ibm.cloud.objectstorage.services.s3.transfer.Upload;
-import com.ibm.cloud.objectstorage.services.s3.transfer.Copy;
-import com.ibm.cloud.objectstorage.services.s3.model.CopyObjectRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.DeleteObjectsRequest;
-import com.ibm.cloud.objectstorage.services.s3.model.DeleteObjectsResult;
-import com.ibm.cloud.objectstorage.services.s3.model.DeleteObjectsRequest.KeyVersion;
-import com.ibm.cloud.objectstorage.oauth.BasicIBMOAuthCredentials;
-import com.ibm.cloud.objectstorage.event.ProgressEvent;
-import com.ibm.cloud.objectstorage.event.ProgressListener;
-import com.ibm.cloud.objectstorage.event.ProgressEventType;
+import com.ibm.stocator.fs.cos.ConfigurationHandler;
+import com.ibm.stocator.fs.cos.OnetimeInitialization;
+import com.ibm.stocator.fs.cos.COSInputStream;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
+import com.amazonaws.event.ProgressEvent;
+import com.amazonaws.event.ProgressListener;
+import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.s3.model.CompleteMultipartUploadResult;
+import com.amazonaws.services.s3.model.CopyObjectRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.UploadPartRequest;
+import com.amazonaws.services.s3.model.UploadPartResult;
+import com.amazonaws.services.s3.model.PartETag;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.Copy;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerConfiguration;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.ibm.cloud.objectstorage.ClientConfiguration;
@@ -143,6 +143,7 @@ import static com.ibm.stocator.fs.cos.COSConstants.API_KEY_IAM_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_ENDPOINT_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.IAM_SERVICE_INSTANCE_ID_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.SECRET_KEY_COS_PROPERTY;
+import static com.ibm.stocator.fs.cos.COSConstants.SESSION_TOKEN_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.BLOCK_SIZE_COS_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.COS_BUCKET_PROPERTY;
 import static com.ibm.stocator.fs.cos.COSConstants.ENDPOINT_URL_COS_PROPERTY;
@@ -294,17 +295,19 @@ public class COSAPIClient implements IStoreClient {
     // Define COS client
     String accessKey = props.getProperty(ACCESS_KEY_COS_PROPERTY);
     String secretKey = props.getProperty(SECRET_KEY_COS_PROPERTY);
-    String apiKey = props.getProperty(API_KEY_IAM_PROPERTY);
-    // Read configuration value only If token not provided by URI
-    if (token == null) {
-      token = props.getProperty(IAM_TOKEN_PROPERTY);
-    }
-    LOG.trace("No token provided for the init of {}", filesystemURI.getPath());
-    if (apiKey == null && accessKey == null && token == null) {
+    String sessionToken = props.getProperty(SESSION_TOKEN_COS_PROPERTY);
+
+    if (accessKey == null) {
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
     }
     if (apiKey == null && secretKey == null && token == null) {
       throw new ConfigurationParseException("Secret KEY is empty. Please provide valid secret key");
+    }
+    AWSCredentials creds;
+    if (sessionToken == null) {
+      creds = new BasicAWSCredentials(accessKey, secretKey);
+    } else {
+      creds = new BasicSessionCredentials(accessKey, secretKey, sessionToken);
     }
 
     ClientConfiguration clientConf = new ClientConfiguration();
