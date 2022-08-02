@@ -67,11 +67,11 @@
         <junit.version>4.13.1</junit.version>
         <jackson.version>1.9.13</jackson.version>
         <httpcomponents.httpcore.version>4.4.14</httpcomponents.httpcore.version>
-        <ibm.sdk.version>2.10.0</ibm.sdk.version>
+        <ibm.sdk.version>2.12.0</ibm.sdk.version>
         <httpcomponents.client5.version>5.0.3</httpcomponents.client5.version>
         <powermock.version>2.0.2</powermock.version>
         <mockito.version>2.28.2</mockito.version>
-        <amazon.sdk.version>1.11.1034</amazon.sdk.version>
+        <amazon.sdk.version>1.12.265</amazon.sdk.version>
         <google.guava.version>30.0-jre</google.guava.version>
     </properties>
 
@@ -87,14 +87,6 @@
             <version>${hadoop.version}</version>
             <scope>provided</scope>
             <exclusions>
-	       <exclusion>
-                  <groupId>commons-codec</groupId>
-                  <artifactId>commons-codec</artifactId>
-               </exclusion>
-               <exclusion>
-                  <groupId>com.fasterxml.jackson.core</groupId>
-                  <artifactId>jackson-databind</artifactId>
-               </exclusion>
                <exclusion>
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
@@ -146,10 +138,6 @@
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
                </exclusion>
-	       <exclusion>
-                  <groupId>com.fasterxml.jackson.core</groupId>
-                  <artifactId>jackson-databind</artifactId>
-               </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -159,14 +147,6 @@
             <type>test-jar</type>
             <version>${hadoop.version}</version>
             <exclusions>
-	       <exclusion>
-                  <groupId>commons-codec</groupId>
-                  <artifactId>commons-codec</artifactId>
-               </exclusion>
-               <exclusion>
-                  <groupId>com.fasterxml.jackson.core</groupId>
-                  <artifactId>jackson-databind</artifactId>
-               </exclusion>
                <exclusion>
                    <groupId>javax.servlet</groupId>
                    <artifactId>*</artifactId>
@@ -218,17 +198,6 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
             <version>${httpcomponents.httpcore.version}</version>
-        </dependency>
-	<!-- override transitive dependency versions for security fixes -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-cbor</artifactId>
-            <version>2.13.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.13</version>
         </dependency>
         <!-- Test dependencies -->
         <dependency>
