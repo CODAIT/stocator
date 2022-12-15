@@ -1408,26 +1408,14 @@ public class COSAPIClient implements IStoreClient {
           if (!newDstKey.endsWith("/")) {
             newDstKey = newDstKey + "/";
           }
-          
-          
-          // https://github.com/CODAIT/stocator/issues/318
-          System.out.println("DEBUG BEGIN: issues/318");
-          System.out.println("src ->" + src);
-          System.out.println("newSrcKey ->" + newSrcKey);
-          System.out.println("pathToKey(src) ->" + pathToKey(src));
-          System.out.println("pathToKey(src).length() ->" + pathToKey(src).length());
-          
-          String filename = ""; 
-          if(!pathToKey(src).isEmpty() && pathToKey(src).contains("appstatus")) {
-        	  filename = newSrcKey.substring(newSrcKey.lastIndexOf("/") + 1, newSrcKey.length() - 11);
+          String filename = "";
+          if (pathToKey(src).startsWith("appstatus") && pathToKey(src).endsWith(".inprogress")) {
+            filename = pathToKey(src).substring(0, pathToKey(src).lastIndexOf(".inprogress"));
+          } else {
+            filename = newSrcKey.substring(pathToKey(src).length());
           }
-          else {
-        	  filename = newSrcKey.substring(pathToKey(src).length() + 1);
-          }
-          System.out.println("filename ->" + filename);
-          System.out.println("DEBUG END: issues/318");
-          
           newDstKey = newDstKey + filename;
+          newDstKey = newDstKey.substring(0, newDstKey.lastIndexOf("/"));
           CopyObjectRequest copyObjectRequest =
                   new CopyObjectRequest(mBucket, newSrcKey, mBucket, newDstKey);
           ObjectMetadata srcmd = getObjectMetadata(newSrcKey);
