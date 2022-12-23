@@ -1510,7 +1510,7 @@ public class COSAPIClient implements IStoreClient {
             newDstKey = newDstKey.substring(0, newDstKey.lastIndexOf("/"));
           }
           // fix end
-          newDstKey = newDstKey + filename;
+
           CopyObjectRequest copyObjectRequest =
                   new CopyObjectRequest(mBucket, newSrcKey, mBucket, newDstKey);
           ObjectMetadata srcmd = getObjectMetadata(newSrcKey);
