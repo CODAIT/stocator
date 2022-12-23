@@ -20,7 +20,7 @@
     <groupId>com.ibm.stocator</groupId>
     <artifactId>stocator</artifactId>
     <packaging>jar</packaging>
-    <version>1.1.5</version>
+    <version>1.1.6-SNAPSHOT</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Storage Connector based on the HDFS interface</description>
     <url>https://github.com/SparkTC/stocator</url>
@@ -42,7 +42,7 @@
        <connection>scm:git:git@github.com:SparkTC/stocator.git</connection>
        <developerConnection>scm:git:git@github.com:SparkTC/stocator.git</developerConnection>
        <url>git@github.com:SparkTC/stocator.git</url>
-      <tag>v1.1.5</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <distributionManagement>
@@ -69,7 +69,7 @@
         <httpcomponents.client5.version>5.0.3</httpcomponents.client5.version>
         <powermock.version>2.0.2</powermock.version>
         <mockito.version>2.28.2</mockito.version>
-        <amazon.sdk.version>1.12.249</amazon.sdk.version>
+        <amazon.sdk.version>1.12.338</amazon.sdk.version>
         <google.guava.version>30.0-jre</google.guava.version>
     </properties>
 
