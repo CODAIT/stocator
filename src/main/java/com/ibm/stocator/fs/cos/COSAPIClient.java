@@ -1408,14 +1408,14 @@ public class COSAPIClient implements IStoreClient {
           if (!newDstKey.endsWith("/")) {
             newDstKey = newDstKey + "/";
           }
-          String filename = "";
-          if (pathToKey(src).startsWith("appstatus") && pathToKey(src).endsWith(".inprogress")) {
-            filename = pathToKey(src).substring(0, pathToKey(src).lastIndexOf(".inprogress"));
-          } else {
-            filename = newSrcKey.substring(pathToKey(src).length());
-          }
+          // fix start: https://github.com/CODAIT/stocator/issues/318
+          String filename = newSrcKey.substring(pathToKey(src).length());
           newDstKey = newDstKey + filename;
-          newDstKey = newDstKey.substring(0, newDstKey.lastIndexOf("/"));
+
+          if (pathToKey(src).endsWith(".inprogress")) {
+            newDstKey = newDstKey.substring(0, newDstKey.lastIndexOf("/"));
+          }
+          // fix end
           CopyObjectRequest copyObjectRequest =
                   new CopyObjectRequest(mBucket, newSrcKey, mBucket, newDstKey);
           ObjectMetadata srcmd = getObjectMetadata(newSrcKey);
