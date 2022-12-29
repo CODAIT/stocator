@@ -67,7 +67,6 @@ public class COSConstants {
   public static final String ENDPOINT_URL = ".endpoint";
   public static final String ENDPOINT_URL_COS_PROPERTY = FS_COS + ENDPOINT_URL;
 
-
   public static final String PATH_STYLE_ACCESS = ".path.style.access";
   public static final boolean DEFAULT_PATH_STYLE_ACCESS = true;
 
