@@ -21,7 +21,7 @@ package com.ibm.stocator.fs.cos;
  * Constants used in the COS REST protocol.
  */
 public class COSConstants {
-  /* 
+  /*
    * COS name space identifier
    */
   public static final String S3_D = "s3d";
