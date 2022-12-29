@@ -1083,21 +1083,17 @@ public class COSAPIClient implements IStoreClient {
         // object key created by Hadoop eco system and contains either part- or _SUCCESS
         // we need to find unified object name
         // most likely it's the parent name, although with Hive style it might be in
-        // different layers
-        // this need to be done only once per path pattern
+        // different layers this need to be done only once per path pattern
         // we start with
 
         if (stocatorUnifiedObjectNameOrigin && !fullListing) {
           if (!stocatorUnifiedObjectNameOriginSuccess) {
-            // a bit tricky. need to delete entire set
-            // having unified name as a prefix
+            // a bit tricky. need to delete entire set having unified name as a prefix
             continue;
           }
           LOG.trace("{} created by Stocator", unifiedObjectName);
-          // if we here - data created by spark and job completed
-          // successfully
-          // however there be might parts of failed tasks that
-          // were not aborted
+          // if we here - data created by spark and job completed successfully
+          // however there be might parts of failed tasks that were not aborted
           // we need to make sure there are no failed attempts
           if (stocatorPath.nameWithoutTaskID(objKey)
               .equals(stocatorPath.nameWithoutTaskID(prevObj.getKey()))) {
